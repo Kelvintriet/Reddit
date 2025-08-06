@@ -1,0 +1,445 @@
+.bot-manager {
+  width: 100%;
+}
+
+.bot-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.bot-header h3 {
+  color: var(--color-neutral-content-strong);
+  margin: 0;
+}
+
+.bot-header-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.docs-button {
+  background-color: var(--color-neutral-background-weak);
+  color: var(--color-neutral-content);
+  text-decoration: none;
+  border: 1px solid var(--color-neutral-border);
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.docs-button:hover {
+  background-color: var(--color-neutral-background-strong);
+  border-color: var(--color-reddit-orange);
+  transform: translateY(-1px);
+}
+
+.create-bot-button {
+  background-color: var(--color-reddit-orange);
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.create-bot-button:hover {
+  background-color: var(--color-reddit-orange-hover);
+  transform: translateY(-1px);
+}
+
+/* Modal Styles */
+.create-bot-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.modal-content {
+  background-color: var(--color-neutral-background-strong);
+  border-radius: 12px;
+  width: 100%;
+  max-width: 800px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow-large);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--color-neutral-border);
+}
+
+.modal-header h3 {
+  margin: 0;
+  color: var(--color-neutral-content-strong);
+}
+
+.close-button {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: var(--color-neutral-content);
+  padding: 4px;
+  border-radius: 4px;
+}
+
+.close-button:hover {
+  background-color: var(--color-neutral-background-weak);
+}
+
+/* AI Section */
+.ai-section {
+  padding: 24px;
+  border-bottom: 1px solid var(--color-neutral-border);
+  background: var(--color-neutral-background-strong);
+  color: var(--color-neutral-content-strong);
+  border-radius: 12px 12px 0 0;
+}
+
+.ai-section h4 {
+  margin: 0 0 8px 0;
+  font-size: 18px;
+}
+
+.ai-section p {
+  margin: 0 0 16px 0;
+  color: var(--color-neutral-content);
+}
+
+.ai-section textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--color-neutral-border);
+  border-radius: 6px;
+  background-color: var(--color-neutral-background);
+  color: var(--color-neutral-content);
+  margin-bottom: 16px;
+  resize: vertical;
+}
+
+.ai-section textarea::placeholder {
+  color: var(--color-neutral-content-weak);
+}
+
+.ai-generate-button {
+  background-color: var(--color-reddit-orange);
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.ai-generate-button:hover:not(:disabled) {
+  background-color: var(--color-reddit-orange-hover);
+  transform: translateY(-1px);
+}
+
+.ai-generate-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Manual Section */
+.manual-section {
+  padding: 24px;
+}
+
+.manual-section h4 {
+  margin: 0 0 20px 0;
+  color: var(--color-neutral-content-strong);
+}
+
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 600;
+  color: var(--color-neutral-content-strong);
+}
+
+.form-group input,
+.form-group textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--color-neutral-border);
+  border-radius: 6px;
+  background-color: var(--color-neutral-background);
+  color: var(--color-neutral-content);
+  font-size: 14px;
+}
+
+.syntax-textarea {
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 24px;
+}
+
+.save-button {
+  background-color: var(--color-reddit-orange);
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.cancel-button {
+  background-color: var(--color-neutral-background-weak);
+  color: var(--color-neutral-content);
+  border: 1px solid var(--color-neutral-border);
+  padding: 10px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+/* Bot List */
+.bots-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.no-bots {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--color-neutral-content-weak);
+}
+
+.bot-item {
+  background-color: var(--color-neutral-background-strong);
+  border: 1px solid var(--color-neutral-border);
+  border-radius: 8px;
+  padding: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.bot-info {
+  flex: 1;
+}
+
+.bot-header-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.bot-header-item h4 {
+  margin: 0;
+  color: var(--color-neutral-content-strong);
+  font-size: 18px;
+}
+
+.bot-status {
+  display: flex;
+  align-items: center;
+}
+
+.status-indicator {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 12px;
+}
+
+.status-indicator.active {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.status-indicator.inactive {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+.bot-description {
+  color: var(--color-neutral-content);
+  margin: 8px 0;
+  line-height: 1.4;
+}
+
+.bot-meta {
+  display: flex;
+  gap: 16px;
+  font-size: 12px;
+  color: var(--color-neutral-content-weak);
+}
+
+.share-code {
+  cursor: pointer;
+  padding: 2px 6px;
+  background-color: var(--color-neutral-background-weak);
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+}
+
+.share-code:hover {
+  background-color: var(--color-neutral-border);
+}
+
+.bot-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.toggle-button {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.toggle-button.play {
+  background-color: #28a745;
+  color: white;
+}
+
+.toggle-button.pause {
+  background-color: #ffc107;
+  color: #212529;
+}
+
+.edit-button {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.edit-button:hover {
+  background-color: #0056b3;
+  transform: translateY(-1px);
+}
+
+.delete-button {
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* Syntax Guide */
+.bot-syntax-guide {
+  margin-top: 30px;
+  padding: 20px;
+  background-color: var(--color-neutral-background-weak);
+  border-radius: 8px;
+  border: 1px solid var(--color-neutral-border);
+}
+
+.bot-syntax-guide h4 {
+  margin: 0 0 12px 0;
+  color: var(--color-neutral-content-strong);
+}
+
+.bot-syntax-guide details {
+  margin-top: 8px;
+}
+
+.bot-syntax-guide summary {
+  cursor: pointer;
+  color: var(--color-reddit-orange);
+  font-weight: 600;
+  padding: 8px 0;
+}
+
+.syntax-example {
+  background-color: #1e1e1e;
+  color: #d4d4d4;
+  padding: 16px;
+  border-radius: 6px;
+  overflow-x: auto;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 12px;
+  line-height: 1.4;
+  margin-top: 8px;
+}
+
+.bot-loading {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--color-neutral-content-weak);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .create-bot-modal {
+    padding: 10px;
+  }
+  
+  .modal-content {
+    max-height: 95vh;
+  }
+  
+  .ai-section,
+  .manual-section {
+    padding: 16px;
+  }
+  
+  .bot-item {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .bot-actions {
+    flex-direction: row;
+    justify-content: flex-end;
+  }
+  
+  .modal-actions {
+    flex-direction: column;
+  }
+}

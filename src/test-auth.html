@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Authentication</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .form-group {
+            margin: 10px 0;
+        }
+        input {
+            padding: 10px;
+            width: 100%;
+            margin: 5px 0;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+        }
+        .error {
+            color: red;
+            margin: 10px 0;
+        }
+        .success {
+            color: green;
+            margin: 10px 0;
+        }
+    </style>
+    <!-- Firebase -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js';
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, signOut } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js';
+        
+        // Firebase config
+        const firebaseConfig = {
+            apiKey: "AIzaSyAq91-kUVQlXW3MhwpfRPmGP7e0nWAqGT0",
+            authDomain: "xredread.firebaseapp.com",
+            projectId: "xredread",
+            storageBucket: "xredread.firebasestorage.app",
+            messagingSenderId: "822628499479",
+            appId: "1:822628499479:web:873b4caca6b644e6289c52"
+        };
+        
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const googleProvider = new GoogleAuthProvider();
+        
+        window.auth = auth;
+        window.signInWithEmailAndPassword = signInWithEmailAndPassword;
+        window.createUserWithEmailAndPassword = createUserWithEmailAndPassword;
+        window.signInWithPopup = signInWithPopup;
+        window.googleProvider = googleProvider;
+        window.signOut = signOut;
+        
+        // Test functions
+        window.testEmailLogin = async () => {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const messageDiv = document.getElementById('message');
+            
+            try {
+                const userCredential = await signInWithEmailAndPassword(auth, email, password);
+                messageDiv.innerHTML = `<div class="success">Đăng nhập thành công! User: ${userCredential.user.email}</div>`;
+            } catch (error) {
+                messageDiv.innerHTML = `<div class="error">Lỗi đăng nhập: ${error.message}</div>`;
+            }
+        };
+        
+        window.testEmailSignup = async () => {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const messageDiv = document.getElementById('message');
+            
+            try {
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                messageDiv.innerHTML = `<div class="success">Đăng ký thành công! User: ${userCredential.user.email}</div>`;
+            } catch (error) {
+                messageDiv.innerHTML = `<div class="error">Lỗi đăng ký: ${error.message}</div>`;
+            }
+        };
+        
+        window.testGoogleLogin = async () => {
+            const messageDiv = document.getElementById('message');
+            
+            try {
+                const userCredential = await signInWithPopup(auth, googleProvider);
+                messageDiv.innerHTML = `<div class="success">Đăng nhập Google thành công! User: ${userCredential.user.email}</div>`;
+            } catch (error) {
+                messageDiv.innerHTML = `<div class="error">Lỗi đăng nhập Google: ${error.message}</div>`;
+            }
+        };
+        
+        window.testSignOut = async () => {
+            const messageDiv = document.getElementById('message');
+            
+            try {
+                await signOut(auth);
+                messageDiv.innerHTML = `<div class="success">Đăng xuất thành công!</div>`;
+            } catch (error) {
+                messageDiv.innerHTML = `<div class="error">Lỗi đăng xuất: ${error.message}</div>`;
+            }
+        };
+        
+        // Listen to auth state changes
+        auth.onAuthStateChanged((user) => {
+            const statusDiv = document.getElementById('auth-status');
+            if (user) {
+                statusDiv.innerHTML = `<div class="success">Đã đăng nhập: ${user.email}</div>`;
+            } else {
+                statusDiv.innerHTML = `<div>Chưa đăng nhập</div>`;
+            }
+        });
+    </script>
+</head>
+<body>
+    <h1>Test Firebase Authentication</h1>
+    
+    <div id="auth-status"></div>
+    
+    <div class="form-group">
+        <input type="email" id="email" placeholder="Email" value="test@example.com">
+    </div>
+    
+    <div class="form-group">
+        <input type="password" id="password" placeholder="Password" value="123456">
+    </div>
+    
+    <div>
+        <button onclick="testEmailSignup()">Đăng ký Email</button>
+        <button onclick="testEmailLogin()">Đăng nhập Email</button>
+        <button onclick="testGoogleLogin()">Đăng nhập Google</button>
+        <button onclick="testSignOut()">Đăng xuất</button>
+    </div>
+    
+    <div id="message"></div>
+    
+    <hr>
+    
+    <h2>Hướng dẫn test:</h2>
+    <ol>
+        <li>Đầu tiên thử đăng ký với email/password</li>
+        <li>Sau đó thử đăng nhập với email/password đó</li>
+        <li>Thử đăng nhập với Google</li>
+        <li>Kiểm tra trạng thái đăng nhập</li>
+        <li>Thử đăng xuất</li>
+    </ol>
+    
+    <p><strong>Lưu ý:</strong> Đối với Google Auth, cần đảm bảo domain đã được cấu hình trong Firebase Console.</p>
+</body>
+</html> 

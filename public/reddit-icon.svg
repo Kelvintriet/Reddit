@@ -1,0 +1,17 @@
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Reddit head -->
+  <circle cx="16" cy="16" r="15" fill="#FF4500"/>
+  
+  <!-- Eyes -->
+  <circle cx="11" cy="12" r="2.5" fill="white"/>
+  <circle cx="21" cy="12" r="2.5" fill="white"/>
+  <circle cx="11" cy="12" r="1.5" fill="#FF4500"/>
+  <circle cx="21" cy="12" r="1.5" fill="#FF4500"/>
+  
+  <!-- Mouth -->
+  <path d="M8 20c0 4.4 3.6 8 8 8s8-3.6 8-8" stroke="white" stroke-width="2" fill="none" stroke-linecap="round"/>
+  
+  <!-- Antenna -->
+  <circle cx="16" cy="4" r="2" fill="white"/>
+  <line x1="16" y1="6" x2="16" y2="9" stroke="white" stroke-width="1.5"/>
+</svg> 
