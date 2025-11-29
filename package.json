@@ -5,12 +5,12 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "start": "vite",
+    "dev:server": "nodemon server/index.js",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "server": "node server/index.js",
-    "server:dev": "nodemon server/index.js",
+    "start:client": "vite preview --host",
+    "start:server": "node server/index.js",
     "cleanup": "node server/scripts/cleanupOrphanedFiles.js"
   },
   "dependencies": {

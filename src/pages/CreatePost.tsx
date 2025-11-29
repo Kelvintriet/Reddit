@@ -41,7 +41,7 @@ const CreatePost = () => {
       // Connect WebSocket for new post creation
       const ws = getFileCleanupWebSocket(user.uid);
       wsRef.current = ws;
-      
+
       ws.connect().catch(error => {
         console.warn('Failed to connect WebSocket for file cleanup:', error);
       });
@@ -174,7 +174,7 @@ const CreatePost = () => {
 
   const handleFilesUploaded = (files: UploadedFile[]) => {
     setUploadedFiles(prev => [...prev, ...files])
-    
+
     // Track files via WebSocket
     if (wsRef.current && !isEditMode) {
       files.forEach(file => {
@@ -185,7 +185,7 @@ const CreatePost = () => {
 
   const handleFileRemoved = (fileId: string) => {
     setUploadedFiles(prev => prev.filter(file => file.id !== fileId))
-    
+
     // Remove from WebSocket tracking
     if (wsRef.current && !isEditMode) {
       wsRef.current.removeFile(fileId);
@@ -302,7 +302,7 @@ const CreatePost = () => {
           if (wsRef.current && !isEditMode) {
             wsRef.current.notifyPostSubmitted();
           }
-          
+
           // Navigate to the created post
           // Check if posting to user profile (starts with u/)
           if (selectedSubreddit && !selectedSubreddit.startsWith('u/')) {

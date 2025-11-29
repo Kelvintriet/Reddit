@@ -35,10 +35,10 @@ const ImageViewer: React.FC<ImageViewerProps> = ({
   // Handle URL updates
   useEffect(() => {
     const imageId = `image${imageIndex + 1}`
-    const basePath = subreddit 
-      ? `/r/${subreddit}/post/${postId}` 
+    const basePath = subreddit
+      ? `/r/${subreddit}/post/${postId}`
       : `/u/${authorId}/post/${postId}`
-    
+
     const newUrl = `${basePath}#${imageId}`
     window.history.replaceState(null, '', newUrl)
   }, [imageIndex, postId, authorId, subreddit])
@@ -62,7 +62,7 @@ const ImageViewer: React.FC<ImageViewerProps> = ({
   // Handle wheel zoom
   const handleWheel = (e: React.WheelEvent) => {
     e.preventDefault()
-    
+
     if (e.ctrlKey) {
       const rect = containerRef.current?.getBoundingClientRect()
       if (!rect) return
@@ -126,7 +126,7 @@ const ImageViewer: React.FC<ImageViewerProps> = ({
   }
 
   return (
-    <div 
+    <div
       className="image-viewer-overlay"
       onClick={handleBackgroundClick}
       onWheel={handleWheel}
@@ -134,53 +134,53 @@ const ImageViewer: React.FC<ImageViewerProps> = ({
       <div className="image-viewer-container" ref={containerRef}>
         {/* Controls */}
         <div className="image-viewer-controls">
-          <button 
+          <button
             className="control-btn close-btn"
             onClick={onClose}
             title="Đóng (Esc)"
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <line x1="18" y1="6" x2="6" y2="18"/>
-              <line x1="6" y1="6" x2="18" y2="18"/>
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
             </svg>
           </button>
-          
+
           <div className="zoom-controls">
-            <button 
+            <button
               className="control-btn"
               onClick={zoomOut}
               title="Thu nhỏ"
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <circle cx="11" cy="11" r="8"/>
-                <path d="M21 21l-4.35-4.35"/>
-                <line x1="8" y1="11" x2="14" y2="11"/>
+                <circle cx="11" cy="11" r="8" />
+                <path d="M21 21l-4.35-4.35" />
+                <line x1="8" y1="11" x2="14" y2="11" />
               </svg>
             </button>
-            
+
             <span className="zoom-level">{Math.round(scale * 100)}%</span>
-            
-            <button 
+
+            <button
               className="control-btn"
               onClick={zoomIn}
               title="Phóng to"
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <circle cx="11" cy="11" r="8"/>
-                <path d="M21 21l-4.35-4.35"/>
-                <line x1="11" y1="8" x2="11" y2="14"/>
-                <line x1="8" y1="11" x2="14" y2="11"/>
+                <circle cx="11" cy="11" r="8" />
+                <path d="M21 21l-4.35-4.35" />
+                <line x1="11" y1="8" x2="11" y2="14" />
+                <line x1="8" y1="11" x2="14" y2="11" />
               </svg>
             </button>
-            
-            <button 
+
+            <button
               className="control-btn"
               onClick={resetZoom}
               title="Đặt lại zoom"
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2 2z"/>
-                <polyline points="9,22 9,12 15,12 15,22"/>
+                <path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2 2z" />
+                <polyline points="9,22 9,12 15,12 15,22" />
               </svg>
             </button>
           </div>
@@ -190,25 +190,25 @@ const ImageViewer: React.FC<ImageViewerProps> = ({
         {images.length > 1 && (
           <>
             {imageIndex > 0 && (
-              <button 
+              <button
                 className="nav-btn nav-prev"
                 onClick={() => setImageIndex(imageIndex - 1)}
                 title="Ảnh trước"
               >
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                  <polyline points="15,18 9,12 15,6"/>
+                  <polyline points="15,18 9,12 15,6" />
                 </svg>
               </button>
             )}
-            
+
             {imageIndex < images.length - 1 && (
-              <button 
+              <button
                 className="nav-btn nav-next"
                 onClick={() => setImageIndex(imageIndex + 1)}
                 title="Ảnh tiếp"
               >
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                  <polyline points="9,18 15,12 9,6"/>
+                  <polyline points="9,18 15,12 9,6" />
                 </svg>
               </button>
             )}

@@ -15,31 +15,31 @@ const CreateSubredditForm = ({ onSuccess, onCancel }: CreateSubredditFormProps) 
   const [rules, setRules] = useState<string[]>(['Hãy tôn trọng các thành viên khác'])
   const [newRule, setNewRule] = useState('')
   const navigate = useNavigate()
-  
+
   const { createSubreddit, isLoading, error, clearError } = useSubredditsStore()
   const { user } = useAuthStore()
-  
+
   useEffect(() => {
     // Kiểm tra nếu người dùng chưa đăng nhập, chuyển hướng đến trang đăng nhập
     if (!user) {
       navigate('/login', { state: { from: '/create-community' } })
     }
   }, [user, navigate])
-  
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (!name || !description) return
-    
+
     // Xóa các ký tự đặc biệt, chỉ cho phép chữ cái, số và dấu gạch dưới
     const sanitizedName = name.toLowerCase().replace(/[^a-z0-9_]/g, '')
-    
+
     if (sanitizedName !== name) {
       alert('Tên subreddit chỉ được chứa chữ cái thường, số và dấu gạch dưới')
       setName(sanitizedName)
       return
     }
-    
+
     try {
       await createSubreddit({
         name,
@@ -48,41 +48,41 @@ const CreateSubredditForm = ({ onSuccess, onCancel }: CreateSubredditFormProps) 
         rules,
         createdBy: user?.uid || ''
       })
-      
+
       // Reset form
       setName('')
       setDescription('')
       setIsPrivate(false)
       setRules(['Hãy tôn trọng các thành viên khác'])
-      
+
       if (onSuccess) onSuccess()
-      
+
       // Chuyển hướng đến trang subreddit vừa tạo
       navigate(`/r/${name}`)
     } catch (error) {
       console.error('Lỗi khi tạo subreddit:', error)
     }
   }
-  
+
   const addRule = () => {
     if (!newRule.trim()) return
     setRules([...rules, newRule.trim()])
     setNewRule('')
   }
-  
+
   const removeRule = (index: number) => {
     const updatedRules = [...rules]
     updatedRules.splice(index, 1)
     setRules(updatedRules)
   }
-  
+
   if (!user) {
     return (
       <div className="create-subreddit-container">
         <div className="auth-message">
           <div className="auth-icon">🔒</div>
           <h2>Bạn cần đăng nhập để tạo subreddit</h2>
-          <button 
+          <button
             onClick={() => navigate('/login')}
             className="auth-button"
           >
@@ -92,16 +92,16 @@ const CreateSubredditForm = ({ onSuccess, onCancel }: CreateSubredditFormProps) 
       </div>
     )
   }
-  
+
   return (
     <div className="create-subreddit-container">
       <div className="create-subreddit-card">
         <h2 className="create-subreddit-title">Tạo Subreddit mới</h2>
-        
+
         {error && (
           <div className="error-message">
             <span>{error}</span>
-            <button 
+            <button
               onClick={clearError}
               className="error-close-button"
             >
@@ -109,7 +109,7 @@ const CreateSubredditForm = ({ onSuccess, onCancel }: CreateSubredditFormProps) 
             </button>
           </div>
         )}
-        
+
         <form onSubmit={handleSubmit} className="create-subreddit-form">
           <div className="form-group">
             <label htmlFor="name" className="form-label">
@@ -132,7 +132,7 @@ const CreateSubredditForm = ({ onSuccess, onCancel }: CreateSubredditFormProps) 
               {name.length}/21 ký tự • Chỉ được chứa chữ cái thường, số và dấu gạch dưới
             </p>
           </div>
-          
+
           <div className="form-group">
             <label htmlFor="description" className="form-label">
               Mô tả
@@ -150,7 +150,7 @@ const CreateSubredditForm = ({ onSuccess, onCancel }: CreateSubredditFormProps) 
               {description.length}/500 ký tự
             </p>
           </div>
-          
+
           <div className="form-group checkbox-group">
             <input
               type="checkbox"
@@ -163,17 +163,17 @@ const CreateSubredditForm = ({ onSuccess, onCancel }: CreateSubredditFormProps) 
               Subreddit riêng tư (chỉ thành viên mới có thể xem)
             </label>
           </div>
-          
+
           <div className="form-group">
             <label className="form-label">
               Quy tắc cộng đồng
             </label>
-            
+
             <ul className="rules-list">
               {rules.map((rule, index) => (
                 <li key={index} className="rule-item">
                   <span>{rule}</span>
-                  <button 
+                  <button
                     type="button"
                     onClick={() => removeRule(index)}
                     className="rule-remove-button"
@@ -183,7 +183,7 @@ const CreateSubredditForm = ({ onSuccess, onCancel }: CreateSubredditFormProps) 
                 </li>
               ))}
             </ul>
-            
+
             <div className="rule-input-group">
               <input
                 type="text"
@@ -202,7 +202,7 @@ const CreateSubredditForm = ({ onSuccess, onCancel }: CreateSubredditFormProps) 
               </button>
             </div>
           </div>
-          
+
           <div className="form-actions">
             {onCancel && (
               <button
@@ -213,7 +213,7 @@ const CreateSubredditForm = ({ onSuccess, onCancel }: CreateSubredditFormProps) 
                 Hủy
               </button>
             )}
-            
+
             <button
               type="submit"
               disabled={isLoading || !name || !description}

@@ -17,7 +17,7 @@ interface SearchResult {
 const Search = () => {
   const [searchParams] = useSearchParams()
   const searchQuery = searchParams.get('q') || ''
-  
+
   // Determine default tab based on search query
   const getDefaultTab = (query: string) => {
     if (query.startsWith('@')) {
@@ -25,7 +25,7 @@ const Search = () => {
     }
     return 'posts'
   }
-  
+
   const [activeTab, setActiveTab] = useState<'posts' | 'communities' | 'users' | 'comments'>(getDefaultTab(searchQuery))
   const [results, setResults] = useState<SearchResult>({
     posts: [],
@@ -34,7 +34,7 @@ const Search = () => {
     loading: false,
     error: null
   })
-  
+
   useEffect(() => {
     if (searchQuery.trim()) {
       // Update active tab based on search query
@@ -43,22 +43,22 @@ const Search = () => {
       performSearch(searchQuery.trim())
     }
   }, [searchQuery])
-  
+
   const performSearch = async (query: string) => {
     setResults(prev => ({ ...prev, loading: true, error: null }))
-    
+
     try {
       const searchTerms = query.toLowerCase().split(' ').filter(term => term.length > 0)
-      
+
       // Check if this is a user search
       const isUserSearch = query.startsWith('@')
       const isUIDSearch = /^[A-Z0-9]{3}-[A-Z0-9]{3}-[A-Z0-9]{3}$/.test(query.toUpperCase())
-      
+
       // Search users
       const usersRef = collection(db, 'users')
       const usersSnapshot = await getDocs(usersRef)
       const users: User[] = []
-      
+
       usersSnapshot.forEach(doc => {
         const data = doc.data()
         const user: User = {
@@ -86,16 +86,16 @@ const Search = () => {
           currentLocation: data.currentLocation,
           updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : undefined
         }
-        
+
         let matchFound = false
-        
+
         // Search by UID format (XXX-YYY-ZZZ)
         if (isUIDSearch && user.customUID) {
           if (user.customUID.toUpperCase() === query.toUpperCase()) {
             matchFound = true
           }
         }
-        
+
         // Search by @name format
         if (isUserSearch) {
           const searchName = query.slice(1).toLowerCase() // Remove @ symbol
@@ -103,39 +103,39 @@ const Search = () => {
             matchFound = true
           }
         }
-        
+
         // General keyword search for users
         if (!isUserSearch && !isUIDSearch) {
-          const usernameMatch = user.username && searchTerms.some(term => 
+          const usernameMatch = user.username && searchTerms.some(term =>
             user.username!.toLowerCase().includes(term)
           )
-          const displayNameMatch = searchTerms.some(term => 
+          const displayNameMatch = searchTerms.some(term =>
             user.displayName.toLowerCase().includes(term)
           )
-          const atNameMatch = user.atName && searchTerms.some(term => 
+          const atNameMatch = user.atName && searchTerms.some(term =>
             user.atName!.toLowerCase().includes(term)
           )
-          const bioMatch = user.bio && searchTerms.some(term => 
+          const bioMatch = user.bio && searchTerms.some(term =>
             user.bio!.toLowerCase().includes(term)
           )
-          
+
           if (usernameMatch || displayNameMatch || atNameMatch || bioMatch) {
             matchFound = true
           }
         }
-        
+
         if (matchFound) {
           users.push(user)
         }
       })
-      
+
       // Search posts - get all posts and filter on client side
       const postsRef = collection(db, 'posts')
       const postsQuery = firestoreQuery(postsRef, orderBy('createdAt', 'desc'), limit(100))
       const postsSnapshot = await getDocs(postsQuery)
-      
+
       const allPosts: Post[] = []
-      
+
       postsSnapshot.forEach(doc => {
         const data = doc.data()
         const post: Post = {
@@ -156,52 +156,52 @@ const Search = () => {
           type: data.type || 'text',
           url: data.url
         }
-        
+
         // Filter posts that match search terms
-        const titleMatch = searchTerms.some(term => 
+        const titleMatch = searchTerms.some(term =>
           post.title.toLowerCase().includes(term)
         )
-        const contentMatch = searchTerms.some(term => 
+        const contentMatch = searchTerms.some(term =>
           post.content.toLowerCase().includes(term)
         )
-        const subredditMatch = post.subreddit && searchTerms.some(term => 
+        const subredditMatch = post.subreddit && searchTerms.some(term =>
           post.subreddit!.toLowerCase().includes(term)
         )
         const authorMatch = post.authorUsername && searchTerms.some(term =>
           post.authorUsername.toLowerCase().includes(term)
         )
-        
+
         if (titleMatch || contentMatch || subredditMatch || authorMatch) {
           allPosts.push(post)
         }
       })
-      
+
       // Sort by relevance (title matches first, then content matches)
       allPosts.sort((a, b) => {
         const aTitle = searchTerms.some(term => a.title.toLowerCase().includes(term))
         const bTitle = searchTerms.some(term => b.title.toLowerCase().includes(term))
-        
+
         if (aTitle && !bTitle) return -1
         if (!aTitle && bTitle) return 1
-        
+
         // If both or neither match title, sort by date
         return b.createdAt.getTime() - a.createdAt.getTime()
       })
-      
+
       // Search communities
       const communitiesRef = collection(db, 'subreddits')
       const communitiesSnapshot = await getDocs(communitiesRef)
       const communities: any[] = []
-      
+
       communitiesSnapshot.forEach(doc => {
         const data = doc.data()
-        const nameMatch = searchTerms.some(term => 
+        const nameMatch = searchTerms.some(term =>
           data.name.toLowerCase().includes(term)
         )
-        const descMatch = searchTerms.some(term => 
+        const descMatch = searchTerms.some(term =>
           data.description.toLowerCase().includes(term)
         )
-        
+
         if (nameMatch || descMatch) {
           communities.push({
             id: doc.id,
@@ -209,7 +209,7 @@ const Search = () => {
           })
         }
       })
-      
+
       setResults({
         posts: allPosts.slice(0, 50), // Limit to 50 results
         communities: communities.slice(0, 20), // Limit to 20 communities
@@ -217,7 +217,7 @@ const Search = () => {
         loading: false,
         error: null
       })
-      
+
     } catch (error) {
       console.error('Search error:', error)
       setResults(prev => ({
@@ -227,7 +227,7 @@ const Search = () => {
       }))
     }
   }
-  
+
   if (!searchQuery.trim()) {
     return (
       <div className="container search-container">
@@ -246,7 +246,7 @@ const Search = () => {
       </div>
     )
   }
-  
+
   return (
     <div className="container search-container">
       {/* Search Header */}
@@ -260,7 +260,7 @@ const Search = () => {
           )}
         </div>
       </div>
-      
+
       {/* Search Tabs */}
       <div className="search-tabs">
         <button
@@ -268,7 +268,7 @@ const Search = () => {
           onClick={() => setActiveTab('users')}
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+            <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
           </svg>
           Người dùng ({results.users.length})
         </button>
@@ -277,7 +277,7 @@ const Search = () => {
           onClick={() => setActiveTab('posts')}
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>
+            <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z" />
           </svg>
           Bài viết ({results.posts.length})
         </button>
@@ -286,7 +286,7 @@ const Search = () => {
           onClick={() => setActiveTab('communities')}
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M16 4c0-1.11.89-2 2-2s2 .89 2 2-.89 2-2 2-2-.89-2-2zM4 18v-4h3v4H4zm9-12c-2.69 0-5.77 1.28-6 2h4v10H7v-1.5H5.5V18H7v1H4V10.15C2.84 9.63 2 8.4 2 7c0-1.66 1.34-3 3-3s3 1.34 3 3c0 1.06-.57 1.98-1.42 2.48L8 8h3.5V6H13v12h-2V6z"/>
+            <path d="M16 4c0-1.11.89-2 2-2s2 .89 2 2-.89 2-2 2-2-.89-2-2zM4 18v-4h3v4H4zm9-12c-2.69 0-5.77 1.28-6 2h4v10H7v-1.5H5.5V18H7v1H4V10.15C2.84 9.63 2 8.4 2 7c0-1.66 1.34-3 3-3s3 1.34 3 3c0 1.06-.57 1.98-1.42 2.48L8 8h3.5V6H13v12h-2V6z" />
           </svg>
           Cộng đồng ({results.communities.length})
         </button>
@@ -295,12 +295,12 @@ const Search = () => {
           onClick={() => setActiveTab('comments')}
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M20 2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h4l4 4 4-4h4c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/>
+            <path d="M20 2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h4l4 4 4-4h4c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z" />
           </svg>
           Bình luận (0)
         </button>
       </div>
-      
+
       {/* Search Results */}
       <div className="search-results">
         {results.loading ? (
@@ -368,7 +368,7 @@ const Search = () => {
                 )}
               </div>
             )}
-            
+
             {activeTab === 'posts' && (
               <div className="search-posts">
                 {results.posts.length === 0 ? (
@@ -409,7 +409,7 @@ const Search = () => {
                 )}
               </div>
             )}
-            
+
             {activeTab === 'communities' && (
               <div className="search-communities">
                 {results.communities.length === 0 ? (
@@ -445,7 +445,7 @@ const Search = () => {
                 )}
               </div>
             )}
-            
+
             {activeTab === 'comments' && (
               <div className="search-comments">
                 <div className="search-no-results">

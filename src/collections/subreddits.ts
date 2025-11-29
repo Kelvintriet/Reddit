@@ -32,11 +32,11 @@ export const createSubreddit = async (data: {
     const subredditId = data.name.toLowerCase();
     const subredditRef = doc(db, 'subreddits', subredditId);
     const subredditSnap = await getDoc(subredditRef);
-    
+
     if (subredditSnap.exists()) {
       throw new Error('Subreddit already exists');
     }
-    
+
     // Chỉ thêm fields có giá trị, loại bỏ undefined
     const subredditData: any = {
       name: data.name.toLowerCase(), // Lưu tên subreddit dưới dạng lowercase
@@ -47,26 +47,26 @@ export const createSubreddit = async (data: {
       members: [data.createdBy],
       moderators: [data.createdBy]
     };
-    
+
     // Chỉ thêm các field optional nếu chúng có giá trị
     if (data.rules && data.rules.length > 0) {
       subredditData.rules = data.rules;
     }
-    
+
     if (data.bannerUrl) {
       subredditData.bannerUrl = data.bannerUrl;
     }
-    
+
     if (data.iconUrl) {
       subredditData.iconUrl = data.iconUrl;
     }
-    
+
     if (data.isPrivate !== undefined) {
       subredditData.isPrivate = data.isPrivate;
     }
-    
+
     await setDoc(subredditRef, subredditData);
-    
+
     return { id: subredditId, ...subredditData };
   } catch (error) {
     console.error('Error creating subreddit:', error);
@@ -79,7 +79,7 @@ export const getSubreddit = async (name: string) => {
   try {
     const subredditRef = doc(db, 'subreddits', name.toLowerCase());
     const subredditSnap = await getDoc(subredditRef);
-    
+
     if (subredditSnap.exists()) {
       const subredditData = subredditSnap.data() as Subreddit;
       return { id: subredditSnap.id, ...subredditData };
@@ -101,7 +101,7 @@ export const getSubreddits = async (options: {
   const { limit: queryLimit = 50, orderByMemberCount = true, userId } = options;
   const subredditsRef = collection(db, 'subreddits');
   let q;
-  
+
   if (userId) {
     // Lấy các subreddit mà người dùng đã tham gia
     q = query(
@@ -124,7 +124,7 @@ export const getSubreddits = async (options: {
       );
     }
   }
-  
+
   try {
     const querySnapshot = await getDocs(q);
     const subreddits = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Subreddit));
@@ -140,24 +140,24 @@ export const joinSubreddit = async (subredditName: string, userId: string) => {
   try {
     const subredditRef = doc(db, 'subreddits', subredditName.toLowerCase());
     const subredditSnap = await getDoc(subredditRef);
-    
+
     if (!subredditSnap.exists()) {
       throw new Error('Subreddit không tồn tại');
     }
-    
+
     const data = subredditSnap.data() as Subreddit;
     const members = data.members || [];
-    
+
     if (members.includes(userId)) {
       return false; // Đã tham gia rồi
     }
-    
+
     // Sử dụng arrayUnion để tránh conflict
     await updateDoc(subredditRef, {
       members: arrayUnion(userId),
       memberCount: (data.memberCount || 0) + 1
     });
-    
+
     return true;
   } catch (error) {
     console.error('Error joining subreddit:', error);
@@ -217,17 +217,17 @@ export const deleteSubreddit = async (subredditName: string) => {
   try {
     const subredditRef = doc(db, 'subreddits', subredditName.toLowerCase());
     const subredditSnap = await getDoc(subredditRef);
-    
+
     if (!subredditSnap.exists()) {
       throw new Error('Subreddit not found');
     }
-    
+
     // TODO: In production, add permission check here
     // const data = subredditSnap.data() as Subreddit;
     // if (data.createdBy !== userId) {
     //   throw new Error('Only creator can delete subreddit');
     // }
-    
+
     await deleteDoc(subredditRef);
     return true;
   } catch (error) {

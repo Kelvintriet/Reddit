@@ -40,13 +40,13 @@ export async function analyzeText(text: string, type: TextAnalysisTypeValue) {
           inputs: [text],
           examples: [],
         });
-      
+
       case TextAnalysisType.TOXICITY:
         return await cohereClient.classify({
           inputs: [text],
           examples: [],
         });
-      
+
       case TextAnalysisType.SUMMARIZE:
         return await cohereClient.summarize({
           text,
@@ -54,7 +54,7 @@ export async function analyzeText(text: string, type: TextAnalysisTypeValue) {
           format: 'paragraph',
           extractiveness: 'high',
         });
-      
+
       default:
         throw new Error('Loại phân tích không được hỗ trợ');
     }

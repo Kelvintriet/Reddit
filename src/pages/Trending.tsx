@@ -8,7 +8,7 @@ const Trending: React.FC = () => {
   const { user } = useAuthStore();
   const { posts, fetchSpecialSubreddit, isLoading, error, voteOnPost } = usePostsStore();
   const [activeSort] = useState<'best' | 'hot' | 'new' | 'top' | 'rising'>('best');
-  
+
   useEffect(() => {
     fetchSpecialSubreddit('trending');
   }, [activeSort]);
@@ -18,7 +18,7 @@ const Trending: React.FC = () => {
       console.log('User must be logged in to vote');
       return;
     }
-    
+
     try {
       await voteOnPost(postId, voteType, user.uid);
     } catch (error) {
@@ -118,7 +118,7 @@ const Trending: React.FC = () => {
       <div className="trending-info-box">
         <h3>Về r/trending</h3>
         <p>
-          r/trending hiển thị những bài viết có tỷ lệ upvote/downvote tốt nhất và đang thu hút sự chú ý. 
+          r/trending hiển thị những bài viết có tỷ lệ upvote/downvote tốt nhất và đang thu hút sự chú ý.
           Chỉ có tối đa 150 bài viết được chọn hàng tháng, cập nhật hàng ngày.
         </p>
         <div className="info-stats">

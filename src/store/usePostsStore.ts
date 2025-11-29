@@ -618,16 +618,16 @@ export const usePostsStore = create<PostsState>()(
       voteOnPost: async (postId, voteType, userId) => {
         try {
           const post = get().posts.find(p => p.id === postId) || get().currentPost
-          
+
           // Check if post is deleted before voting
           if (post?.isDeleted) {
             throw new Error('Cannot vote on deleted post')
           }
-          
+
           if (!post) {
             // Check main posts collection first
             let postDoc = await getDoc(doc(db, 'posts', postId))
-            
+
             // If not found, check deletedPosts collection
             if (!postDoc.exists()) {
               const deletedPostDoc = await getDoc(doc(db, 'deletedPosts', postId))
@@ -636,14 +636,14 @@ export const usePostsStore = create<PostsState>()(
               }
               throw new Error('Post not found')
             }
-            
+
             const postData = postDoc.data()
-            
+
             // Check if post is deleted
             if (postData.isDeleted) {
               throw new Error('Cannot vote on deleted post')
             }
-            
+
             const authorId = postData.authorId
 
             const updatedVotes = await votePostCollection(postId, userId, voteType)

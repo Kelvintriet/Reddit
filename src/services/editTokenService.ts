@@ -26,12 +26,12 @@ export const generateEditToken = async (postId: string, userId: string): Promise
   try {
     // First, expire all existing tokens for this post
     await expireExistingTokens(postId, userId)
-    
+
     const token = generateToken()
     const tokenId = `${postId}_${token}`
-    
+
     const editTokenRef = doc(db, 'editTokens', tokenId)
-    
+
     await setDoc(editTokenRef, {
       id: tokenId,
       postId,
@@ -41,7 +41,7 @@ export const generateEditToken = async (postId: string, userId: string): Promise
       expiresAt: new Date(Date.now() + 30 * 60 * 1000), // Expires in 30 minutes
       isExpired: false
     })
-    
+
     console.log('✅ Edit token generated:', token)
     return token
   } catch (error) {
@@ -121,11 +121,11 @@ export const expireExistingTokens = async (postId: string, userId: string): Prom
     const tokensRef = collection(db, 'editTokens')
     const q = query(tokensRef, where('postId', '==', postId), where('userId', '==', userId))
     const querySnap = await getDocs(q)
-    
-    const expirePromises = querySnap.docs.map(doc => 
+
+    const expirePromises = querySnap.docs.map(doc =>
       setDoc(doc.ref, { isExpired: true }, { merge: true })
     )
-    
+
     await Promise.all(expirePromises)
     console.log(`✅ Expired ${querySnap.docs.length} existing tokens for post ${postId}`)
   } catch (error) {

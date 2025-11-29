@@ -84,11 +84,11 @@ export const KARMA_MILESTONES: KarmaMilestone[] = [
 export const processKarmaAction = async (action: KarmaAction): Promise<number> => {
   try {
     console.log(`Processing karma action: ${action.type} for user ${action.userId}, points: ${action.points}`);
-    
+
     // Import updateUserKarma dynamically to avoid circular dependencies
     const { updateUserKarma } = await import('../collections/users');
     await updateUserKarma(action.userId, action.points);
-    
+
     // Return the karma points awarded/deducted
     return action.points;
   } catch (error) {
@@ -122,7 +122,7 @@ export const formatKarma = (karma: number): string => {
 export const getKarmaMilestone = (karma: number): KarmaMilestone => {
   // Find the highest milestone the user has achieved
   let currentMilestone = KARMA_MILESTONES[0];
-  
+
   for (const milestone of KARMA_MILESTONES) {
     if (karma >= milestone.threshold) {
       currentMilestone = milestone;
@@ -130,7 +130,7 @@ export const getKarmaMilestone = (karma: number): KarmaMilestone => {
       break;
     }
   }
-  
+
   return currentMilestone;
 };
 
@@ -148,7 +148,7 @@ export const getNextKarmaMilestone = (karma: number): KarmaMilestone | null => {
 export const getKarmaProgress = (karma: number): { current: number; next: number; progress: number } => {
   const currentMilestone = getKarmaMilestone(karma);
   const nextMilestone = getNextKarmaMilestone(karma);
-  
+
   if (!nextMilestone) {
     return {
       current: karma,
@@ -156,11 +156,11 @@ export const getKarmaProgress = (karma: number): { current: number; next: number
       progress: 100
     };
   }
-  
+
   const progressPoints = karma - currentMilestone.threshold;
   const totalPoints = nextMilestone.threshold - currentMilestone.threshold;
   const progress = Math.min(100, (progressPoints / totalPoints) * 100);
-  
+
   return {
     current: karma,
     next: nextMilestone.threshold,
@@ -171,7 +171,7 @@ export const getKarmaProgress = (karma: number): { current: number; next: number
 // Check if user can perform action based on karma
 export const canPerformAction = (karma: number, action: string): boolean => {
   const milestone = getKarmaMilestone(karma);
-  
+
   switch (action) {
     case 'create_subreddit':
       return milestone.level >= 2;
@@ -227,7 +227,7 @@ export const awardKarma = async (
   contentType: 'post' | 'comment'
 ): Promise<number> => {
   let points = 0;
-  
+
   switch (actionType) {
     case 'post_created':
       points = KARMA_VALUES.POST_CREATED;
@@ -251,7 +251,7 @@ export const awardKarma = async (
     default:
       points = 0;
   }
-  
+
   const action: KarmaAction = {
     type: actionType,
     userId,
@@ -259,7 +259,7 @@ export const awardKarma = async (
     contentType,
     points
   };
-  
+
   return await processKarmaAction(action);
 };
 

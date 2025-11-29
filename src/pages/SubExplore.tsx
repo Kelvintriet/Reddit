@@ -7,11 +7,11 @@ const SubExplore = () => {
   const [activeTab, setActiveTab] = useState<'popular' | 'new' | 'trending'>('popular')
   const { subreddits, fetchSubreddits, isLoading, error } = useSubredditsStore()
   const { user } = useAuthStore()
-  
+
   useEffect(() => {
     fetchSubreddits()
   }, [])
-  
+
   // Lọc và sắp xếp các subreddit theo tab đang chọn
   const filteredSubreddits = [...subreddits].sort((a, b) => {
     if (activeTab === 'popular') {
@@ -26,13 +26,13 @@ const SubExplore = () => {
       return Math.random() - 0.5
     }
   })
-  
+
   const isUserJoined = (subreddit: any) => {
     if (!user) return false
     // Check both members array and createdBy field
     return subreddit.members?.includes(user.uid) || subreddit.createdBy === user.uid
   }
-  
+
   const handleJoinSubreddit = async (subredditName: string, isJoined: boolean) => {
     if (!user) {
       // Redirect to login
@@ -54,10 +54,10 @@ const SubExplore = () => {
       alert(error instanceof Error ? error.message : 'Có lỗi xảy ra')
     }
   }
-  
+
   const formatDate = (date: any) => {
     if (!date) return 'Unknown date'
-    
+
     const d = date instanceof Date ? date : new Date(date.seconds * 1000)
     return d.toLocaleDateString('vi-VN', {
       year: 'numeric',
@@ -65,7 +65,7 @@ const SubExplore = () => {
       day: 'numeric'
     })
   }
-  
+
   return (
     <div className="subexplore-container">
       <div className="subexplore-header">
@@ -74,28 +74,28 @@ const SubExplore = () => {
           Tìm kiếm và tham gia các cộng đồng phù hợp với sở thích của bạn
         </p>
       </div>
-      
+
       <div className="subexplore-tabs">
-        <button 
+        <button
           className={`subexplore-tab ${activeTab === 'popular' ? 'active' : ''}`}
           onClick={() => setActiveTab('popular')}
         >
           Phổ biến
         </button>
-        <button 
+        <button
           className={`subexplore-tab ${activeTab === 'new' ? 'active' : ''}`}
           onClick={() => setActiveTab('new')}
         >
           Mới nhất
         </button>
-        <button 
+        <button
           className={`subexplore-tab ${activeTab === 'trending' ? 'active' : ''}`}
           onClick={() => setActiveTab('trending')}
         >
           Xu hướng
         </button>
       </div>
-      
+
       {isLoading ? (
         <div className="subexplore-loading">
           <div className="subexplore-loading-spinner"></div>
@@ -163,11 +163,11 @@ const SubExplore = () => {
                     </button>
                   )}
                 </div>
-                
+
                 <div className="subreddit-description">
                   {subreddit.description || 'Không có mô tả'}
                 </div>
-                
+
                 <div className="subreddit-footer">
                   <span className="subreddit-created">
                     Tạo ngày: {formatDate(subreddit.createdAt)}
@@ -176,7 +176,7 @@ const SubExplore = () => {
               </div>
             )
           })}
-          
+
           {filteredSubreddits.length === 0 && (
             <div className="no-subreddits">
               <p>Không tìm thấy cộng đồng nào</p>
@@ -187,7 +187,7 @@ const SubExplore = () => {
           )}
         </div>
       )}
-      
+
       <div className="subexplore-create-banner">
         <div className="create-banner-content">
           <h2>Không tìm thấy cộng đồng phù hợp?</h2>

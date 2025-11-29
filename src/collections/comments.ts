@@ -32,21 +32,21 @@ export const createComment = async (data: {
 }): Promise<string> => {
   try {
     let depth = 0;
-    
+
     // Nếu là reply, tính depth và kiểm tra giới hạn
     if (data.parentId) {
       const parentComment = await getComment(data.parentId);
       if (!parentComment) {
         throw new Error('Parent comment not found');
       }
-      
+
       depth = parentComment.depth + 1;
-      
+
       if (depth > MAX_REPLY_DEPTH) {
         throw new Error(`Maximum reply depth of ${MAX_REPLY_DEPTH} exceeded`);
       }
     }
-    
+
     const commentData: any = {
       content: data.content,
       postId: data.postId,
@@ -60,20 +60,20 @@ export const createComment = async (data: {
       replyCount: 0,
       isDeleted: false
     };
-    
+
     // Chỉ thêm parentId nếu có
     if (data.parentId) {
       commentData.parentId = data.parentId;
     }
-    
+
     const docRef = await addDoc(collection(db, 'comments'), commentData);
-    
+
     // Cập nhật comment count của post
     const postRef = doc(db, 'posts', data.postId);
     await updateDoc(postRef, {
       commentCount: increment(1)
     });
-    
+
     // Nếu là reply, cập nhật reply count của parent comment
     if (data.parentId) {
       const parentRef = doc(db, 'comments', data.parentId);
@@ -81,7 +81,7 @@ export const createComment = async (data: {
         replyCount: increment(1)
       });
     }
-    
+
     return docRef.id;
   } catch (error) {
     console.error('Error creating comment:', error);
@@ -94,7 +94,7 @@ export const getComment = async (commentId: string): Promise<Comment | null> => 
   try {
     const commentRef = doc(db, 'comments', commentId);
     const commentSnap = await getDoc(commentRef);
-    
+
     if (commentSnap.exists()) {
       const commentData = commentSnap.data() as Comment;
       return { id: commentSnap.id, ...commentData };
@@ -114,11 +114,11 @@ export const getComments = async (postId: string, options: {
   orderBy?: 'newest' | 'oldest' | 'top';
 } = {}): Promise<Comment[]> => {
   const { parentId = null, limit: queryLimit = 50, orderBy: sortBy = 'top' } = options;
-  
+
   try {
     const commentsRef = collection(db, 'comments');
     let q;
-    
+
     if (parentId === null) {
       // Lấy comment gốc (không có parentId)
       if (sortBy === 'newest') {
@@ -175,7 +175,7 @@ export const getComments = async (postId: string, options: {
         );
       }
     }
-    
+
     const querySnapshot = await getDocs(q);
     const comments = querySnapshot.docs.map(doc => {
       const data = doc.data();
@@ -188,7 +188,7 @@ export const getComments = async (postId: string, options: {
         deletedAt: data.deletedAt?.toDate()
       } as Comment;
     });
-    
+
     return comments;
   } catch (error) {
     console.error('Error getting comments:', error);
@@ -202,18 +202,18 @@ export const voteComment = async (commentId: string, userId: string, voteType: '
   try {
     const commentRef = doc(db, 'comments', commentId);
     const commentSnap = await getDoc(commentRef);
-    
+
     if (commentSnap.exists()) {
       const data = commentSnap.data() as Comment;
-      
+
       // Prevent voting on deleted comments
       if (data.isDeleted) {
         throw new Error('Cannot vote on deleted comment');
       }
-      
+
       const votes = data.votes || {};
       const currentVote = votes[userId];
-      
+
       // Update votes object
       if (currentVote === voteType) {
         // Remove vote if clicking same button
@@ -222,7 +222,7 @@ export const voteComment = async (commentId: string, userId: string, voteType: '
         // Add or change vote
         votes[userId] = voteType;
       }
-      
+
       // Calculate totals from votes object (frontend calculation)
       let upvotes = 0;
       let downvotes = 0;
@@ -230,12 +230,12 @@ export const voteComment = async (commentId: string, userId: string, voteType: '
         if (vote === 'up') upvotes++;
         else if (vote === 'down') downvotes++;
       });
-      
+
       // Save calculated totals to database
       await updateDoc(commentRef, { votes, upvotes, downvotes });
       return { votes, upvotes, downvotes };
     }
-    
+
     return null;
   } catch (error) {
     console.error('Error voting on comment:', error);
@@ -248,23 +248,23 @@ export const updateComment = async (commentId: string, content: string, userId: 
   try {
     const commentRef = doc(db, 'comments', commentId);
     const commentSnap = await getDoc(commentRef);
-    
+
     if (!commentSnap.exists()) {
       throw new Error('Comment not found');
     }
-    
+
     const commentData = commentSnap.data() as Comment;
-    
+
     // Kiểm tra quyền chỉnh sửa
     if (commentData.authorId !== userId) {
       throw new Error('You do not have permission to edit this comment');
     }
-    
+
     await updateDoc(commentRef, {
       content,
       updatedAt: serverTimestamp()
     });
-    
+
     return true;
   } catch (error) {
     console.error('Error updating comment:', error);
@@ -277,18 +277,18 @@ export const deleteComment = async (commentId: string, userId: string) => {
   try {
     const commentRef = doc(db, 'comments', commentId);
     const commentSnap = await getDoc(commentRef);
-    
+
     if (!commentSnap.exists()) {
       throw new Error('Comment not found');
     }
-    
+
     const commentData = commentSnap.data() as Comment;
-    
+
     // Kiểm tra quyền xóa
     if (commentData.authorId !== userId) {
       throw new Error('You do not have permission to delete this comment');
     }
-    
+
     await updateDoc(commentRef, {
       isDeleted: true,
       deletedAt: serverTimestamp(),
@@ -296,13 +296,13 @@ export const deleteComment = async (commentId: string, userId: string) => {
       authorUsername: '[deleted]'
       // Votes remain unchanged - they stay visible but can't be modified
     });
-    
+
     // Giảm comment count của post
     const postRef = doc(db, 'posts', commentData.postId);
     await updateDoc(postRef, {
       commentCount: increment(-1)
     });
-    
+
     // Nếu có parent, giảm reply count
     if (commentData.parentId) {
       const parentRef = doc(db, 'comments', commentData.parentId);
@@ -310,7 +310,7 @@ export const deleteComment = async (commentId: string, userId: string) => {
         replyCount: increment(-1)
       });
     }
-    
+
     return true;
   } catch (error) {
     console.error('Error deleting comment:', error);
@@ -328,7 +328,7 @@ export const getCommentTree = async (postId: string, sortBy: 'newest' | 'oldest'
       where('postId', '==', postId),
       orderBy('createdAt', 'asc') // Sắp xếp theo thời gian tạo để xây dựng tree
     );
-    
+
     const querySnapshot = await getDocs(q);
     const allComments = querySnapshot.docs.map(doc => {
       const data = doc.data() as Comment;
@@ -341,16 +341,16 @@ export const getCommentTree = async (postId: string, sortBy: 'newest' | 'oldest'
         replies: [] as Comment[]
       } as Comment & { replies: Comment[] };
     });
-    
+
     // Xây dựng comment tree
     const commentMap = new Map();
     const rootComments: Comment[] = [];
-    
+
     // Tạo map để dễ tìm kiếm
     allComments.forEach(comment => {
       commentMap.set(comment.id, comment);
     });
-    
+
     // Xây dựng tree structure
     allComments.forEach(comment => {
       if (!comment.parentId) {
@@ -367,7 +367,7 @@ export const getCommentTree = async (postId: string, sortBy: 'newest' | 'oldest'
         }
       }
     });
-    
+
     // Sắp xếp comments dựa trên sortBy
     const sortComments = (comments: Comment[]) => {
       if (sortBy === 'newest') {
@@ -379,10 +379,10 @@ export const getCommentTree = async (postId: string, sortBy: 'newest' | 'oldest'
         return comments.sort((a, b) => (b.upvotes - b.downvotes) - (a.upvotes - a.downvotes));
       }
     };
-    
+
     // Sắp xếp cả root comments và replies
     const sortedRootComments = sortComments(rootComments);
-    
+
     // Đệ quy sắp xếp replies
     const sortRepliesRecursively = (comments: any[]) => {
       comments.forEach(comment => {
@@ -392,9 +392,9 @@ export const getCommentTree = async (postId: string, sortBy: 'newest' | 'oldest'
         }
       });
     };
-    
+
     sortRepliesRecursively(sortedRootComments);
-    
+
     return sortedRootComments as Comment[];
   } catch (error) {
     console.error('Error getting comment tree:', error);

@@ -23,15 +23,15 @@ const LoadingFallback = () => (
 // Protected Route component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, isLoading } = useAuthStore()
-  
+
   if (isLoading) {
     return <LoadingFallback />
   }
-  
+
   if (!user) {
     return <Navigate to="/login" replace />
   }
-  
+
   return <>{children}</>
 }
 

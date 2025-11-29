@@ -345,7 +345,7 @@ export const getSavedPosts = async (uid: string) => {
         chunks.push(savedPosts.slice(i, i + 10));
       }
 
-      let allPosts: Array<{ id: string; [key: string]: any }> = [];
+      let allPosts: Array<{ id: string;[key: string]: any }> = [];
 
       for (const chunk of chunks) {
         const q = query(postsRef, where('id', 'in', chunk));

@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { useAuthStore } from './authStore'
-import { 
+import {
   createSubreddit as createSubredditCollection,
   getSubreddits as getSubredditsCollection,
   getSubreddit as getSubredditCollection,
@@ -31,7 +31,7 @@ interface SubredditsState {
   currentSubreddit: Subreddit | null
   isLoading: boolean
   error: string | null
-  
+
   // Actions
   fetchSubreddits: () => Promise<void>
   fetchSubredditByName: (name: string) => Promise<Subreddit | null>
@@ -64,12 +64,12 @@ export const useSubredditsStore = create<SubredditsState>((set, get) => ({
   fetchSubreddits: async () => {
     try {
       set({ isLoading: true, error: null })
-      
+
       const fetchedSubreddits = await getSubredditsCollection({
         limit: 50,
         orderByMemberCount: true
       })
-      
+
       // Convert to local Subreddit interface và fetch usernames
       const subreddits: Subreddit[] = await Promise.all(
         fetchedSubreddits.map(async (sub) => {
@@ -77,7 +77,7 @@ export const useSubredditsStore = create<SubredditsState>((set, get) => ({
           const moderatorNames = await Promise.all(
             (sub.moderators || [sub.createdBy]).map(id => get().getUsernameFromId(id))
           )
-          
+
           // Properly handle Firestore timestamp conversion
           const convertFirestoreDate = (date: any): Date => {
             if (!date) return new Date();
@@ -102,13 +102,13 @@ export const useSubredditsStore = create<SubredditsState>((set, get) => ({
           }
         })
       )
-      
+
       set({ subreddits, isLoading: false })
     } catch (error) {
       console.error('Error fetching subreddits:', error)
-      set({ 
-        error: error instanceof Error ? error.message : 'Đã xảy ra lỗi khi tải danh sách subreddits', 
-        isLoading: false 
+      set({
+        error: error instanceof Error ? error.message : 'Đã xảy ra lỗi khi tải danh sách subreddits',
+        isLoading: false
       })
     }
   },
@@ -116,15 +116,15 @@ export const useSubredditsStore = create<SubredditsState>((set, get) => ({
   fetchSubredditByName: async (name) => {
     try {
       set({ isLoading: true, error: null })
-      
+
       const subredditData = await getSubredditCollection(name)
-      
+
       if (subredditData) {
         const creatorName = await get().getUsernameFromId(subredditData.createdBy)
         const moderatorNames = await Promise.all(
           (subredditData.moderators || [subredditData.createdBy]).map(id => get().getUsernameFromId(id))
         )
-        
+
         // Properly handle Firestore timestamp conversion
         const convertFirestoreDate = (date: any): Date => {
           if (!date) return new Date();
@@ -147,7 +147,7 @@ export const useSubredditsStore = create<SubredditsState>((set, get) => ({
           bannerImageUrl: subredditData.bannerUrl,
           iconImageUrl: subredditData.iconUrl
         }
-        
+
         set({ currentSubreddit: subreddit, isLoading: false })
         return subreddit
       } else {
@@ -156,9 +156,9 @@ export const useSubredditsStore = create<SubredditsState>((set, get) => ({
       }
     } catch (error) {
       console.error('Error fetching subreddit:', error)
-      set({ 
-        error: error instanceof Error ? error.message : `Đã xảy ra lỗi khi tìm subreddit ${name}`, 
-        isLoading: false 
+      set({
+        error: error instanceof Error ? error.message : `Đã xảy ra lỗi khi tìm subreddit ${name}`,
+        isLoading: false
       })
       return null
     }
@@ -167,25 +167,25 @@ export const useSubredditsStore = create<SubredditsState>((set, get) => ({
   createSubreddit: async (subredditData) => {
     try {
       set({ isLoading: true, error: null })
-      
+
       const user = useAuthStore.getState().user
       if (!user) {
         throw new Error('Bạn cần đăng nhập để tạo subreddit')
       }
-      
+
       await createSubredditCollection({
         ...subredditData,
         createdBy: user.uid
       })
-      
+
       // Refresh danh sách subreddits
       await get().fetchSubreddits()
-      
+
       set({ isLoading: false })
     } catch (error) {
-      set({ 
-        error: error instanceof Error ? error.message : 'Đã xảy ra lỗi khi tạo subreddit', 
-        isLoading: false 
+      set({
+        error: error instanceof Error ? error.message : 'Đã xảy ra lỗi khi tạo subreddit',
+        isLoading: false
       })
     }
   },
@@ -193,32 +193,32 @@ export const useSubredditsStore = create<SubredditsState>((set, get) => ({
   updateSubreddit: async (id, subredditData) => {
     try {
       set({ isLoading: true, error: null })
-      
+
       const user = useAuthStore.getState().user
       if (!user) {
         throw new Error('Bạn cần đăng nhập để cập nhật subreddit')
       }
-      
+
       // Kiểm tra quyền (chỉ creator hoặc moderator mới có thể cập nhật)
       const subreddit = get().subreddits.find(s => s.id === id)
       if (!subreddit) {
         throw new Error('Không tìm thấy subreddit')
       }
-      
+
       if (subreddit.creatorId !== user.uid && !subreddit.moderatorIds.includes(user.uid)) {
         throw new Error('Bạn không có quyền cập nhật subreddit này')
       }
-      
+
       await updateSubredditCollection(id, subredditData)
-      
+
       // Refresh danh sách subreddits
       await get().fetchSubreddits()
-      
+
       set({ isLoading: false })
     } catch (error) {
-      set({ 
-        error: error instanceof Error ? error.message : 'Đã xảy ra lỗi khi cập nhật subreddit', 
-        isLoading: false 
+      set({
+        error: error instanceof Error ? error.message : 'Đã xảy ra lỗi khi cập nhật subreddit',
+        isLoading: false
       })
     }
   },
@@ -226,32 +226,32 @@ export const useSubredditsStore = create<SubredditsState>((set, get) => ({
   deleteSubreddit: async (id) => {
     try {
       set({ isLoading: true, error: null })
-      
+
       const user = useAuthStore.getState().user
       if (!user) {
         throw new Error('Bạn cần đăng nhập để xóa subreddit')
       }
-      
+
       // Kiểm tra quyền (chỉ creator mới có thể xóa)
       const subreddit = get().subreddits.find(s => s.id === id)
       if (!subreddit) {
         throw new Error('Không tìm thấy subreddit')
       }
-      
+
       if (subreddit.creatorId !== user.uid) {
         throw new Error('Chỉ người tạo mới có thể xóa subreddit')
       }
-      
+
       await deleteSubredditCollection(id)
-      
+
       // Refresh danh sách subreddits
       await get().fetchSubreddits()
-      
+
       set({ isLoading: false })
     } catch (error) {
-      set({ 
-        error: error instanceof Error ? error.message : 'Đã xảy ra lỗi khi xóa subreddit', 
-        isLoading: false 
+      set({
+        error: error instanceof Error ? error.message : 'Đã xảy ra lỗi khi xóa subreddit',
+        isLoading: false
       })
     }
   },
@@ -262,20 +262,20 @@ export const useSubredditsStore = create<SubredditsState>((set, get) => ({
       if (!user) {
         throw new Error('Bạn cần đăng nhập để tham gia subreddit')
       }
-      
+
       await joinSubredditCollection(subredditName, user.uid)
-      
+
       // Refresh current subreddit data
       if (get().currentSubreddit?.name === subredditName) {
         await get().fetchSubredditByName(subredditName)
       }
-      
+
       // Refresh danh sách subreddits
       await get().fetchSubreddits()
     } catch (error) {
       console.error('Error joining subreddit:', error)
-      set({ 
-        error: error instanceof Error ? error.message : 'Đã xảy ra lỗi khi tham gia subreddit' 
+      set({
+        error: error instanceof Error ? error.message : 'Đã xảy ra lỗi khi tham gia subreddit'
       })
     }
   },
@@ -286,25 +286,25 @@ export const useSubredditsStore = create<SubredditsState>((set, get) => ({
       if (!user) {
         throw new Error('Bạn cần đăng nhập để rời khỏi subreddit')
       }
-      
+
       await leaveSubredditCollection(subredditName, user.uid)
-      
+
       // Refresh current subreddit data
       if (get().currentSubreddit?.name === subredditName) {
         await get().fetchSubredditByName(subredditName)
       }
-      
+
       // Refresh danh sách subreddits
       await get().fetchSubreddits()
     } catch (error) {
       console.error('Error leaving subreddit:', error)
-      set({ 
-        error: error instanceof Error ? error.message : 'Đã xảy ra lỗi khi rời khỏi subreddit' 
+      set({
+        error: error instanceof Error ? error.message : 'Đã xảy ra lỗi khi rời khỏi subreddit'
       })
     }
   },
 
   clearError: () => set({ error: null }),
-  
+
   setCurrentSubreddit: (subreddit) => set({ currentSubreddit: subreddit })
 })) 

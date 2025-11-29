@@ -8,7 +8,7 @@ const Popular: React.FC = () => {
   const { user } = useAuthStore();
   const { posts, fetchSpecialSubreddit, isLoading, error, voteOnPost } = usePostsStore();
   const [activeSort] = useState<'best' | 'hot' | 'new' | 'top' | 'rising'>('best');
-  
+
   useEffect(() => {
     fetchSpecialSubreddit('popular');
   }, [activeSort]);
@@ -18,7 +18,7 @@ const Popular: React.FC = () => {
       console.log('User must be logged in to vote');
       return;
     }
-    
+
     try {
       await voteOnPost(postId, voteType, user.uid);
     } catch (error) {
@@ -118,7 +118,7 @@ const Popular: React.FC = () => {
       <div className="popular-info-box">
         <h3>Về r/popular</h3>
         <p>
-          r/popular hiển thị những bài viết có nhiều lượt xem và thích nhất từ tất cả các cộng đồng. 
+          r/popular hiển thị những bài viết có nhiều lượt xem và thích nhất từ tất cả các cộng đồng.
           Chỉ có tối đa 100 bài viết được chọn hàng tháng dựa trên điểm phổ biến.
         </p>
         <div className="info-stats">
