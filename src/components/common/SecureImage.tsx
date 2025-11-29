@@ -29,7 +29,7 @@ export const SecureImage: React.FC<SecureImageProps> = ({
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [error, setError] = useState(false);
   const { user } = useAuthStore();
-  const { getToken: getCaptchaToken, isVerified } = useCaptchaStore();
+  const { isVerified } = useCaptchaStore();
 
   useEffect(() => {
     const loadSecureImage = async () => {
@@ -39,25 +39,19 @@ export const SecureImage: React.FC<SecureImageProps> = ({
       }
 
       // Check CAPTCHA verification
-      const captchaToken = getCaptchaToken();
-      if (!captchaToken) {
+      if (!isVerified) {
         console.warn('CAPTCHA verification required to load secure images');
         setError(true);
         return;
       }
 
       try {
-        // Get Firebase ID token
-        const token = await user.getIdToken();
-
         // Get secure URL
         const secureUrl = getSecureAttachmentUrl(fileId, postId);
 
-        // Fetch image with auth header and CAPTCHA token
+        // Fetch image
         const response = await fetch(secureUrl, {
           headers: {
-            'Authorization': `Bearer ${token}`,
-            'X-Captcha-Token': captchaToken
           }
         });
 

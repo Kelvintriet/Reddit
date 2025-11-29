@@ -6,19 +6,21 @@ export const cohereClient = new CohereClient({
 });
 
 // Loại phân tích văn bản
-export const enum TextAnalysisType {
-  SENTIMENT = 'sentiment',
-  TOXICITY = 'toxicity',
-  SUMMARIZE = 'summarize',
-  CLASSIFY = 'classify',
-  SPAM = 'spam',
-  PROFANITY = 'profanity',
-  PII = 'pii'
-}
+export const TextAnalysisType = {
+  SENTIMENT: 'sentiment',
+  TOXICITY: 'toxicity',
+  SUMMARIZE: 'summarize',
+  CLASSIFY: 'classify',
+  SPAM: 'spam',
+  PROFANITY: 'profanity',
+  PII: 'pii'
+} as const;
+
+export type TextAnalysisTypeValue = typeof TextAnalysisType[keyof typeof TextAnalysisType];
 
 export type TextAnalysisRequest = {
   texts: string[];
-  type: TextAnalysisType;
+  type: TextAnalysisTypeValue;
 };
 
 // Các prompt mẫu
@@ -30,7 +32,7 @@ export const PROMPTS = {
 };
 
 // Hàm phân tích văn bản với Cohere
-export async function analyzeText(text: string, type: TextAnalysisType) {
+export async function analyzeText(text: string, type: TextAnalysisTypeValue) {
   try {
     switch (type) {
       case TextAnalysisType.SENTIMENT:

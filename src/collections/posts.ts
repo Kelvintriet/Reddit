@@ -124,7 +124,7 @@ export const getPost = async (postId: string) => {
     
     if (postSnap.exists()) {
       const postData = postSnap.data() as Post;
-      return { id: postSnap.id, ...postData };
+      return { ...postData, id: postSnap.id };
     } else {
       return null;
     }
@@ -536,7 +536,7 @@ export const editPost = async (postId: string, updates: {
   content?: string;
   contentType?: 'markdown' | 'html';
   editReason?: string;
-}, userId: string) => {
+}, _userId: string) => {
   try {
     const postRef = doc(db, 'posts', postId);
     const postSnap = await getDoc(postRef);

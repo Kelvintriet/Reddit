@@ -1,4 +1,4 @@
-import { collection, doc, setDoc, getDoc, getDocs, updateDoc, query, orderBy, limit, where, deleteDoc, addDoc, arrayUnion, arrayRemove, serverTimestamp } from 'firebase/firestore';
+import { collection, doc, setDoc, getDoc, getDocs, updateDoc, query, orderBy, limit, where, deleteDoc, arrayUnion, arrayRemove, serverTimestamp } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 
 // Định nghĩa interface cho Subreddit
@@ -8,6 +8,7 @@ export interface Subreddit {
   description: string;
   createdBy: string;
   createdAt: Date;
+  updatedAt?: Date;
   memberCount: number;
   members: string[];
   rules?: string[];

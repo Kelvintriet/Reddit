@@ -17,7 +17,7 @@ export interface Subreddit extends SubredditType {
   creatorId: string
   creatorName: string
   createdAt: Date
-  updatedAt?: Date
+  updatedAt: Date
   isPrivate: boolean
   rules: string[]
   moderatorIds: string[]

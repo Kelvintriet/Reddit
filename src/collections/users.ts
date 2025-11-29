@@ -84,7 +84,7 @@ export const getUserProfile = async (uid: string) => {
     if (userSnap.exists()) {
       const userData = userSnap.data() as User;
       // console.log('User profile retrieved:', userData);
-      return { id: userSnap.id, ...userData };
+      return { ...userData, id: userSnap.id };
     } else {
       // console.log('User profile not found for:', uid);
       return null;
@@ -117,7 +117,7 @@ export const searchUserByIdentifier = async (identifier: string) => {
 
       if (!customUIDSnapshot.empty) {
         const userData = customUIDSnapshot.docs[0].data() as User;
-        return { id: customUIDSnapshot.docs[0].id, ...userData };
+        return { ...userData, id: customUIDSnapshot.docs[0].id };
       }
     }
 
@@ -127,7 +127,7 @@ export const searchUserByIdentifier = async (identifier: string) => {
 
     if (!usernameSnapshot.empty) {
       const userData = usernameSnapshot.docs[0].data() as User;
-      return { id: usernameSnapshot.docs[0].id, ...userData };
+      return { ...userData, id: usernameSnapshot.docs[0].id };
     }
 
     // Try to find by displayName
@@ -136,7 +136,7 @@ export const searchUserByIdentifier = async (identifier: string) => {
 
     if (!displayNameSnapshot.empty) {
       const userData = displayNameSnapshot.docs[0].data() as User;
-      return { id: displayNameSnapshot.docs[0].id, ...userData };
+      return { ...userData, id: displayNameSnapshot.docs[0].id };
     }
 
     // Try to find by atName
@@ -145,7 +145,7 @@ export const searchUserByIdentifier = async (identifier: string) => {
 
     if (!atNameSnapshot.empty) {
       const userData = atNameSnapshot.docs[0].data() as User;
-      return { id: atNameSnapshot.docs[0].id, ...userData };
+      return { ...userData, id: atNameSnapshot.docs[0].id };
     }
 
     return null;
@@ -187,7 +187,7 @@ export const searchUsersByPartialName = async (searchTerm: string, limit: number
         displayName.includes(lowerSearch) ||
         atName.includes(lowerSearch) ||
         customUID.includes(lowerSearch)) {
-        results.push({ id: doc.id, ...userData });
+        results.push({ ...userData, id: doc.id });
       }
     });
 
@@ -345,12 +345,12 @@ export const getSavedPosts = async (uid: string) => {
         chunks.push(savedPosts.slice(i, i + 10));
       }
 
-      let allPosts = [];
+      let allPosts: Array<{ id: string; [key: string]: any }> = [];
 
       for (const chunk of chunks) {
         const q = query(postsRef, where('id', 'in', chunk));
         const querySnapshot = await getDocs(q);
-        const posts = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const posts = querySnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
         allPosts = [...allPosts, ...posts];
       }
 

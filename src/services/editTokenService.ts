@@ -135,7 +135,7 @@ export const expireExistingTokens = async (postId: string, userId: string): Prom
 }
 
 // Expire token after successful edit (security measure)
-export const expireTokenAfterEdit = async (postId: string, token: string, userId: string): Promise<void> => {
+export const expireTokenAfterEdit = async (postId: string, token: string, _userId: string): Promise<void> => {
   try {
     const tokenId = `${postId}_${token}`
     const tokenRef = doc(db, 'editTokens', tokenId)

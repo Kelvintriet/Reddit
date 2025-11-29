@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { useNavigate, useLocation } from 'react-router-dom'
+// Navigation hooks removed - not needed for modal viewer
 
 interface ImageViewerProps {
   images: string[]
@@ -25,8 +25,6 @@ const ImageViewer: React.FC<ImageViewerProps> = ({
   const [imageIndex, setImageIndex] = useState(currentIndex)
   const imageRef = useRef<HTMLImageElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
-  const navigate = useNavigate()
-  const location = useLocation()
 
   // Reset position and scale when image changes
   useEffect(() => {

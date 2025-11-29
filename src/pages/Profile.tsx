@@ -6,19 +6,9 @@ const formatKarma = (karma: number): string => {
   if (karma >= 1000) return `${(karma / 1000).toFixed(1)}K`;
   return karma.toString();
 };
-
-const getKarmaMilestone = (karma: number): string | null => {
-  if (karma >= 100000) return '🏆 Karma Legend';
-  if (karma >= 50000) return '🥇 Karma Master';
-  if (karma >= 10000) return '🥈 Karma Expert';
-  if (karma >= 5000) return '🥉 Karma Veteran';
-  if (karma >= 1000) return '⭐ Karma Star';
-  if (karma >= 100) return '🌟 Rising Star';
-  return null;
-};
 import { useAuthStore, usePostsStore } from '../store'
 import { getUserProfile, searchUserByIdentifier } from '../collections/users'
-import { getCachedLocation, getCountryFlag, getCurrentTimeForLocation, getLocationWithAutoFetch } from '../services/location'
+import { getCountryFlag, getCurrentTimeForLocation, getLocationWithAutoFetch } from '../services/location'
 import PostCard from '../components/post/PostCard'
 import PostSkeleton from '../components/post/PostSkeleton'
 
@@ -31,7 +21,7 @@ const Profile = () => {
   const [profileUser, setProfileUser] = useState<any>(null)
   const [isLoadingUser, setIsLoadingUser] = useState(true)
   const [currentLocation, setCurrentLocation] = useState<any>(null)
-  const [avatarCacheBuster, setAvatarCacheBuster] = useState(Date.now())
+  const [_avatarCacheBuster, setAvatarCacheBuster] = useState(Date.now())
 
   const fetchUserProfile = async () => {
     if (!userId) return;

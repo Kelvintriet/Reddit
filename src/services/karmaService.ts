@@ -264,7 +264,7 @@ export const awardKarma = async (
 };
 
 // Get karma leaderboard
-export const getKarmaLeaderboard = async (limit: number = 10): Promise<Array<{
+export const getKarmaLeaderboard = async (_limit: number = 10): Promise<Array<{
   userId: string;
   username: string;
   karma: number;

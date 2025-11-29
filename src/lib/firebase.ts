@@ -1,10 +1,9 @@
-import { initializeApp } from 'firebase/app'
-import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from 'firebase/auth'
+import { GoogleAuthProvider, signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from 'firebase/auth'
 import type { User as FirebaseUser } from 'firebase/auth'
-import { getFirestore, collection, doc, setDoc, getDoc, getDocs, addDoc, updateDoc, deleteDoc, query, orderBy, where, limit, serverTimestamp, Timestamp, arrayUnion } from 'firebase/firestore'
+import { collection, doc, setDoc, getDoc, getDocs, addDoc, updateDoc, deleteDoc, query, orderBy, where, limit, serverTimestamp, Timestamp } from 'firebase/firestore'
 
 // Sử dụng cấu hình từ services/firebase/config.ts
-import app, { db, auth, storage } from '../services/firebase/config';
+import { db, auth, storage } from '../services/firebase/config';
 
 // Không cần khởi tạo lại Firebase
 export { db, auth, storage };
@@ -336,7 +335,7 @@ export const getPosts = async (subreddit?: string, sortBy: 'hot' | 'new' | 'top'
   
   // Nếu cần sắp xếp theo upvotes nhưng không thể dùng orderBy trong query
   if (subreddit && sortBy === 'top') {
-    return posts.sort((a, b) => b.upvotes - a.upvotes);
+    return posts.sort((a: any, b: any) => (b.upvotes || 0) - (a.upvotes || 0));
   }
   
   return posts;

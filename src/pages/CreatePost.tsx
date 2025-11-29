@@ -31,7 +31,7 @@ const CreatePost = () => {
   const [tokenValidated, setTokenValidated] = useState(false)
   const [tokenExpired, setTokenExpired] = useState(false)
   const [tokenError, setTokenError] = useState<string | null>(null)
-  const [canViewContent, setCanViewContent] = useState(false)
+  const [_canViewContent, setCanViewContent] = useState(false)
   const [savedContent, setSavedContent] = useState({ title: '', content: '' })
   const wsRef = useRef<ReturnType<typeof getFileCleanupWebSocket> | null>(null)
 

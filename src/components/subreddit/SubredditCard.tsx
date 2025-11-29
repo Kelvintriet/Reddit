@@ -33,7 +33,7 @@ const SubredditCard = ({ subreddit, onJoin, onLeave, isUserMember = false }: Sub
       </div>
       
       <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-        {memberCount} thành viên • Tạo ngày {createdAt.toDate().toLocaleDateString()}
+        {memberCount} thành viên • Tạo ngày {createdAt instanceof Date ? createdAt.toLocaleDateString() : typeof createdAt === 'object' && createdAt && 'toDate' in createdAt ? (createdAt as any).toDate().toLocaleDateString() : new Date(createdAt as any).toLocaleDateString()}
       </p>
       
       <p className="text-gray-700 dark:text-gray-300 mt-3 line-clamp-2">

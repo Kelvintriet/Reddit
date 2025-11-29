@@ -1,4 +1,4 @@
-import { collection, doc, addDoc, getDoc, updateDoc, deleteDoc, query, where, orderBy, limit, getDocs, serverTimestamp, increment } from 'firebase/firestore';
+import { collection, doc, addDoc, getDoc, updateDoc, query, where, orderBy, limit, getDocs, serverTimestamp, increment } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 
 // Định nghĩa interface cho Comment
@@ -331,14 +331,14 @@ export const getCommentTree = async (postId: string, sortBy: 'newest' | 'oldest'
     
     const querySnapshot = await getDocs(q);
     const allComments = querySnapshot.docs.map(doc => {
-      const data = doc.data();
+      const data = doc.data() as Comment;
       return {
-        id: doc.id,
         ...data,
-        createdAt: data.createdAt?.toDate() || new Date(),
-        updatedAt: data.updatedAt?.toDate(),
-        deletedAt: data.deletedAt?.toDate(),
-        replies: [] // Khởi tạo mảng replies
+        id: doc.id,
+        createdAt: data.createdAt ? (typeof data.createdAt === 'object' && 'toDate' in data.createdAt ? (data.createdAt as any).toDate() : data.createdAt) : new Date(),
+        updatedAt: data.updatedAt ? (typeof data.updatedAt === 'object' && 'toDate' in data.updatedAt ? (data.updatedAt as any).toDate() : data.updatedAt) : undefined,
+        deletedAt: data.deletedAt ? (typeof data.deletedAt === 'object' && 'toDate' in data.deletedAt ? (data.deletedAt as any).toDate() : data.deletedAt) : undefined,
+        replies: [] as Comment[]
       } as Comment & { replies: Comment[] };
     });
     

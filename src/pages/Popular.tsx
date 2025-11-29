@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import { useAuthStore, usePostsStore } from '../store';
 import PostCard from '../components/post/PostCard';
 import PostSkeleton from '../components/post/PostSkeleton';
@@ -8,15 +7,11 @@ import './SpecialSubreddits.css';
 const Popular: React.FC = () => {
   const { user } = useAuthStore();
   const { posts, fetchSpecialSubreddit, isLoading, error, voteOnPost } = usePostsStore();
-  const [activeSort, setActiveSort] = useState<'best' | 'hot' | 'new' | 'top' | 'rising'>('best');
+  const [activeSort] = useState<'best' | 'hot' | 'new' | 'top' | 'rising'>('best');
   
   useEffect(() => {
     fetchSpecialSubreddit('popular');
   }, [activeSort]);
-  
-  const handleSortChange = (newSort: 'best' | 'hot' | 'new' | 'top' | 'rising') => {
-    setActiveSort(newSort);
-  };
 
   const handleVote = async (postId: string, voteType: 'up' | 'down') => {
     if (!user) {

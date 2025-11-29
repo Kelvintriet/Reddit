@@ -17,8 +17,8 @@ const SubExplore = () => {
     if (activeTab === 'popular') {
       return (b.memberCount || 0) - (a.memberCount || 0)
     } else if (activeTab === 'new') {
-      const dateA = a.createdAt instanceof Date ? a.createdAt : new Date(a.createdAt?.seconds * 1000 || Date.now())
-      const dateB = b.createdAt instanceof Date ? b.createdAt : new Date(b.createdAt?.seconds * 1000 || Date.now())
+      const dateA = a.createdAt instanceof Date ? a.createdAt : new Date((a.createdAt as any)?.seconds * 1000 || Date.now())
+      const dateB = b.createdAt instanceof Date ? b.createdAt : new Date((b.createdAt as any)?.seconds * 1000 || Date.now())
       return dateB.getTime() - dateA.getTime()
     } else {
       // Trending - ưu tiên các subreddit có tốc độ tăng trưởng thành viên cao

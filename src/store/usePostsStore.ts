@@ -401,7 +401,7 @@ export const usePostsStore = create<PostsState>()(
         }
       },
 
-      fetchPostById: async (id: string, userId?: string) => {
+      fetchPostById: async (id: string, _userId?: string) => {
         try {
           // First try main posts collection
           let postDoc = await getDoc(doc(db, 'posts', id))

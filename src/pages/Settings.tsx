@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../store'
 import { updateUserProfile, getUserProfile, searchUsersByPartialName } from '../collections/users'
-import { getCurrentLocation, getCountryFlag, getCurrentTimeForLocation, refreshLocationData, getRemainingRefreshCount, canRefreshLocation, getLocationWithAutoFetch } from '../services/location'
+import { getCountryFlag, getCurrentTimeForLocation, refreshLocationData, getRemainingRefreshCount, canRefreshLocation, getLocationWithAutoFetch } from '../services/location'
 import { uploadAvatar } from '../services/appwrite/storage'
 
 const Settings = () => {
@@ -120,7 +120,7 @@ const Settings = () => {
     setAvatarError('')
 
     try {
-      const uploadedFile = await uploadAvatar(file, user.uid)
+      const uploadedFile = await uploadAvatar(file)
       setAvatarUrl(uploadedFile.url)
 
       // Update user profile with new avatar URL
@@ -156,7 +156,7 @@ const Settings = () => {
   }
 
   // Add user to whitelist
-  const handleAddUser = (userId: string, username: string) => {
+  const handleAddUser = (userId: string, _username: string) => {
     if (!allowedMessageUsers.includes(userId)) {
       setAllowedMessageUsers([...allowedMessageUsers, userId])
     }

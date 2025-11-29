@@ -203,7 +203,7 @@ const Header: React.FC = () => {
                   >
                     <div className="reddit-user-avatar">
                       {user.avatarUrl || user.photoURL ? (
-                        <img src={user.avatarUrl || user.photoURL} alt={user.username || user.displayName || 'User'} />
+                        <img src={user.avatarUrl || user.photoURL || undefined} alt={user.username || user.displayName || 'User'} />
                       ) : (
                         <div className="reddit-user-avatar-placeholder">
                           {((user.username || user.displayName || 'U') + '').charAt(0)?.toUpperCase() || 'U'}

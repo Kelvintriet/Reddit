@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams, Link } from 'react-router-dom'
-import { collection, query as firestoreQuery, where, orderBy, limit, getDocs } from 'firebase/firestore'
+import { collection, query as firestoreQuery, orderBy, limit, getDocs } from 'firebase/firestore'
 import { db } from '../lib/firebase'
 import PostCard from '../components/post/PostCard'
 import PostSkeleton from '../components/post/PostSkeleton'

@@ -45,7 +45,8 @@ const CreateSubredditForm = ({ onSuccess, onCancel }: CreateSubredditFormProps) 
         name,
         description,
         isPrivate,
-        rules
+        rules,
+        createdBy: user?.uid || ''
       })
       
       // Reset form
