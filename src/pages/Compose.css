@@ -1,0 +1,324 @@
+/* Compose Page */
+.compose-page {
+    min-height: calc(100vh - 48px);
+    background: #F5F5F5;
+    padding: 24px;
+}
+
+.compose-container {
+    max-width: 800px;
+    margin: 0 auto;
+    background: #FFFFFF;
+    border-radius: 12px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+}
+
+.compose-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 20px 24px;
+    border-bottom: 1px solid #E5E5E5;
+    background: #FFFFFF;
+}
+
+.compose-back-btn {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+    color: #666666;
+    cursor: pointer;
+    transition: all 150ms ease-in-out;
+}
+
+.compose-back-btn:hover {
+    background: #F5F5F5;
+    color: #000000;
+}
+
+.compose-header h1 {
+    font-size: 24px;
+    font-weight: 600;
+    margin: 0;
+    color: #000000;
+}
+
+.compose-form-page {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    padding: 32px 24px;
+}
+
+.compose-form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.compose-form-field label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #000000;
+}
+
+.compose-input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.compose-form-field input,
+.compose-form-field textarea {
+    width: 100%;
+    padding: 12px 16px;
+    border: 2px solid #E5E5E5;
+    border-radius: 8px;
+    font-size: 14px;
+    color: #000000;
+    font-family: inherit;
+    outline: none;
+    transition: all 150ms ease-in-out;
+    line-height: 1.5;
+}
+
+.compose-input-wrapper input {
+    padding-right: 48px;
+}
+
+.compose-form-field input.valid {
+    border-color: #46D160;
+    background: #F0FFF0;
+}
+
+.compose-form-field input:focus,
+.compose-form-field textarea:focus {
+    border-color: #FF4500;
+    box-shadow: 0 0 0 3px rgba(255, 69, 0, 0.1);
+}
+
+.compose-form-field input:disabled,
+.compose-form-field textarea:disabled {
+    background: #F9F9F9;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+.compose-form-field textarea {
+    resize: vertical;
+    min-height: 200px;
+}
+
+.compose-input-status {
+    position: absolute;
+    right: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.compose-input-status.valid {
+    color: #46D160;
+}
+
+.compose-input-status.validating {
+    color: #FF4500;
+}
+
+.compose-hint {
+    font-size: 13px;
+    color: #666666;
+    padding: 4px 8px;
+    background: #F9F9F9;
+    border-radius: 4px;
+    border-left: 3px solid #FF4500;
+}
+
+.compose-user-preview {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    background: #FFF5F0;
+    border: 2px solid #FF4500;
+    border-radius: 8px;
+    margin-top: 8px;
+}
+
+.compose-user-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.compose-user-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.compose-user-avatar-placeholder {
+    width: 100%;
+    height: 100%;
+    background: #FF4500;
+    color: #FFFFFF;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.compose-user-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.compose-user-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: #000000;
+    margin-bottom: 2px;
+}
+
+.compose-user-details {
+    font-size: 12px;
+    color: #666666;
+}
+
+.compose-error-message {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background: #FEE;
+    border: 2px solid #FCC;
+    border-radius: 8px;
+    font-size: 14px;
+    color: #C00;
+    line-height: 1.5;
+}
+
+.compose-form-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+    padding-top: 8px;
+    border-top: 1px solid #E5E5E5;
+}
+
+.compose-btn-primary,
+.compose-btn-secondary {
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 150ms ease-in-out;
+    border: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 120px;
+    justify-content: center;
+}
+
+.compose-btn-secondary {
+    background: transparent;
+    border: 2px solid #E5E5E5;
+    color: #000000;
+}
+
+.compose-btn-secondary:hover:not(:disabled) {
+    background: #F5F5F5;
+    border-color: #999999;
+}
+
+.compose-btn-primary {
+    background: #FF4500;
+    color: #FFFFFF;
+}
+
+.compose-btn-primary:hover:not(:disabled) {
+    background: #E63E00;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(255, 69, 0, 0.3);
+}
+
+.compose-btn-primary:disabled,
+.compose-btn-secondary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.compose-spinner-small {
+    width: 18px;
+    height: 18px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top-color: #FFFFFF;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+.compose-input-status .compose-spinner-small {
+    border: 2px solid rgba(255, 69, 0, 0.3);
+    border-top-color: #FF4500;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.compose-error-page {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 80px 24px;
+    text-align: center;
+    gap: 24px;
+    color: #999999;
+}
+
+.compose-error-page h2 {
+    font-size: 20px;
+    font-weight: 600;
+    margin: 0;
+    color: #666666;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .compose-page {
+        padding: 0;
+    }
+
+    .compose-container {
+        border-radius: 0;
+        min-height: 100vh;
+    }
+
+    .compose-form-page {
+        padding: 24px 16px;
+    }
+
+    .compose-form-actions {
+        flex-direction: column-reverse;
+    }
+
+    .compose-btn-primary,
+    .compose-btn-secondary {
+        width: 100%;
+    }
+}

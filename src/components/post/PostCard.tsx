@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { MessageCircle, Share2, Bookmark, Download, Play, AlertTriangle, Edit3, MoreHorizontal } from 'lucide-react'
+import { MessageCircle, Share2, Bookmark, Download, Play, AlertTriangle, Edit3 } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { vi } from 'date-fns/locale'
 import { useAuthStore } from '../../store/authStore'
@@ -40,6 +40,7 @@ interface PostCardProps {
     downvotes: number
     commentCount: number
     type: 'text' | 'image' | 'link'
+    isDeleted?: boolean
   }
   onVote?: (postId: string, voteType: 'up' | 'down') => void
   userVote?: 'up' | 'down' | null
@@ -53,7 +54,7 @@ const PostCard: React.FC<PostCardProps> = ({ post, onVote, userVote }) => {
   const [selectedImageIndex, setSelectedImageIndex] = useState(0)
 
   const handleVote = (voteType: 'up' | 'down') => {
-    if (!user) {
+    if (!user || post.isDeleted) {
       // TODO: Show login modal
       return
     }
@@ -87,7 +88,7 @@ const PostCard: React.FC<PostCardProps> = ({ post, onVote, userVote }) => {
       // TODO: Show login modal
       return
     }
-    
+
     try {
       const token = await generateEditToken(post.id, user.uid)
       navigate(`/edit-post/${post.id}/${token}`)
@@ -118,57 +119,57 @@ const PostCard: React.FC<PostCardProps> = ({ post, onVote, userVote }) => {
 
   const renderFileIcon = (type: string) => {
     const iconType = getFileIcon(type)
-    
+
     switch (iconType) {
       case 'video':
         return <Play className="w-6 h-6" />
       case 'pdf':
         return (
           <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-            <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/>
-            <path d="M9,13H16V14H9V13M9,16H14V17H9V16"/>
+            <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z" />
+            <path d="M9,13H16V14H9V13M9,16H14V17H9V16" />
           </svg>
         )
       case 'text':
         return (
           <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-            <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/>
-            <path d="M8,12H16V13H8V12M8,15H13V16H8V15"/>
+            <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z" />
+            <path d="M8,12H16V13H8V12M8,15H13V16H8V15" />
           </svg>
         )
       case 'word':
         return (
           <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-            <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/>
-            <path d="M8,12L10,17L12,12L14,17L16,12"/>
+            <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z" />
+            <path d="M8,12L10,17L12,12L14,17L16,12" />
           </svg>
         )
       case 'excel':
         return (
           <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-            <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/>
-            <path d="M8,12L12,16M12,12L8,16M16,12V16"/>
+            <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z" />
+            <path d="M8,12L12,16M12,12L8,16M16,12V16" />
           </svg>
         )
       case 'powerpoint':
         return (
           <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-            <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/>
-            <path d="M8,12H12V16H8V12M8,12V10H12"/>
+            <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z" />
+            <path d="M8,12H12V16H8V12M8,12V10H12" />
           </svg>
         )
       case 'archive':
         return (
           <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-            <polyline points="21,8 21,21 3,21 3,8"/>
-            <rect x="1" y="3" width="22" height="5"/>
-            <line x1="10" y1="12" x2="14" y2="12"/>
+            <polyline points="21,8 21,21 3,21 3,8" />
+            <rect x="1" y="3" width="22" height="5" />
+            <line x1="10" y1="12" x2="14" y2="12" />
           </svg>
         )
       default:
         return (
           <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-            <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/>
+            <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z" />
           </svg>
         )
     }
@@ -176,7 +177,7 @@ const PostCard: React.FC<PostCardProps> = ({ post, onVote, userVote }) => {
 
   const renderAttachment = (attachment: any, index: number) => {
     console.log('🎬 Rendering attachment:', attachment)
-    
+
     if (isImageFile(attachment.type)) {
       return (
         <div key={attachment.id} className="post-attachment">
@@ -210,7 +211,7 @@ const PostCard: React.FC<PostCardProps> = ({ post, onVote, userVote }) => {
         type: attachment.type,
         name: attachment.name
       })
-      
+
       return (
         <div key={attachment.id} className="post-attachment">
           <video
@@ -234,7 +235,7 @@ const PostCard: React.FC<PostCardProps> = ({ post, onVote, userVote }) => {
               })
               // Không ẩn video ngay lập tức, thay vào đó hiển thị thông báo lỗi
               e.currentTarget.style.display = 'none'
-              
+
               // Tạo thông báo lỗi
               const errorDiv = document.createElement('div')
               errorDiv.className = 'video-error'
@@ -277,7 +278,7 @@ const PostCard: React.FC<PostCardProps> = ({ post, onVote, userVote }) => {
             <div className="file-details">
               <p className="file-name">{attachment.name}</p>
               <p className="file-size">{(attachment.size / 1024 / 1024).toFixed(2)} MB</p>
-              {isDangerousFile(attachment.type) && (
+              {isDangerousFile(attachment.type, attachment.name) && (
                 <div className="file-warning">
                   <AlertTriangle className="w-4 h-4" />
                   <span>File có thể nguy hiểm</span>
@@ -310,22 +311,26 @@ const PostCard: React.FC<PostCardProps> = ({ post, onVote, userVote }) => {
     <div className="post-card">
       <div className="post-vote">
         <button
-          className={`vote-button upvote ${userVote === 'up' ? 'active' : ''}`}
+          className={`vote-button upvote ${userVote === 'up' ? 'active' : ''} ${post.isDeleted ? 'disabled' : ''}`}
           onClick={() => handleVote('up')}
+          disabled={post.isDeleted}
+          title={post.isDeleted ? 'Cannot vote on deleted post' : 'Upvote'}
         >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-            <path d="M7 14l5-5 5 5"/>
+            <path d="M7 14l5-5 5 5" />
           </svg>
         </button>
         <span className={`vote-score ${userVote === 'up' ? 'text-upvote' : userVote === 'down' ? 'text-downvote' : ''}`}>
           {post.upvotes - post.downvotes}
         </span>
         <button
-          className={`vote-button downvote ${userVote === 'down' ? 'active' : ''}`}
+          className={`vote-button downvote ${userVote === 'down' ? 'active' : ''} ${post.isDeleted ? 'disabled' : ''}`}
           onClick={() => handleVote('down')}
+          disabled={post.isDeleted}
+          title={post.isDeleted ? 'Cannot vote on deleted post' : 'Downvote'}
         >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-            <path d="M17 10l-5 5-5-5"/>
+            <path d="M17 10l-5 5-5-5" />
           </svg>
         </button>
       </div>
@@ -340,34 +345,57 @@ const PostCard: React.FC<PostCardProps> = ({ post, onVote, userVote }) => {
               </>
             )}
             <span>Đăng bởi</span>
-            <Link to={`/u/${post.author.uid}`}>u/{post.author.displayName}</Link>
+            {post.isDeleted || post.author.displayName === '[deleted]' ? (
+              <span className="deleted-text">[deleted]</span>
+            ) : (
+              <Link to={`/u/${post.author.uid}`} className="author-link">u/{post.author.displayName}</Link>
+            )}
             <span className="post-meta-separator">•</span>
-            <span>{formatDistanceToNow(
-              post.createdAt && typeof post.createdAt.toDate === 'function' 
-                ? post.createdAt.toDate() 
-                : post.createdAt instanceof Date 
-                  ? post.createdAt 
-                  : new Date(post.createdAt || Date.now()), 
-              { addSuffix: true, locale: vi }
-            )}</span>
+            <span>{(() => {
+              try {
+                let date: Date;
+                if (post.createdAt && typeof post.createdAt.toDate === 'function') {
+                  date = post.createdAt.toDate();
+                } else if (post.createdAt instanceof Date) {
+                  date = post.createdAt;
+                } else if (post.createdAt) {
+                  date = new Date(post.createdAt);
+                } else {
+                  return 'Không xác định';
+                }
+                
+                // Check if date is valid
+                if (isNaN(date.getTime())) {
+                  return 'Không xác định';
+                }
+                
+                return formatDistanceToNow(date, { addSuffix: true, locale: vi });
+              } catch (error) {
+                return 'Không xác định';
+              }
+            })()}</span>
           </div>
         </div>
 
         <h3 className="post-title">
-          <Link to={`/post/${post.id}`}>{post.title}</Link>
+          <Link to={`/post/${post.id}`}>{post.isDeleted ? '[deleted]' : post.title}</Link>
         </h3>
 
         {post.body && (
           <div className="post-body">
-            <PostContent
-              content={post.body}
-              contentType={post.contentType || 'html'}
-            />
+            {post.isDeleted ? (
+              <div className="deleted-content">[deleted]</div>
+            ) : (
+              <PostContent
+                content={post.body}
+                contentType={post.contentType || 'html'}
+              />
+            )}
           </div>
         )}
 
         {/* Display images from imageUrls */}
-        {post.imageUrls && post.imageUrls.length > 0 && (
+        {!post.isDeleted && post.imageUrls && post.imageUrls.length > 0 && (
           <div className="post-images">
             {post.imageUrls.map((imageUrl, index) => (
               <div key={index} className="post-attachment">
@@ -398,10 +426,17 @@ const PostCard: React.FC<PostCardProps> = ({ post, onVote, userVote }) => {
           </div>
         )}
 
-        {/* Display attachments */}
-        {post.attachments && post.attachments.length > 0 && (
+        {/* Show [deleted] for attachments if post is deleted */}
+        {post.isDeleted && post.attachments && post.attachments.length > 0 && (
           <div className="post-images">
-            {post.attachments.map((attachment, index) => 
+            <div className="deleted-content">[deleted]</div>
+          </div>
+        )}
+
+        {/* Display attachments */}
+        {!post.isDeleted && post.attachments && post.attachments.length > 0 && (
+          <div className="post-images">
+            {post.attachments.map((attachment, index) =>
               renderAttachment(attachment, (post.imageUrls?.length || 0) + index)
             )}
           </div>

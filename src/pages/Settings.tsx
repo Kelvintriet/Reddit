@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../store'
-import { updateUserProfile, getUserProfile } from '../collections/users'
+import { updateUserProfile, getUserProfile, searchUsersByPartialName } from '../collections/users'
 import { getCurrentLocation, getCountryFlag, getCurrentTimeForLocation, refreshLocationData, getRemainingRefreshCount, canRefreshLocation, getLocationWithAutoFetch } from '../services/location'
 import { uploadAvatar } from '../services/appwrite/storage'
 
@@ -11,7 +11,7 @@ const Settings = () => {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
-  
+
   // Form states
   const [displayName, setDisplayName] = useState('')
   const [username, setUsername] = useState('')
@@ -21,21 +21,28 @@ const Settings = () => {
   const [hideComments, setHideComments] = useState(false)
   const [showLocation, setShowLocation] = useState(true)
   const [currentLocation, setCurrentLocation] = useState<any>(null)
+
+  // Inbox privacy settings
+  const [allowMessageSearch, setAllowMessageSearch] = useState(true)
+  const [allowMessagesFrom, setAllowMessagesFrom] = useState<'everyone' | 'specific' | 'nobody'>('everyone')
+  const [allowedMessageUsers, setAllowedMessageUsers] = useState<string[]>([])
+  const [userInputValue, setUserInputValue] = useState('')
+  const [userSuggestions, setUserSuggestions] = useState<any[]>([])
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [refreshError, setRefreshError] = useState('')
   const [remainingRefresh, setRemainingRefresh] = useState(15)
-  
+
   // Avatar states
   const [avatarUrl, setAvatarUrl] = useState('')
   const [avatarUploading, setAvatarUploading] = useState(false)
   const [avatarError, setAvatarError] = useState('')
-  
+
   useEffect(() => {
     if (!user) {
       navigate('/login')
       return
     }
-    
+
     // Load user data
     const loadUserData = async () => {
       try {
@@ -49,36 +56,39 @@ const Settings = () => {
           setHideComments(userProfile.hideComments || false)
           setShowLocation(userProfile.showLocation !== false)
           setAvatarUrl(userProfile.avatarUrl || '')
+          setAllowMessageSearch(userProfile.allowMessageSearch !== false)
+          setAllowMessagesFrom(userProfile.allowMessagesFrom || 'everyone')
+          setAllowedMessageUsers(userProfile.allowedMessageUsers || [])
         }
-        
+
         // Load cached location (auto-fetch lần đầu nếu cần)
         const location = await getLocationWithAutoFetch()
         setCurrentLocation(location)
-        
+
         // Update remaining refresh count
         setRemainingRefresh(getRemainingRefreshCount())
       } catch (error) {
         // Silent error handling
       }
     }
-    
+
     loadUserData()
   }, [user, navigate])
-  
+
   const handleRefreshLocation = async () => {
     if (!canRefreshLocation()) {
       setRefreshError(`Bạn đã hết lượt refresh hôm nay. Còn lại: ${getRemainingRefreshCount()}/15`)
       return
     }
-    
+
     setIsRefreshing(true)
     setRefreshError('')
-    
+
     try {
       const newLocation = await refreshLocationData()
       setCurrentLocation(newLocation)
       setRemainingRefresh(getRemainingRefreshCount())
-      
+
       if (newLocation) {
         setSuccess('Vị trí đã được cập nhật thành công!')
         setTimeout(() => setSuccess(''), 3000)
@@ -89,35 +99,35 @@ const Settings = () => {
       setIsRefreshing(false)
     }
   }
-  
+
   const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (!file || !user) return
-    
+
     // Validate file type
     if (!file.type.startsWith('image/')) {
       setAvatarError('Vui lòng chọn file ảnh (JPG, PNG, GIF, WebP)')
       return
     }
-    
+
     // Validate file size (5MB)
     if (file.size > 5 * 1024 * 1024) {
       setAvatarError('Kích thước file không được vượt quá 5MB')
       return
     }
-    
+
     setAvatarUploading(true)
     setAvatarError('')
-    
+
     try {
       const uploadedFile = await uploadAvatar(file, user.uid)
       setAvatarUrl(uploadedFile.url)
-      
+
       // Update user profile with new avatar URL
       await updateUserProfile(user.uid, {
         avatarUrl: uploadedFile.url
       })
-      
+
       setSuccess('Avatar đã được cập nhật thành công!')
       setTimeout(() => setSuccess(''), 3000)
     } catch (error: any) {
@@ -127,13 +137,44 @@ const Settings = () => {
       setAvatarUploading(false)
     }
   }
-  
+
+  // Handle user input change for whitelist
+  const handleUserInputChange = async (value: string) => {
+    setUserInputValue(value)
+
+    if (value.trim().length < 2) {
+      setUserSuggestions([])
+      return
+    }
+
+    try {
+      const results = await searchUsersByPartialName(value.trim(), 5)
+      setUserSuggestions(results)
+    } catch (error) {
+      console.error('Error searching users:', error)
+    }
+  }
+
+  // Add user to whitelist
+  const handleAddUser = (userId: string, username: string) => {
+    if (!allowedMessageUsers.includes(userId)) {
+      setAllowedMessageUsers([...allowedMessageUsers, userId])
+    }
+    setUserInputValue('')
+    setUserSuggestions([])
+  }
+
+  // Remove user from whitelist
+  const handleRemoveUser = (userId: string) => {
+    setAllowedMessageUsers(allowedMessageUsers.filter(id => id !== userId))
+  }
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     setError('')
     setSuccess('')
-    
+
     try {
       await updateUserProfile(user!.uid, {
         displayName: displayName.trim(),
@@ -141,9 +182,12 @@ const Settings = () => {
         hideProfile,
         hidePosts,
         hideComments,
-        showLocation
+        showLocation,
+        allowMessageSearch,
+        allowMessagesFrom,
+        allowedMessageUsers
       })
-      
+
       setSuccess('Cài đặt đã được lưu thành công!')
       setTimeout(() => setSuccess(''), 3000)
     } catch (error: any) {
@@ -152,23 +196,23 @@ const Settings = () => {
       setLoading(false)
     }
   }
-  
+
   if (!user) {
     return <div>Đang tải...</div>
   }
-  
+
   return (
     <div className="container settings-container">
       <div className="settings-header">
         <h1>Cài đặt tài khoản</h1>
         <p>Quản lý thông tin cá nhân và quyền riêng tư của bạn</p>
       </div>
-      
+
       <form onSubmit={handleSave} className="settings-form">
         {/* Profile Information */}
         <div className="settings-section">
           <h2>Thông tin cá nhân</h2>
-          
+
           {/* Avatar Upload */}
           <div className="form-group">
             <label>Avatar</label>
@@ -194,16 +238,16 @@ const Settings = () => {
                 color: 'var(--color-neutral-content-weak)'
               }}>
                 {avatarUrl ? (
-                  <img 
-                    src={avatarUrl} 
-                    alt="Avatar" 
+                  <img
+                    src={avatarUrl}
+                    alt="Avatar"
                     style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                   />
                 ) : (
                   <span>{(displayName || user?.displayName || 'U')[0].toUpperCase()}</span>
                 )}
               </div>
-              
+
               <div className="avatar-upload-info" style={{ flex: 1 }}>
                 <div style={{ marginBottom: '8px' }}>
                   <input
@@ -214,7 +258,7 @@ const Settings = () => {
                     disabled={avatarUploading}
                     style={{ display: 'none' }}
                   />
-                  <label 
+                  <label
                     htmlFor="avatar-upload"
                     style={{
                       display: 'inline-block',
@@ -230,13 +274,13 @@ const Settings = () => {
                     {avatarUploading ? 'Đang upload...' : 'Chọn ảnh mới'}
                   </label>
                 </div>
-                
+
                 <div style={{ fontSize: '12px', color: 'var(--color-neutral-content-weak)' }}>
                   <p>• Chỉ chấp nhận file ảnh (JPG, PNG, GIF, WebP)</p>
                   <p>• Kích thước tối đa: 5MB</p>
                   <p>• Khuyến nghị: Ảnh vuông 200x200px</p>
                 </div>
-                
+
                 {avatarError && (
                   <div style={{
                     color: '#dc2626',
@@ -253,7 +297,7 @@ const Settings = () => {
               </div>
             </div>
           </div>
-          
+
           <div className="form-group">
             <label htmlFor="displayName">Tên hiển thị</label>
             <input
@@ -266,7 +310,7 @@ const Settings = () => {
             />
             <small>Tên này sẽ hiển thị trên bài viết và bình luận của bạn</small>
           </div>
-          
+
           <div className="form-group">
             <label htmlFor="username">Tên người dùng</label>
             <input
@@ -277,15 +321,15 @@ const Settings = () => {
               maxLength={20}
               readOnly
               disabled
-              style={{ 
-                backgroundColor: 'var(--color-neutral-border-weak)', 
+              style={{
+                backgroundColor: 'var(--color-neutral-border-weak)',
                 color: 'var(--color-neutral-content-weak)',
                 cursor: 'not-allowed'
               }}
             />
             <small>Tên người dùng không thể thay đổi sau khi tạo tài khoản</small>
           </div>
-          
+
           <div className="form-group">
             <label htmlFor="bio">Giới thiệu bản thân</label>
             <textarea
@@ -299,11 +343,11 @@ const Settings = () => {
             <small>{bio.length}/200 ký tự</small>
           </div>
         </div>
-        
+
         {/* Location Settings */}
         <div className="settings-section">
           <h2>Vị trí</h2>
-          
+
           <div className="form-group checkbox-group">
             <label>
               <input
@@ -316,7 +360,7 @@ const Settings = () => {
             </label>
             <small>Vị trí của bạn sẽ hiển thị bên cạnh tên trong bài viết và bình luận</small>
           </div>
-          
+
           {currentLocation && (
             <div className="form-group">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
@@ -345,7 +389,7 @@ const Settings = () => {
                   )}
                 </button>
               </div>
-              
+
               {refreshError && (
                 <div style={{
                   color: '#dc2626',
@@ -359,10 +403,10 @@ const Settings = () => {
                   {refreshError}
                 </div>
               )}
-              
-              <div style={{ 
-                padding: '12px 16px', 
-                backgroundColor: 'var(--color-neutral-background-weak)', 
+
+              <div style={{
+                padding: '12px 16px',
+                backgroundColor: 'var(--color-neutral-background-weak)',
                 borderRadius: '8px',
                 display: 'flex',
                 flexDirection: 'column',
@@ -373,44 +417,44 @@ const Settings = () => {
                     {getCountryFlag(currentLocation.country_code)}
                   </span>
                   <span style={{ fontWeight: '600' }}>{currentLocation.country}</span>
-                  <span style={{ 
-                    backgroundColor: 'var(--color-reddit-orange)', 
-                    color: 'white', 
-                    padding: '2px 6px', 
-                    borderRadius: '4px', 
+                  <span style={{
+                    backgroundColor: 'var(--color-reddit-orange)',
+                    color: 'white',
+                    padding: '2px 6px',
+                    borderRadius: '4px',
                     fontSize: '0.75rem',
                     fontWeight: '600'
                   }}>
                     {currentLocation.country_code}
                   </span>
-                  <span style={{ 
-                    backgroundColor: 'var(--color-neutral-border)', 
-                    color: 'var(--color-neutral-content)', 
-                    padding: '2px 6px', 
-                    borderRadius: '4px', 
+                  <span style={{
+                    backgroundColor: 'var(--color-neutral-border)',
+                    color: 'var(--color-neutral-content)',
+                    padding: '2px 6px',
+                    borderRadius: '4px',
                     fontSize: '0.75rem',
                     fontWeight: '600'
                   }}>
                     {currentLocation.continent_code}
                   </span>
                 </div>
-                
+
                 {(currentLocation.region || currentLocation.city) && (
-                  <div style={{ 
-                    color: 'var(--color-neutral-content-weak)', 
+                  <div style={{
+                    color: 'var(--color-neutral-content-weak)',
                     fontSize: '0.9rem',
                     paddingLeft: '32px'
                   }}>
-                    {currentLocation.region && currentLocation.city 
+                    {currentLocation.region && currentLocation.city
                       ? `${currentLocation.region}, ${currentLocation.city}`
                       : currentLocation.region || currentLocation.city
                     }
                   </div>
                 )}
-                
-                <div style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
+
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
                   gap: '8px',
                   paddingLeft: '32px',
                   color: 'var(--color-neutral-content-weak)',
@@ -428,11 +472,11 @@ const Settings = () => {
             </div>
           )}
         </div>
-        
+
         {/* Privacy Settings */}
         <div className="settings-section">
           <h2>Quyền riêng tư</h2>
-          
+
           <div className="form-group checkbox-group">
             <label>
               <input
@@ -445,7 +489,7 @@ const Settings = () => {
             </label>
             <small>Người khác sẽ không thể xem trang hồ sơ của bạn</small>
           </div>
-          
+
           <div className="form-group checkbox-group">
             <label>
               <input
@@ -458,7 +502,7 @@ const Settings = () => {
             </label>
             <small>Bài viết của bạn sẽ không hiển thị trong hồ sơ công khai</small>
           </div>
-          
+
           <div className="form-group checkbox-group">
             <label>
               <input
@@ -471,21 +515,175 @@ const Settings = () => {
             </label>
             <small>Bình luận của bạn sẽ không hiển thị trong hồ sơ công khai</small>
           </div>
+
+          <div className="form-group checkbox-group">
+            <label>
+              <input
+                type="checkbox"
+                checked={allowMessageSearch}
+                onChange={(e) => setAllowMessageSearch(e.target.checked)}
+              />
+              <span className="checkmark"></span>
+              Cho phép tìm kiếm trong hộp thư
+            </label>
+            <small>Người khác có thể tìm thấy bạn bằng tên một phần khi soạn tin nhắn</small>
+          </div>
+
+          <div className="form-group">
+            <label>Ai có thể gửi tin nhắn cho bạn</label>
+            <div className="radio-group" style={{ marginTop: '8px' }}>
+              <label style={{ display: 'flex', alignItems: 'center', marginBottom: '8px', cursor: 'pointer' }}>
+                <input
+                  type="radio"
+                  name="allowMessagesFrom"
+                  value="everyone"
+                  checked={allowMessagesFrom === 'everyone'}
+                  onChange={(e) => setAllowMessagesFrom(e.target.value as 'everyone' | 'specific' | 'nobody')}
+                  style={{ marginRight: '8px' }}
+                />
+                Tất cả mọi người
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', marginBottom: '8px', cursor: 'pointer' }}>
+                <input
+                  type="radio"
+                  name="allowMessagesFrom"
+                  value="specific"
+                  checked={allowMessagesFrom === 'specific'}
+                  onChange={(e) => setAllowMessagesFrom(e.target.value as 'everyone' | 'specific' | 'nobody')}
+                  style={{ marginRight: '8px' }}
+                />
+                Chỉ người cụ thể
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+                <input
+                  type="radio"
+                  name="allowMessagesFrom"
+                  value="nobody"
+                  checked={allowMessagesFrom === 'nobody'}
+                  onChange={(e) => setAllowMessagesFrom(e.target.value as 'everyone' | 'specific' | 'nobody')}
+                  style={{ marginRight: '8px' }}
+                />
+                Không cho phép
+              </label>
+            </div>
+            <small>Kiểm soát ai có thể gửi tin nhắn riêng cho bạn</small>
+
+            {allowMessagesFrom === 'specific' && (
+              <div style={{ marginTop: '16px', padding: '12px', backgroundColor: 'var(--color-neutral-background-weak)', borderRadius: '8px' }}>
+                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 500 }}>
+                  Danh sách người dùng được phép (nhập @tên hoặc u/tên)
+                </label>
+                <div style={{ position: 'relative' }}>
+                  <input
+                    type="text"
+                    value={userInputValue}
+                    onChange={(e) => handleUserInputChange(e.target.value)}
+                    placeholder="Gõ @ hoặc u/ để tìm người dùng..."
+                    style={{
+                      width: '100%',
+                      padding: '8px',
+                      borderRadius: '4px',
+                      border: '1px solid var(--color-neutral-border)',
+                      fontSize: '14px'
+                    }}
+                  />
+                  {userSuggestions.length > 0 && (
+                    <div style={{
+                      position: 'absolute',
+                      top: '100%',
+                      left: 0,
+                      right: 0,
+                      backgroundColor: 'white',
+                      border: '1px solid var(--color-neutral-border)',
+                      borderRadius: '4px',
+                      marginTop: '4px',
+                      maxHeight: '200px',
+                      overflowY: 'auto',
+                      zIndex: 1000,
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                    }}>
+                      {userSuggestions.map((user) => (
+                        <div
+                          key={user.id}
+                          onClick={() => handleAddUser(user.id, user.username || user.displayName)}
+                          style={{
+                            padding: '8px 12px',
+                            cursor: 'pointer',
+                            borderBottom: '1px solid var(--color-neutral-border-weak)',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '2px'
+                          }}
+                          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-neutral-background-weak)'}
+                          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'white'}
+                        >
+                          <div style={{ fontWeight: 500 }}>@{user.atName || user.username || user.displayName}</div>
+                          <div style={{ fontSize: '12px', color: 'var(--color-neutral-content-weak)' }}>
+                            u/{user.username || user.displayName} • ID: {user.customUID}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {allowedMessageUsers.length > 0 && (
+                  <div style={{ marginTop: '12px', display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                    {allowedMessageUsers.map((userId) => (
+                      <div
+                        key={userId}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          padding: '4px 8px',
+                          backgroundColor: 'var(--color-primary)',
+                          color: 'white',
+                          borderRadius: '16px',
+                          fontSize: '13px'
+                        }}
+                      >
+                        <span>{userId}</span>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveUser(userId)}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            color: 'white',
+                            cursor: 'pointer',
+                            padding: '0',
+                            display: 'flex',
+                            alignItems: 'center'
+                          }}
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <small style={{ display: 'block', marginTop: '8px', color: 'var(--color-neutral-content-weak)' }}>
+                  Chỉ những người dùng trong danh sách này có thể gửi tin nhắn cho bạn. Thay đổi sẽ được lưu tự động.
+                </small>
+              </div>
+            )}
+          </div>
         </div>
-        
+
         {/* Messages */}
         {error && (
           <div className="error-message">
             {error}
           </div>
         )}
-        
+
         {success && (
           <div className="success-message">
             {success}
           </div>
         )}
-        
+
         {/* Actions */}
         <div className="settings-actions">
           <button

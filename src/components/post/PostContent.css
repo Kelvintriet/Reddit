@@ -1,0 +1,146 @@
+/* Post Content Markdown Styles */
+.post-content-markdown {
+  color: var(--color-neutral-content);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.post-content-markdown h1,
+.post-content-markdown h2,
+.post-content-markdown h3,
+.post-content-markdown h4,
+.post-content-markdown h5,
+.post-content-markdown h6 {
+  font-weight: 700;
+  margin-top: 1em;
+  margin-bottom: 0.5em;
+  color: var(--color-neutral-content);
+}
+
+.post-content-markdown h1 {
+  font-size: 2em;
+  border-bottom: 1px solid var(--color-neutral-border-weak);
+  padding-bottom: 0.3em;
+}
+
+.post-content-markdown h2 {
+  font-size: 1.5em;
+  border-bottom: 1px solid var(--color-neutral-border-weak);
+  padding-bottom: 0.3em;
+}
+
+.post-content-markdown h3 { font-size: 1.25em; }
+.post-content-markdown h4 { font-size: 1.1em; }
+.post-content-markdown h5 { font-size: 1em; }
+.post-content-markdown h6 { 
+  font-size: 0.9em;
+  color: var(--color-neutral-content-weak);
+}
+
+.post-content-markdown table {
+  border: 1px solid var(--color-neutral-border-weak);
+  border-collapse: collapse;
+  width: 100%;
+  margin-bottom: 1rem;
+}
+
+.post-content-markdown th,
+.post-content-markdown td {
+  border: 1px solid var(--color-neutral-border-weak);
+  padding: 8px;
+}
+
+.post-content-markdown th {
+  background-color: var(--color-neutral-background-weak);
+  font-weight: bold;
+}
+
+.post-content-markdown code {
+  background-color: var(--color-neutral-background-weak);
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-size: 0.9em;
+  font-family: monospace;
+  color: var(--color-neutral-content);
+}
+
+.post-content-markdown pre {
+  background-color: var(--color-neutral-background-weak);
+  padding: 1rem;
+  border-radius: 5px;
+  overflow: auto;
+  margin-bottom: 1rem;
+}
+
+.post-content-markdown pre code {
+  background-color: transparent;
+  padding: 0;
+  color: inherit;
+}
+
+.post-content-markdown blockquote {
+  border-left: 4px solid var(--color-neutral-border-weak);
+  padding-left: 1rem;
+  margin: 1rem 0;
+  font-style: italic;
+  color: var(--color-neutral-content-weak);
+  background-color: var(--color-neutral-background-weak); /* Optional: Reddit doesn't always bg blockquotes, but inline style did */
+  padding: 0.5rem 1rem;
+}
+
+.post-content-markdown ul,
+.post-content-markdown ol {
+  padding-left: 2rem;
+  margin-bottom: 1rem;
+}
+
+.post-content-markdown li {
+  margin-bottom: 0.25rem;
+}
+
+.post-content-markdown a {
+  color: var(--color-reddit-blue);
+  text-decoration: underline;
+}
+
+.post-content-markdown p {
+  margin-bottom: 1rem;
+}
+
+.post-content-markdown hr {
+  border: none;
+  border-top: 1px solid var(--color-neutral-border-weak);
+  margin: 2rem 0;
+}
+
+/* HTML Content Styles - for legacy/rich text editor content */
+.post-content-html {
+  color: var(--color-neutral-content);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.post-content-html a {
+  color: var(--color-reddit-blue);
+  text-decoration: underline;
+}
+
+.post-content-html blockquote {
+  border-left: 4px solid var(--color-neutral-border-weak);
+  padding-left: 1rem;
+  color: var(--color-neutral-content-weak);
+}
+
+.post-content-html pre {
+  background-color: var(--color-neutral-background-weak);
+  padding: 1rem;
+  border-radius: 4px;
+  overflow-x: auto;
+}
+
+.post-content-html img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 4px;
+}
+

@@ -8,9 +8,14 @@
     "start": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "server": "node server/index.js",
+    "server:dev": "nodemon server/index.js",
+    "cleanup": "node server/scripts/cleanupOrphanedFiles.js"
   },
   "dependencies": {
+    "@koa/cors": "^5.0.0",
+    "@koa/router": "^12.0.1",
     "@tiptap/core": "^3.0.2",
     "@tiptap/extension-image": "^3.0.2",
     "@tiptap/extension-link": "^3.0.2",
@@ -22,15 +27,21 @@
     "@tiptap/react": "^3.0.2",
     "@tiptap/starter-kit": "^3.0.2",
     "appwrite": "^18.1.1",
+    "axios": "^1.7.7",
+    "claude": "^0.1.1",
+    "code": "^5.2.4",
     "cohere-ai": "^7.17.1",
     "date-fns": "^4.1.0",
     "firebase": "^11.10.0",
+    "koa": "^2.15.0",
+    "koa-bodyparser": "^4.4.1",
     "lucide-react": "^0.525.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-markdown": "^10.1.0",
     "react-router-dom": "^7.6.2",
     "remark-gfm": "^4.0.1",
+    "ws": "^8.18.0",
     "zustand": "^5.0.5"
   },
   "devDependencies": {
@@ -42,6 +53,7 @@
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.19",
     "globals": "^16.0.0",
+    "nodemon": "^3.1.7",
     "typescript": "~5.8.3",
     "typescript-eslint": "^8.30.1",
     "vite": "^6.3.5"

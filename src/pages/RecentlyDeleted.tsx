@@ -186,14 +186,19 @@ const RecentlyDeleted = () => {
         </div>
       ) : (
         <div className="deleted-posts-list">
-          {deletedPosts.map(post => (
+          {deletedPosts.map(post => {
+            // Use originalData for display in recycle bin, fallback to current post data
+            const displayTitle = (post as any).originalData?.title || post.title;
+            const displayContent = (post as any).originalData?.content || post.content;
+            
+            return (
             <div key={post.id} className="deleted-post-card">
               <div className="post-content">
-                <h3 className="post-title">{post.title}</h3>
+                <h3 className="post-title">{displayTitle}</h3>
                 <p className="post-preview">
-                  {post.content && post.content.length > 200 
-                    ? post.content.substring(0, 200) + '...' 
-                    : post.content || 'Không có nội dung'
+                  {displayContent && displayContent.length > 200 
+                    ? displayContent.substring(0, 200) + '...' 
+                    : displayContent || 'Không có nội dung'
                   }
                 </p>
                 
@@ -225,7 +230,7 @@ const RecentlyDeleted = () => {
                   onClick={() => setShowConfirmDialog({
                     postId: post.id,
                     action: 'restore',
-                    postTitle: post.title
+                    postTitle: displayTitle
                   })}
                   className="restore-btn"
                   disabled={processingPostId === post.id}
@@ -247,7 +252,7 @@ const RecentlyDeleted = () => {
                   onClick={() => setShowConfirmDialog({
                     postId: post.id,
                     action: 'permanent_delete',
-                    postTitle: post.title
+                    postTitle: displayTitle
                   })}
                   className="permanent-delete-btn"
                   disabled={processingPostId === post.id}
@@ -260,7 +265,7 @@ const RecentlyDeleted = () => {
                 </button>
               </div>
             </div>
-          ))}
+          )})}
         </div>
       )}
 
@@ -276,7 +281,7 @@ const RecentlyDeleted = () => {
             </h3>
             <p>
               {showConfirmDialog.action === 'restore'
-                ? `Bạn có chắc chắn muốn khôi phục bài viết "${showConfirmDialog.postTitle}"? Bài viết sẽ được hiển thị lại nhưng tất cả upvotes, downvotes và comments sẽ bị mất.`
+                ? `Bạn có chắc chắn muốn khôi phục bài viết "${showConfirmDialog.postTitle}"? Bài viết sẽ được tạo lại như một bài viết mới (không có upvotes, downvotes và comments). Bài viết cũ sẽ vẫn hiển thị [deleted].`
                 : `Bạn có chắc chắn muốn xóa vĩnh viễn bài viết "${showConfirmDialog.postTitle}"? Hành động này không thể hoàn tác.`
               }
             </p>

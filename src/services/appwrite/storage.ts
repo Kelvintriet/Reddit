@@ -87,9 +87,55 @@ export const isPreviewableFile = (type: string): boolean => {
   return isImageFile(type) || isVideoFile(type)
 }
 
-export const isDangerousFile = (type: string): boolean => {
-  const safeTypes = [...SUPPORTED_IMAGE_TYPES, ...SUPPORTED_VIDEO_TYPES, 'application/pdf', 'text/plain', 'text/csv']
-  return !safeTypes.includes(type)
+// Blocked executable file extensions
+const BLOCKED_EXTENSIONS = [
+  '.exe', '.bat', '.cmd', '.com', '.scr', '.vbs', '.js', '.jar',
+  '.msi', '.dmg', '.pkg', '.deb', '.rpm', '.sh', '.bash', '.ps1',
+  '.app', '.dll', '.sys', '.drv', '.bin', '.run', '.deb', '.rpm'
+];
+
+// Blocked MIME types for executables
+const BLOCKED_MIME_TYPES = [
+  'application/x-msdownload',           // .exe
+  'application/x-ms-installer',         // .msi
+  'application/x-executable',
+  'application/x-sharedlib',
+  'application/x-dll',
+  'application/x-msdos-program',
+  'application/x-bat',
+  'application/x-shellscript',          // .sh
+  'application/x-sh',                   // .sh
+  'application/x-csh',                  // .csh
+  'application/x-perl',                 // .pl
+  'application/x-python',               // .py (executable)
+  'application/java-archive',           // .jar
+  'application/x-java-archive',         // .jar
+  'application/x-jar',                  // .jar
+  'application/x-apple-diskimage'       // .dmg
+];
+
+export const isDangerousFile = (type: string, filename?: string): boolean => {
+  // Check MIME type first
+  if (BLOCKED_MIME_TYPES.includes(type)) {
+    return true;
+  }
+  
+  // Check file extension as backup (MIME types can be spoofed)
+  if (filename) {
+    const extension = filename.toLowerCase().substring(filename.lastIndexOf('.'));
+    if (BLOCKED_EXTENSIONS.includes(extension)) {
+      return true;
+    }
+  }
+  
+  // Allow safe types
+  const safeTypes = [
+    ...SUPPORTED_IMAGE_TYPES,
+    ...SUPPORTED_VIDEO_TYPES,
+    ...SUPPORTED_DOCUMENT_TYPES
+  ];
+  
+  return !safeTypes.includes(type);
 }
 
 export const getFileIcon = (type: string): string => {
@@ -120,7 +166,7 @@ const handleAppwriteError = (error: any): string => {
   return error.message || 'Đã xảy ra lỗi không xác định.'
 }
 
-export const uploadFile = async (file: File): Promise<UploadedFile> => {
+export const uploadFile = async (file: File, userId?: string): Promise<UploadedFile> => {
   try {
     console.log('📤 Starting file upload:', { name: file.name, size: file.size, type: file.type })
     
@@ -132,6 +178,16 @@ export const uploadFile = async (file: File): Promise<UploadedFile> => {
     )
     
     console.log('✅ File uploaded to Appwrite:', response)
+    
+    // Register as orphaned file for cleanup tracking
+    if (userId) {
+      try {
+        const { registerOrphanedFile } = await import('./orphanedFiles');
+        await registerOrphanedFile(response.$id, userId);
+      } catch (error) {
+        console.warn('Failed to register orphaned file (non-critical):', error);
+      }
+    }
     
     // Sử dụng URL khác nhau cho video và image
     const viewUrl = isVideoFile(file.type) 
@@ -199,11 +255,11 @@ export const uploadAvatar = async (file: File): Promise<UploadedFile> => {
   }
 }
 
-export const uploadMultipleFiles = async (files: File[]): Promise<UploadedFile[]> => {
+export const uploadMultipleFiles = async (files: File[], userId?: string): Promise<UploadedFile[]> => {
   try {
     console.log('📤 Starting multiple file upload:', files.length, 'files')
     
-    const uploadPromises = files.map(file => uploadFile(file))
+    const uploadPromises = files.map(file => uploadFile(file, userId))
     const results = await Promise.all(uploadPromises)
     
     console.log('✅ Multiple files uploaded successfully:', results.length)

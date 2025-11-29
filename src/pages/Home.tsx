@@ -3,14 +3,13 @@ import { useParams, Link } from 'react-router-dom';
 import { useAuthStore, usePostsStore } from '../store';
 import PostCard from '../components/post/PostCard';
 import PostSkeleton from '../components/post/PostSkeleton';
-import BotMonitor from '../components/bot/BotMonitor';
 
 const Home = () => {
   const { subreddit } = useParams<{ subreddit?: string }>();
   const { user } = useAuthStore();
-  const { posts, fetchPosts, isLoading, error, setSortBy, voteOnPost } = usePostsStore();
+  const { posts, fetchPosts, isLoading, error, setSortBy, voteOnPost, cleanupRealtimeListener } = usePostsStore();
   const [activeSort, setActiveSort] = useState<'best' | 'hot' | 'new' | 'top' | 'rising'>('best');
-  
+
   useEffect(() => {
     const sortMapping: Record<string, 'hot' | 'new' | 'top'> = {
       'best': 'hot',
@@ -19,11 +18,16 @@ const Home = () => {
       'top': 'top',
       'rising': 'hot'
     };
-    
+
     setSortBy(sortMapping[activeSort]);
     fetchPosts(subreddit);
+
+    // Cleanup realtime listener on unmount or when subreddit changes
+    return () => {
+      cleanupRealtimeListener();
+    };
   }, [activeSort, subreddit]);
-  
+
   const handleSortChange = (newSort: 'best' | 'hot' | 'new' | 'top' | 'rising') => {
     setActiveSort(newSort);
   };
@@ -34,7 +38,7 @@ const Home = () => {
       console.log('User must be logged in to vote');
       return;
     }
-    
+
     try {
       await voteOnPost(postId, voteType, user.uid);
     } catch (error) {
@@ -97,11 +101,11 @@ const Home = () => {
               <div className="empty-state">
                 <div className="empty-state-icon">
                   <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                    <polyline points="14,2 14,8 20,8"/>
-                    <line x1="16" y1="13" x2="8" y2="13"/>
-                    <line x1="16" y1="17" x2="8" y2="17"/>
-                    <polyline points="10,9 9,9 8,9"/>
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                    <polyline points="14,2 14,8 20,8" />
+                    <line x1="16" y1="13" x2="8" y2="13" />
+                    <line x1="16" y1="17" x2="8" y2="17" />
+                    <polyline points="10,9 9,9 8,9" />
                   </svg>
                 </div>
                 <h3>Chưa có bài viết nào</h3>
@@ -129,7 +133,7 @@ const Home = () => {
                       author: {
                         uid: post.authorId,
                         displayName: post.authorUsername,
-                        photoURL: null
+                        photoURL: undefined
                       },
                       community: post.subreddit ? {
                         name: post.subreddit,
@@ -141,7 +145,8 @@ const Home = () => {
                       upvotes: post.upvotes || 0,
                       downvotes: post.downvotes || 0,
                       commentCount: post.commentCount || 0,
-                      type: post.imageUrls && post.imageUrls.length > 0 ? 'image' : 'text'
+                      type: post.imageUrls && post.imageUrls.length > 0 ? 'image' : 'text',
+                      isDeleted: post.isDeleted || false
                     }}
                     onVote={handleVote}
                     userVote={getUserVote(post.id)}
@@ -152,9 +157,6 @@ const Home = () => {
           </>
         )}
       </div>
-
-      {/* Bot Monitor - Show bot activity */}
-      {user && <BotMonitor />}
     </>
   );
 };

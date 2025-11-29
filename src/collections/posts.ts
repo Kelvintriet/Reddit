@@ -1,4 +1,4 @@
-import { collection, doc, addDoc, getDoc, updateDoc, deleteDoc, query, where, orderBy, limit, getDocs, serverTimestamp, increment } from 'firebase/firestore';
+import { collection, doc, addDoc, getDoc, updateDoc, deleteDoc, setDoc, query, where, orderBy, limit, getDocs, serverTimestamp, increment } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import type { Post } from '../types';
 
@@ -84,6 +84,31 @@ export const createPost = async (data: {
     
     const docRef = await addDoc(collection(db, 'posts'), postData);
     console.log('✅ Post created with ID:', docRef.id);
+    
+    // Mark uploaded files as attached to this post
+    const fileIds: string[] = [];
+    if (data.imageUrls && data.imageUrls.length > 0) {
+      // Extract file IDs from imageUrls
+      data.imageUrls.forEach(url => {
+        const match = url.match(/files\/([^\/\?]+)/);
+        if (match) fileIds.push(match[1]);
+      });
+    }
+    if (data.attachments && data.attachments.length > 0) {
+      data.attachments.forEach(att => {
+        if (att.id) fileIds.push(att.id);
+      });
+    }
+    
+    if (fileIds.length > 0) {
+      try {
+        const { markFilesAsAttached } = await import('../services/appwrite/orphanedFiles');
+        await markFilesAsAttached(fileIds, docRef.id);
+      } catch (error) {
+        console.warn('Failed to mark files as attached (non-critical):', error);
+      }
+    }
+    
     return docRef.id;
   } catch (error) {
     console.error('❌ Error creating post:', error);
@@ -268,38 +293,56 @@ export const getPosts = async (options: {
   }
 };
 
-// Vote cho bài viết
+// Vote cho bài viết - Frontend calculates totals from votes object
 export const votePost = async (postId: string, userId: string, voteType: 'up' | 'down') => {
   try {
+    // First check deletedPosts collection - if found, reject voting immediately
+    const deletedPostRef = doc(db, 'deletedPosts', postId);
+    const deletedPostSnap = await getDoc(deletedPostRef);
+    
+    if (deletedPostSnap.exists()) {
+      // Post is deleted, cannot vote
+      throw new Error('Cannot vote on deleted post');
+    }
+    
+    // Check main posts collection
     const postRef = doc(db, 'posts', postId);
     const postSnap = await getDoc(postRef);
     
-    if (postSnap.exists()) {
-      const data = postSnap.data() as Post;
-      const votes = data.votes || {};
-      const currentVote = votes[userId];
-      
-      let upvotes = data.upvotes || 0;
-      let downvotes = data.downvotes || 0;
-      
-      // Remove previous vote
-      if (currentVote === 'up') upvotes--;
-      if (currentVote === 'down') downvotes--;
-      
-      // Add new vote (if different from current)
-      if (currentVote !== voteType) {
-        votes[userId] = voteType;
-        if (voteType === 'up') upvotes++;
-        if (voteType === 'down') downvotes++;
-      } else {
-        delete votes[userId]; // Remove vote if same
-      }
-      
-      await updateDoc(postRef, { votes, upvotes, downvotes });
-      return { votes, upvotes, downvotes };
+    if (!postSnap.exists()) {
+      throw new Error('Post not found');
     }
     
-    return null;
+    const data = postSnap.data() as Post;
+    
+    // Double check - don't allow voting on deleted posts (safety check)
+    if (data.isDeleted) {
+      throw new Error('Cannot vote on deleted post');
+    }
+    
+    const votes = data.votes || {};
+    const currentVote = votes[userId];
+    
+    // Update votes object
+    if (currentVote === voteType) {
+      // Remove vote if clicking same button
+      delete votes[userId];
+    } else {
+      // Add or change vote
+      votes[userId] = voteType;
+    }
+    
+    // Calculate totals from votes object (frontend calculation)
+    let upvotes = 0;
+    let downvotes = 0;
+    Object.values(votes).forEach((vote: any) => {
+      if (vote === 'up') upvotes++;
+      else if (vote === 'down') downvotes++;
+    });
+    
+    // Save calculated totals to database
+    await updateDoc(postRef, { votes, upvotes, downvotes });
+    return { votes, upvotes, downvotes };
   } catch (error) {
     console.error('Error voting on post:', error);
     throw error;
@@ -318,7 +361,7 @@ export const deletePost = async (postId: string) => {
   }
 };
 
-// Soft delete bài viết
+// Soft delete bài viết - Move to deletedPosts collection
 export const softDeletePost = async (postId: string, userId: string, reason?: string) => {
   try {
     const postRef = doc(db, 'posts', postId);
@@ -330,30 +373,50 @@ export const softDeletePost = async (postId: string, userId: string, reason?: st
     
     const postData = postSnap.data() as Post;
     
-    // Backup original data for potential restoration
-    const originalData = {
-      upvotes: postData.upvotes || 0,
-      downvotes: postData.downvotes || 0,
-      commentCount: postData.commentCount || 0,
-      votes: postData.votes || {}
-    };
+    // Backup ALL original data for potential restoration as fresh post
+    // Filter out undefined values as Firestore doesn't allow them
+    const originalData: any = {};
+    if (postData.title !== undefined) originalData.title = postData.title;
+    if (postData.content !== undefined) originalData.content = postData.content;
+    originalData.contentType = postData.contentType || 'html';
+    if (postData.authorId !== undefined) originalData.authorId = postData.authorId;
+    if (postData.authorUsername !== undefined) originalData.authorUsername = postData.authorUsername;
+    if (postData.subreddit !== undefined) originalData.subreddit = postData.subreddit;
+    originalData.imageUrls = postData.imageUrls || [];
+    originalData.attachments = postData.attachments || [];
+    originalData.type = postData.type || 'text';
+    if (postData.url !== undefined) originalData.url = postData.url;
+    originalData.tags = postData.tags || [];
     
-    await updateDoc(postRef, {
+    // Create deleted post document with [deleted] content but keep votes
+    // Filter out undefined values from postData spread
+    const deletedPostData: any = {
+      ...Object.fromEntries(
+        Object.entries(postData).filter(([_, value]) => value !== undefined)
+      ),
+      id: postId, // Keep original ID for direct access
       isDeleted: true,
       deletedAt: serverTimestamp(),
       deletedBy: userId,
       deleteReason: reason || 'No reason provided',
       originalData: originalData,
-      // Reset interactive data
-      upvotes: 0,
-      downvotes: 0,
-      commentCount: 0,
-      votes: {},
-      viewCount: 0,
-      viewedBy: []
-    });
+      // Override content with [deleted] but keep votes
+      title: '[deleted]',
+      content: '[deleted]',
+      authorUsername: '[deleted]',
+      imageUrls: [],
+      attachments: []
+      // Votes remain unchanged - they stay visible but can't be modified
+    };
     
-    console.log('✅ Post soft deleted successfully');
+    // Copy to deletedPosts collection
+    const deletedPostRef = doc(db, 'deletedPosts', postId);
+    await setDoc(deletedPostRef, deletedPostData);
+    
+    // Delete from main posts collection
+    await deleteDoc(postRef);
+    
+    console.log('✅ Post moved to deletedPosts collection');
     return true;
   } catch (error) {
     console.error('❌ Error soft deleting post:', error);
@@ -361,11 +424,12 @@ export const softDeletePost = async (postId: string, userId: string, reason?: st
   }
 };
 
-// Restore bài viết từ deleted
+// Restore bài viết từ deleted - Creates a NEW fresh post (doesn't restore the old one)
 export const restorePost = async (postId: string, userId: string) => {
   try {
-    const postRef = doc(db, 'posts', postId);
-    const postSnap = await getDoc(postRef);
+    // Get from deletedPosts collection
+    const deletedPostRef = doc(db, 'deletedPosts', postId);
+    const postSnap = await getDoc(deletedPostRef);
     
     if (!postSnap.exists()) {
       throw new Error('Post not found');
@@ -373,46 +437,70 @@ export const restorePost = async (postId: string, userId: string) => {
     
     const postData = postSnap.data() as Post;
     
-    if (!postData.isDeleted) {
-      throw new Error('Post is not deleted');
+    if (!postData.isDeleted || !postData.originalData) {
+      throw new Error('Post is not deleted or has no backup data');
     }
     
-    // Delete all comments related to this post
-    const commentsRef = collection(db, 'comments');
-    const commentsQuery = query(commentsRef, where('postId', '==', postId));
-    const commentsSnap = await getDocs(commentsQuery);
+    // Check if post is permanently deleted (cannot be restored)
+    if ((postData as any).permanentlyDeleted === true) {
+      throw new Error('This post has been permanently deleted and cannot be restored');
+    }
     
-    // Delete all comments in batches
-    const deletePromises = commentsSnap.docs.map(commentDoc => 
-      deleteDoc(doc(db, 'comments', commentDoc.id))
-    );
-    await Promise.all(deletePromises);
+    // Verify user owns the deleted post
+    if (postData.deletedBy !== userId) {
+      throw new Error('You do not have permission to restore this post');
+    }
     
-    // Restore post but reset all interactive data (votes, comments)
-    const updateData: any = {
-      isDeleted: false,
-      deletedAt: null,
-      deletedBy: null,
-      deleteReason: null,
-      // Reset all votes and comments data
+    const originalData = postData.originalData as any;
+    
+    // Create a NEW fresh post with original content but reset stats
+    // Filter out undefined values as Firestore doesn't allow them
+    const newPostData: any = {
+      createdAt: serverTimestamp(),
       upvotes: 0,
       downvotes: 0,
       commentCount: 0,
+      viewCount: 0,
+      viewedBy: [],
       votes: {},
-      originalData: null
+      isDeleted: false,
+      isEdited: false
     };
     
-    await updateDoc(postRef, updateData);
+    // Only add fields that are defined
+    if (originalData.title !== undefined) newPostData.title = originalData.title;
+    if (originalData.content !== undefined) newPostData.content = originalData.content;
+    newPostData.contentType = originalData.contentType || 'html';
+    if (originalData.authorId !== undefined) {
+      newPostData.authorId = originalData.authorId;
+    } else if (postData.authorId !== undefined) {
+      newPostData.authorId = postData.authorId;
+    }
+    if (originalData.authorUsername !== undefined) newPostData.authorUsername = originalData.authorUsername;
+    if (originalData.subreddit !== undefined) newPostData.subreddit = originalData.subreddit;
+    newPostData.imageUrls = originalData.imageUrls || [];
+    newPostData.attachments = originalData.attachments || [];
+    newPostData.type = originalData.type || 'text';
+    if (originalData.url !== undefined) newPostData.url = originalData.url;
+    newPostData.tags = originalData.tags || [];
     
-    console.log(`✅ Post restored successfully with reset data. Deleted ${commentsSnap.docs.length} comments`);
-    return true;
+    // Create the new post in main posts collection
+    const newPostRef = doc(collection(db, 'posts'));
+    await setDoc(newPostRef, newPostData);
+    
+    // The old deleted post remains in deletedPosts collection - it's not restored
+    // This creates a fresh repost instead
+    
+    console.log(`✅ Post restored as fresh new post. Old post remains in deletedPosts.`);
+    return newPostRef.id;
   } catch (error) {
     console.error('❌ Error restoring post:', error);
     throw error;
   }
 };
 
-// Permanently delete bài viết
+// Permanently delete bài viết - Mark as permanently deleted (frozen, not recoverable)
+// Post remains in deletedPosts collection but cannot be restored
 export const permanentlyDeletePost = async (postId: string) => {
   try {
     // First, delete all comments related to this post
@@ -426,11 +514,15 @@ export const permanentlyDeletePost = async (postId: string) => {
     );
     await Promise.all(deletePromises);
     
-    // Then delete the post itself
-    const postRef = doc(db, 'posts', postId);
-    await deleteDoc(postRef);
+    // Mark post as permanently deleted instead of actually deleting it
+    // Post remains frozen in deletedPosts collection, URL still works, but not recoverable
+    const deletedPostRef = doc(db, 'deletedPosts', postId);
+    await updateDoc(deletedPostRef, {
+      permanentlyDeleted: true,
+      permanentlyDeletedAt: serverTimestamp()
+    });
     
-    console.log(`✅ Post and ${commentsSnap.docs.length} comments permanently deleted`);
+    console.log(`✅ Post marked as permanently deleted. ${commentsSnap.docs.length} comments deleted. Post remains frozen in deletedPosts.`);
     return true;
   } catch (error) {
     console.error('❌ Error permanently deleting post:', error);
@@ -493,34 +585,35 @@ export const editPost = async (postId: string, updates: {
   }
 };
 
-// Lấy deleted posts
+// Lấy deleted posts from deletedPosts collection (only recoverable ones)
 export const getDeletedPosts = async (userId?: string) => {
   try {
-    const postsRef = collection(db, 'posts');
+    const deletedPostsRef = collection(db, 'deletedPosts');
     let q;
     
     if (userId) {
       // Chỉ lấy posts của user cụ thể
       q = query(
-        postsRef,
-        where('isDeleted', '==', true),
+        deletedPostsRef,
         where('deletedBy', '==', userId),
         orderBy('deletedAt', 'desc')
       );
     } else {
       // Lấy tất cả deleted posts (cho admin)
       q = query(
-        postsRef,
-        where('isDeleted', '==', true),
+        deletedPostsRef,
         orderBy('deletedAt', 'desc')
       );
     }
     
     const querySnapshot = await getDocs(q);
-    const deletedPosts = querySnapshot.docs.map(doc => ({ 
-      id: doc.id, 
-      ...doc.data() 
-    } as Post));
+    // Filter out permanently deleted posts on client side
+    const deletedPosts = querySnapshot.docs
+      .map(doc => ({ 
+        id: doc.id, 
+        ...doc.data() 
+      } as Post))
+      .filter(post => !(post as any).permanentlyDeleted); // Exclude permanently deleted
     
     return deletedPosts;
   } catch (error) {
@@ -529,26 +622,37 @@ export const getDeletedPosts = async (userId?: string) => {
   }
 };
 
-// Auto cleanup - xóa vĩnh viễn posts đã deleted > 15 ngày
+// Auto cleanup - Mark old deleted posts (>15 days) as permanently deleted (frozen, not recoverable)
+// Posts remain in deletedPosts collection but cannot be restored
 export const cleanupOldDeletedPosts = async () => {
   try {
     const fifteenDaysAgo = new Date();
     fifteenDaysAgo.setDate(fifteenDaysAgo.getDate() - 15);
     
-    const postsRef = collection(db, 'posts');
+    const deletedPostsRef = collection(db, 'deletedPosts');
     const q = query(
-      postsRef,
-      where('isDeleted', '==', true),
+      deletedPostsRef,
       where('deletedAt', '<', fifteenDaysAgo)
     );
     
     const querySnapshot = await getDocs(q);
-    const deletePromises = querySnapshot.docs.map(doc => deleteDoc(doc.ref));
+    // Filter out already permanently deleted posts on client side
+    const postsToMark = querySnapshot.docs.filter(doc => {
+      const data = doc.data();
+      return !data.permanentlyDeleted; // Only mark ones not already permanently deleted
+    });
     
-    await Promise.all(deletePromises);
+    const updatePromises = postsToMark.map(doc => 
+      updateDoc(doc.ref, {
+        permanentlyDeleted: true,
+        permanentlyDeletedAt: serverTimestamp()
+      })
+    );
     
-    console.log(`✅ Cleaned up ${querySnapshot.docs.length} old deleted posts`);
-    return querySnapshot.docs.length;
+    await Promise.all(updatePromises);
+    
+    console.log(`✅ Marked ${postsToMark.length} old deleted posts as permanently deleted (frozen)`);
+    return postsToMark.length;
   } catch (error) {
     console.error('❌ Error cleaning up old deleted posts:', error);
     throw error;

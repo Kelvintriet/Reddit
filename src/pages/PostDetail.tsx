@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link, useLocation } from 'react-router-dom'
 import { useAuthStore, usePostsStore, useSubredditsStore } from '../store'
 import { getCommentTree, createComment, voteComment, deleteComment, updateComment } from '../collections/comments'
 import { getFileDownloadUrl, isImageFile } from '../services/appwrite/storage'
+import { processKarmaAction } from '../services/karmaService'
 import ImageViewer from '../components/post/ImageViewer'
 import PostContent from '../components/post/PostContent'
 import type { Comment } from '../collections/comments'
@@ -65,44 +66,62 @@ const CommentComponent: React.FC<CommentProps> = ({ comment, depth = 0, maxDepth
   };
   
   const handleUpvote = async () => {
-    if (!user || !postId) return;
+    if (!user || !comment.id || comment.isDeleted) return;
     
     try {
-      await voteOnPost(postId, 'up', user.uid);
+      const result = await voteComment(comment.id, user.uid, 'up');
       
-      // Update local state optimistically  
-      if (userVote === 'up') {
-        // Remove upvote
-        setVotes(votes - 1);
-        setUserVote(null);
-      } else {
-        // Add upvote (remove downvote if exists)
-        setVotes(userVote === 'down' ? votes + 2 : votes + 1);
-        setUserVote('up');
+      if (result) {
+        // Update local state with server response
+        setVotes(result.upvotes - result.downvotes);
+        setUserVote(result.votes[user.uid] || null);
+        
+        // Update karma for comment author
+        if (comment.authorId && comment.authorId !== user.uid && !comment.isDeleted) {
+          await processKarmaAction({
+            type: 'comment_upvoted',
+            userId: comment.authorId,
+            contentId: comment.id,
+            contentType: 'comment',
+            points: 1
+          })
+        }
+        
+        // Reload comments to ensure consistency
+        onReplyAdded();
       }
     } catch (error) {
-      // Removed console.error
+      console.error('Error voting on comment:', error);
     }
   };
 
   const handleDownvote = async () => {
-    if (!user || !postId) return;
+    if (!user || !comment.id || comment.isDeleted) return;
     
     try {
-      await voteOnPost(postId, 'down', user.uid);
+      const result = await voteComment(comment.id, user.uid, 'down');
       
-      // Update local state optimistically
-      if (userVote === 'down') {
-        // Remove downvote
-        setVotes(votes + 1);
-        setUserVote(null);
-      } else {
-        // Add downvote (remove upvote if exists)
-        setVotes(userVote === 'up' ? votes - 2 : votes - 1);
-        setUserVote('down');
+      if (result) {
+        // Update local state with server response
+        setVotes(result.upvotes - result.downvotes);
+        setUserVote(result.votes[user.uid] || null);
+        
+        // Update karma for comment author
+        if (comment.authorId && comment.authorId !== user.uid && !comment.isDeleted) {
+          await processKarmaAction({
+            type: 'comment_downvoted',
+            userId: comment.authorId,
+            contentId: comment.id,
+            contentType: 'comment',
+            points: -1
+          })
+        }
+        
+        // Reload comments to ensure consistency
+        onReplyAdded();
       }
     } catch (error) {
-      // Removed console.error
+      console.error('Error voting on comment:', error);
     }
   };
   
@@ -168,8 +187,9 @@ const CommentComponent: React.FC<CommentProps> = ({ comment, depth = 0, maxDepth
           <button 
             onClick={handleUpvote} 
             aria-label="Upvote" 
-            className={`vote-button ${userVote === 'up' ? 'upvoted' : ''}`}
-            disabled={!user}
+            className={`vote-button ${userVote === 'up' ? 'upvoted' : ''} ${comment.isDeleted ? 'disabled' : ''}`}
+            disabled={!user || comment.isDeleted}
+            title={comment.isDeleted ? 'Cannot vote on deleted comment' : 'Upvote'}
           >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
               <path d="M12 4L4 15h16L12 4z" />
@@ -183,8 +203,9 @@ const CommentComponent: React.FC<CommentProps> = ({ comment, depth = 0, maxDepth
           <button 
             onClick={handleDownvote} 
             aria-label="Downvote" 
-            className={`vote-button ${userVote === 'down' ? 'downvoted' : ''}`}
-            disabled={!user}
+            className={`vote-button ${userVote === 'down' ? 'downvoted' : ''} ${comment.isDeleted ? 'disabled' : ''}`}
+            disabled={!user || comment.isDeleted}
+            title={comment.isDeleted ? 'Cannot vote on deleted comment' : 'Downvote'}
           >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
               <path d="M12 20l8-11H4l8 11z" />
@@ -195,9 +216,13 @@ const CommentComponent: React.FC<CommentProps> = ({ comment, depth = 0, maxDepth
         {/* Comment content */}
         <div className="comment-content">
           <div className="comment-header">
-            <Link to={`/u/${comment.authorId}`} className="comment-author">
-              u/{comment.authorUsername}
-            </Link>
+            {comment.isDeleted || comment.authorUsername === '[deleted]' ? (
+              <span className="comment-author deleted-text">[deleted]</span>
+            ) : (
+              <Link to={`/u/${comment.authorId}`} className="comment-author">
+                u/{comment.authorUsername}
+              </Link>
+            )}
             <span className="comment-dot">•</span>
             <span className="comment-time">{formatDate(comment.createdAt)}</span>
             {comment.updatedAt && (
@@ -215,7 +240,9 @@ const CommentComponent: React.FC<CommentProps> = ({ comment, depth = 0, maxDepth
           </div>
           
           <div className="comment-body">
-            {isEditing ? (
+            {comment.isDeleted ? (
+              <div className="deleted-content">[deleted]</div>
+            ) : isEditing ? (
               <form onSubmit={handleEdit} className="edit-form">
                 <textarea 
                   value={editContent}
@@ -273,6 +300,12 @@ const CommentComponent: React.FC<CommentProps> = ({ comment, depth = 0, maxDepth
                   Xóa
                 </button>
               </>
+            )}
+            
+            {comment.isDeleted && (
+              <span className="comment-action-button" style={{ cursor: 'default', opacity: 0.6 }}>
+                Đã xóa
+              </span>
             )}
             
             <button className="comment-action-button">
@@ -426,7 +459,7 @@ const PostDetail = () => {
   };
   
   const handleUpvote = async () => {
-    if (!user || !postId) return;
+    if (!user || !postId || post?.isDeleted) return;
     
     try {
       await voteOnPost(postId, 'up', user.uid);
@@ -447,7 +480,7 @@ const PostDetail = () => {
   };
 
   const handleDownvote = async () => {
-    if (!user || !postId) return;
+    if (!user || !postId || post?.isDeleted) return;
     
     try {
       await voteOnPost(postId, 'down', user.uid);
@@ -649,7 +682,9 @@ const PostDetail = () => {
             <button
               onClick={handleUpvote}
               aria-label="Upvote"
-              className={`vote-button ${userVote === 'up' ? 'upvoted' : ''}`}
+              disabled={!user || post?.isDeleted}
+              className={`vote-button ${userVote === 'up' ? 'upvoted' : ''} ${post?.isDeleted ? 'disabled' : ''}`}
+              title={post?.isDeleted ? 'Cannot vote on deleted post' : 'Upvote'}
             >
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M12 4L4 15h16L12 4z" />
@@ -663,7 +698,9 @@ const PostDetail = () => {
             <button
               onClick={handleDownvote}
               aria-label="Downvote"
-              className={`vote-button ${userVote === 'down' ? 'downvoted' : ''}`}
+              disabled={!user || post?.isDeleted}
+              className={`vote-button ${userVote === 'down' ? 'downvoted' : ''} ${post?.isDeleted ? 'disabled' : ''}`}
+              title={post?.isDeleted ? 'Cannot vote on deleted post' : 'Downvote'}
             >
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M12 20l8-11H4l8 11z" />
@@ -684,9 +721,13 @@ const PostDetail = () => {
                 </>
               )}
               <span className="post-author-prefix">Đăng bởi</span>
-              <Link to={`/u/${post.authorId}`} className="post-author-link">
-                u/{post.authorUsername}
-              </Link>
+              {post.isDeleted || post.authorUsername === '[deleted]' ? (
+                <span className="deleted-text">[deleted]</span>
+              ) : (
+                <Link to={`/u/${post.authorId}`} className="post-author-link">
+                  u/{post.authorUsername}
+                </Link>
+              )}
               <span className="post-dot">•</span>
               <span className="post-time">{formatDate(post.createdAt)}</span>
               <span className="post-dot">•</span>

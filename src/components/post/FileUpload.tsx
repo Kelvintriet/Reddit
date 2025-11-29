@@ -10,6 +10,7 @@ interface FileUploadProps {
   acceptedTypes?: string[]
   multiple?: boolean
   disabled?: boolean
+  userId?: string // User ID for orphaned file tracking
 }
 
 const FileUpload: React.FC<FileUploadProps> = ({
@@ -19,7 +20,8 @@ const FileUpload: React.FC<FileUploadProps> = ({
   maxFiles = 5,
   acceptedTypes = ALL_SUPPORTED_TYPES,
   multiple = true,
-  disabled = false
+  disabled = false,
+  userId
 }) => {
   const [isDragging, setIsDragging] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
@@ -32,8 +34,13 @@ const FileUpload: React.FC<FileUploadProps> = ({
       return `File "${file.name}" quá lớn. Kích thước tối đa là ${formatFileSize(MAX_FILE_SIZE)}.`
     }
     
+    // Check if file is dangerous/executable
+    if (isDangerousFile(file.type, file.name)) {
+      return `File "${file.name}" không được phép upload. Các file thực thi (.exe, .bat, .sh, v.v.) bị cấm vì lý do bảo mật.`
+    }
+    
     if (!acceptedTypes.includes(file.type)) {
-      return `File "${file.name}" không được hỗ trợ.`
+      return `File "${file.name}" không được hỗ trợ. Chỉ hỗ trợ: ảnh, video, PDF, Word, Excel, PowerPoint, và file nén.`
     }
     
     return null
@@ -75,11 +82,11 @@ const FileUpload: React.FC<FileUploadProps> = ({
       if (multiple && fileArray.length > 1) {
         // Upload multiple files
         console.log('📤 Uploading multiple files...')
-        uploadedFiles = await uploadMultipleFiles(fileArray)
+        uploadedFiles = await uploadMultipleFiles(fileArray, userId)
       } else {
         // Upload single file
         console.log('📤 Uploading single file...')
-        const uploadedFile = await uploadFile(fileArray[0])
+        const uploadedFile = await uploadFile(fileArray[0], userId)
         uploadedFiles = [uploadedFile]
       }
 
@@ -92,7 +99,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
     } finally {
       setIsUploading(false)
     }
-  }, [disabled, maxFiles, uploadedFiles.length, acceptedTypes, multiple, onFilesUploaded])
+  }, [disabled, maxFiles, uploadedFiles.length, acceptedTypes, multiple, onFilesUploaded, userId])
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault()
@@ -350,7 +357,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
                     {file.name.length > 20 ? `${file.name.substring(0, 20)}...` : file.name}
                   </p>
                   <p className="file-size">{formatFileSize(file.size)}</p>
-                  {isDangerousFile(file.type) && (
+                  {isDangerousFile(file.type, file.name) && (
                     <p className="file-warning">⚠️ File có thể nguy hiểm</p>
                   )}
                 </div>

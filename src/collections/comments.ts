@@ -126,7 +126,6 @@ export const getComments = async (postId: string, options: {
           commentsRef,
           where('postId', '==', postId),
           where('parentId', '==', null),
-          where('isDeleted', '==', false),
           orderBy('createdAt', 'desc'),
           limit(queryLimit)
         );
@@ -135,7 +134,6 @@ export const getComments = async (postId: string, options: {
           commentsRef,
           where('postId', '==', postId),
           where('parentId', '==', null),
-          where('isDeleted', '==', false),
           orderBy('createdAt', 'asc'),
           limit(queryLimit)
         );
@@ -145,7 +143,6 @@ export const getComments = async (postId: string, options: {
           commentsRef,
           where('postId', '==', postId),
           where('parentId', '==', null),
-          where('isDeleted', '==', false),
           orderBy('upvotes', 'desc'),
           limit(queryLimit)
         );
@@ -157,7 +154,6 @@ export const getComments = async (postId: string, options: {
           commentsRef,
           where('postId', '==', postId),
           where('parentId', '==', parentId),
-          where('isDeleted', '==', false),
           orderBy('createdAt', 'desc'),
           limit(queryLimit)
         );
@@ -166,7 +162,6 @@ export const getComments = async (postId: string, options: {
           commentsRef,
           where('postId', '==', postId),
           where('parentId', '==', parentId),
-          where('isDeleted', '==', false),
           orderBy('createdAt', 'asc'),
           limit(queryLimit)
         );
@@ -175,7 +170,6 @@ export const getComments = async (postId: string, options: {
           commentsRef,
           where('postId', '==', postId),
           where('parentId', '==', parentId),
-          where('isDeleted', '==', false),
           orderBy('upvotes', 'desc'),
           limit(queryLimit)
         );
@@ -187,6 +181,7 @@ export const getComments = async (postId: string, options: {
       const data = doc.data();
       return {
         id: doc.id,
+        isDeleted: data.isDeleted || false,
         ...data,
         createdAt: data.createdAt?.toDate() || new Date(),
         updatedAt: data.updatedAt?.toDate(),
@@ -202,6 +197,7 @@ export const getComments = async (postId: string, options: {
 };
 
 // Vote cho comment
+// Vote cho comment - Frontend calculates totals from votes object
 export const voteComment = async (commentId: string, userId: string, voteType: 'up' | 'down') => {
   try {
     const commentRef = doc(db, 'comments', commentId);
@@ -209,25 +205,33 @@ export const voteComment = async (commentId: string, userId: string, voteType: '
     
     if (commentSnap.exists()) {
       const data = commentSnap.data() as Comment;
+      
+      // Prevent voting on deleted comments
+      if (data.isDeleted) {
+        throw new Error('Cannot vote on deleted comment');
+      }
+      
       const votes = data.votes || {};
       const currentVote = votes[userId];
       
-      let upvotes = data.upvotes || 0;
-      let downvotes = data.downvotes || 0;
-      
-      // Remove previous vote
-      if (currentVote === 'up') upvotes--;
-      if (currentVote === 'down') downvotes--;
-      
-      // Add new vote (if different from current)
-      if (currentVote !== voteType) {
-        votes[userId] = voteType;
-        if (voteType === 'up') upvotes++;
-        if (voteType === 'down') downvotes++;
+      // Update votes object
+      if (currentVote === voteType) {
+        // Remove vote if clicking same button
+        delete votes[userId];
       } else {
-        delete votes[userId]; // Remove vote if same
+        // Add or change vote
+        votes[userId] = voteType;
       }
       
+      // Calculate totals from votes object (frontend calculation)
+      let upvotes = 0;
+      let downvotes = 0;
+      Object.values(votes).forEach((vote: any) => {
+        if (vote === 'up') upvotes++;
+        else if (vote === 'down') downvotes++;
+      });
+      
+      // Save calculated totals to database
       await updateDoc(commentRef, { votes, upvotes, downvotes });
       return { votes, upvotes, downvotes };
     }
@@ -288,7 +292,9 @@ export const deleteComment = async (commentId: string, userId: string) => {
     await updateDoc(commentRef, {
       isDeleted: true,
       deletedAt: serverTimestamp(),
-      content: '[đã xóa]'
+      content: '[deleted]',
+      authorUsername: '[deleted]'
+      // Votes remain unchanged - they stay visible but can't be modified
     });
     
     // Giảm comment count của post
@@ -320,7 +326,6 @@ export const getCommentTree = async (postId: string, sortBy: 'newest' | 'oldest'
     const q = query(
       allCommentsRef,
       where('postId', '==', postId),
-      where('isDeleted', '==', false),
       orderBy('createdAt', 'asc') // Sắp xếp theo thời gian tạo để xây dựng tree
     );
     

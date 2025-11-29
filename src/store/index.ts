@@ -2,7 +2,9 @@
 export { useAuthStore } from './authStore'
 export { usePostsStore } from './usePostsStore'
 export { useSubredditsStore } from './useSubredditsStore'
-// export { useMessagesStore } from './useMessagesStore'
+export { useMessagesStore } from './useMessagesStore'
+export { useThemeStore } from './useThemeStore'
+export { useCaptchaStore } from './useCaptchaStore'
 
 // Thêm các export cho các store khác khi chúng được tạo
 // export { useCommentsStore } from './useCommentsStore' 

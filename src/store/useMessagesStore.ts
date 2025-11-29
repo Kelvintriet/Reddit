@@ -1,279 +1,233 @@
 import { create } from 'zustand';
-import type {
-  Message,
-  Conversation
-} from '../collections/messages';
-import {
-  sendMessage as sendMessageAPI,
-  getUserMessages,
-  getConversation,
-  markMessageAsRead,
-  deleteMessage,
-  getUserConversations,
-  getUnreadMessageCount,
-  subscribeToUserMessages
-} from '../collections/messages';
-import { useAuthStore } from './authStore';
+import type { Message } from '../collections/messages';
+import { getInboxMessages, getSentMessages, getStarredMessages, getTrashedMessages, getMessage, sendMessage, markAsRead, markAsUnread, toggleStar, moveToTrash, archiveMessage, getUnreadCount, subscribeToInboxMessages, subscribeToUnreadCount, getThreadMessages } from '../collections/messages';
 
 interface MessagesState {
-  // State
-  messages: Message[];
-  sentMessages: Message[];
-  conversations: Conversation[];
-  currentConversation: Message[];
-  unreadCount: number;
-  isLoading: boolean;
-  error: string | null;
-  
-  // Real-time subscription
-  unsubscribeMessages: (() => void) | null;
+    messages: Message[];
+    selectedMessage: Message | null;
+    unreadCount: number;
+    isLoading: boolean;
+    error: string | null;
+    currentView: 'inbox' | 'sent' | 'starred' | 'trash';
+    unsubscribeInbox: (() => void) | null;
+    unsubscribeUnread: (() => void) | null;
 
-  // Actions
-  fetchInboxMessages: () => Promise<void>;
-  fetchSentMessages: () => Promise<void>;
-  fetchConversations: () => Promise<void>;
-  fetchConversation: (otherUserId: string) => Promise<void>;
-  sendMessage: (messageData: {
-    receiverId: string;
-    receiverUsername: string;
-    subject: string;
-    content: string;
-    type?: 'message' | 'system' | 'notification';
-  }) => Promise<void>;
-  markAsRead: (messageId: string) => Promise<void>;
-  deleteMessage: (messageId: string) => Promise<void>;
-  fetchUnreadCount: () => Promise<void>;
-  subscribeToMessages: () => void;
-  unsubscribeFromMessages: () => void;
-  clearError: () => void;
-  setCurrentConversation: (messages: Message[]) => void;
+    // Actions
+    fetchInboxMessages: (userId: string) => Promise<void>;
+    fetchSentMessages: (userId: string) => Promise<void>;
+    fetchStarredMessages: (userId: string) => Promise<void>;
+    fetchTrashedMessages: (userId: string) => Promise<void>;
+    selectMessage: (messageId: string) => Promise<void>;
+    sendNewMessage: (fromUserId: string, fromUsername: string, fromDisplayName: string, fromAvatarUrl: string | undefined, toUserId: string, toUsername: string, toDisplayName: string, subject: string, body: string) => Promise<void>;
+    markMessageAsRead: (messageId: string) => Promise<void>;
+    markMessageAsUnread: (messageId: string) => Promise<void>;
+    toggleMessageStar: (messageId: string, isStarred: boolean) => Promise<void>;
+    moveMessageToTrash: (messageId: string) => Promise<void>;
+    archiveMessageAction: (messageId: string) => Promise<void>;
+    fetchUnreadCount: (userId: string) => Promise<void>;
+    setCurrentView: (view: 'inbox' | 'sent' | 'starred' | 'trash') => void;
+    subscribeToMessages: (userId: string) => void;
+    unsubscribeFromMessages: () => void;
+    clearSelection: () => void;
 }
 
 export const useMessagesStore = create<MessagesState>((set, get) => ({
-  // Initial state
-  messages: [],
-  sentMessages: [],
-  conversations: [],
-  currentConversation: [],
-  unreadCount: 0,
-  isLoading: false,
-  error: null,
-  unsubscribeMessages: null,
+    messages: [],
+    selectedMessage: null,
+    unreadCount: 0,
+    isLoading: false,
+    error: null,
+    currentView: 'inbox',
+    unsubscribeInbox: null,
+    unsubscribeUnread: null,
 
-  // Fetch inbox messages
-  fetchInboxMessages: async () => {
-    try {
-      set({ isLoading: true, error: null });
-      
-      const { user } = useAuthStore.getState();
-      if (!user) {
-        throw new Error('User not authenticated');
-      }
+    fetchInboxMessages: async (userId: string) => {
+        set({ isLoading: true, error: null });
+        try {
+            const messages = await getInboxMessages(userId);
+            set({ messages, isLoading: false });
+        } catch (error) {
+            set({ error: error instanceof Error ? error.message : 'Failed to fetch messages', isLoading: false });
+        }
+    },
 
-      const messages = await getUserMessages(user.uid, 'inbox');
-      set({ messages, isLoading: false });
-    } catch (error) {
-      set({ 
-        error: error instanceof Error ? error.message : 'Failed to fetch messages',
-        isLoading: false 
-      });
+    fetchSentMessages: async (userId: string) => {
+        set({ isLoading: true, error: null });
+        try {
+            const messages = await getSentMessages(userId);
+            set({ messages, isLoading: false });
+        } catch (error) {
+            set({ error: error instanceof Error ? error.message : 'Failed to fetch sent messages', isLoading: false });
+        }
+    },
+
+    fetchStarredMessages: async (userId: string) => {
+        set({ isLoading: true, error: null });
+        try {
+            const messages = await getStarredMessages(userId);
+            set({ messages, isLoading: false });
+        } catch (error) {
+            set({ error: error instanceof Error ? error.message : 'Failed to fetch starred messages', isLoading: false });
+        }
+    },
+
+    fetchTrashedMessages: async (userId: string) => {
+        set({ isLoading: true, error: null });
+        try {
+            const messages = await getTrashedMessages(userId);
+            set({ messages, isLoading: false });
+        } catch (error) {
+            set({ error: error instanceof Error ? error.message : 'Failed to fetch trashed messages', isLoading: false });
+        }
+    },
+
+    selectMessage: async (messageId: string) => {
+        set({ isLoading: true, error: null });
+        try {
+            const message = await getMessage(messageId);
+
+            // Load thread messages if this message is part of a thread or has replies
+            if (message) {
+                const threadId = message.threadId || messageId;
+                const threadMessages = await getThreadMessages(threadId);
+
+                // Attach replies to the message
+                message.replies = threadMessages.filter(m => m.id !== message.id);
+            }
+
+            set({ selectedMessage: message, isLoading: false });
+
+            // Mark as read if not already read
+            if (message && !message.isRead) {
+                await markAsRead(messageId);
+                // Update the message in the list
+                const messages = get().messages.map(m =>
+                    m.id === messageId ? { ...m, isRead: true } : m
+                );
+                set({ messages });
+            }
+        } catch (error) {
+            set({ error: error instanceof Error ? error.message : 'Failed to fetch message', isLoading: false });
+        }
+    },
+
+    sendNewMessage: async (fromUserId: string, fromUsername: string, fromDisplayName: string, fromAvatarUrl: string | undefined, toUserId: string, toUsername: string, toDisplayName: string, subject: string, body: string) => {
+        set({ isLoading: true, error: null });
+        try {
+            await sendMessage(fromUserId, fromUsername, fromDisplayName, fromAvatarUrl, toUserId, toUsername, toDisplayName, subject, body);
+            set({ isLoading: false });
+        } catch (error) {
+            set({ error: error instanceof Error ? error.message : 'Failed to send message', isLoading: false });
+            throw error;
+        }
+    },
+
+    markMessageAsRead: async (messageId: string) => {
+        try {
+            await markAsRead(messageId);
+            const messages = get().messages.map(m =>
+                m.id === messageId ? { ...m, isRead: true } : m
+            );
+            set({ messages });
+
+            if (get().selectedMessage?.id === messageId) {
+                set({ selectedMessage: { ...get().selectedMessage!, isRead: true } });
+            }
+        } catch (error) {
+            set({ error: error instanceof Error ? error.message : 'Failed to mark as read' });
+        }
+    },
+
+    markMessageAsUnread: async (messageId: string) => {
+        try {
+            await markAsUnread(messageId);
+            const messages = get().messages.map(m =>
+                m.id === messageId ? { ...m, isRead: false } : m
+            );
+            set({ messages });
+
+            if (get().selectedMessage?.id === messageId) {
+                set({ selectedMessage: { ...get().selectedMessage!, isRead: false } });
+            }
+        } catch (error) {
+            set({ error: error instanceof Error ? error.message : 'Failed to mark as unread' });
+        }
+    },
+
+    toggleMessageStar: async (messageId: string, isStarred: boolean) => {
+        try {
+            await toggleStar(messageId, isStarred);
+            const messages = get().messages.map(m =>
+                m.id === messageId ? { ...m, isStarred: !isStarred } : m
+            );
+            set({ messages });
+
+            if (get().selectedMessage?.id === messageId) {
+                set({ selectedMessage: { ...get().selectedMessage!, isStarred: !isStarred } });
+            }
+        } catch (error) {
+            set({ error: error instanceof Error ? error.message : 'Failed to toggle star' });
+        }
+    },
+
+    moveMessageToTrash: async (messageId: string) => {
+        try {
+            await moveToTrash(messageId);
+            const messages = get().messages.filter(m => m.id !== messageId);
+            set({ messages, selectedMessage: null });
+        } catch (error) {
+            set({ error: error instanceof Error ? error.message : 'Failed to move to trash' });
+        }
+    },
+
+    archiveMessageAction: async (messageId: string) => {
+        try {
+            await archiveMessage(messageId);
+            const messages = get().messages.filter(m => m.id !== messageId);
+            set({ messages, selectedMessage: null });
+        } catch (error) {
+            set({ error: error instanceof Error ? error.message : 'Failed to archive message' });
+        }
+    },
+
+    fetchUnreadCount: async (userId: string) => {
+        try {
+            const count = await getUnreadCount(userId);
+            set({ unreadCount: count });
+        } catch (error) {
+            console.error('Failed to fetch unread count:', error);
+        }
+    },
+
+    setCurrentView: (view: 'inbox' | 'sent' | 'starred' | 'trash') => {
+        set({ currentView: view, selectedMessage: null });
+    },
+
+    subscribeToMessages: (userId: string) => {
+        // Unsubscribe from previous subscriptions
+        get().unsubscribeFromMessages();
+
+        // Subscribe to inbox messages
+        const unsubInbox = subscribeToInboxMessages(userId, (messages) => {
+            set({ messages });
+        });
+
+        // Subscribe to unread count
+        const unsubUnread = subscribeToUnreadCount(userId, (count) => {
+            set({ unreadCount: count });
+        });
+
+        set({ unsubscribeInbox: unsubInbox, unsubscribeUnread: unsubUnread });
+    },
+
+    unsubscribeFromMessages: () => {
+        const { unsubscribeInbox, unsubscribeUnread } = get();
+        if (unsubscribeInbox) unsubscribeInbox();
+        if (unsubscribeUnread) unsubscribeUnread();
+        set({ unsubscribeInbox: null, unsubscribeUnread: null });
+    },
+
+    clearSelection: () => {
+        set({ selectedMessage: null });
     }
-  },
-
-  // Fetch sent messages
-  fetchSentMessages: async () => {
-    try {
-      set({ isLoading: true, error: null });
-      
-      const { user } = useAuthStore.getState();
-      if (!user) {
-        throw new Error('User not authenticated');
-      }
-
-      const sentMessages = await getUserMessages(user.uid, 'sent');
-      set({ sentMessages, isLoading: false });
-    } catch (error) {
-      set({ 
-        error: error instanceof Error ? error.message : 'Failed to fetch sent messages',
-        isLoading: false 
-      });
-    }
-  },
-
-  // Fetch conversations
-  fetchConversations: async () => {
-    try {
-      set({ isLoading: true, error: null });
-      
-      const { user } = useAuthStore.getState();
-      if (!user) {
-        throw new Error('User not authenticated');
-      }
-
-      const conversations = await getUserConversations(user.uid);
-      set({ conversations, isLoading: false });
-    } catch (error) {
-      set({ 
-        error: error instanceof Error ? error.message : 'Failed to fetch conversations',
-        isLoading: false 
-      });
-    }
-  },
-
-  // Fetch conversation with specific user
-  fetchConversation: async (otherUserId: string) => {
-    try {
-      set({ isLoading: true, error: null });
-      
-      const { user } = useAuthStore.getState();
-      if (!user) {
-        throw new Error('User not authenticated');
-      }
-
-      const conversation = await getConversation(user.uid, otherUserId);
-      set({ currentConversation: conversation, isLoading: false });
-    } catch (error) {
-      set({ 
-        error: error instanceof Error ? error.message : 'Failed to fetch conversation',
-        isLoading: false 
-      });
-    }
-  },
-
-  // Send message
-  sendMessage: async (messageData) => {
-    try {
-      set({ isLoading: true, error: null });
-      
-      const { user } = useAuthStore.getState();
-      if (!user) {
-        throw new Error('User not authenticated');
-      }
-
-      await sendMessageAPI({
-        senderId: user.uid,
-        senderUsername: user.username || user.displayName || 'Unknown',
-        senderAvatarUrl: user.avatarUrl || user.photoURL,
-        ...messageData
-      });
-
-      // Refresh messages and conversations
-      await Promise.all([
-        get().fetchInboxMessages(),
-        get().fetchSentMessages(),
-        get().fetchConversations(),
-        get().fetchUnreadCount()
-      ]);
-
-      set({ isLoading: false });
-    } catch (error) {
-      set({ 
-        error: error instanceof Error ? error.message : 'Failed to send message',
-        isLoading: false 
-      });
-    }
-  },
-
-  // Mark message as read
-  markAsRead: async (messageId: string) => {
-    try {
-      await markMessageAsRead(messageId);
-      
-      // Update local state
-      set(state => ({
-        messages: state.messages.map(msg => 
-          msg.id === messageId ? { ...msg, isRead: true } : msg
-        ),
-        currentConversation: state.currentConversation.map(msg => 
-          msg.id === messageId ? { ...msg, isRead: true } : msg
-        )
-      }));
-
-      // Refresh unread count
-      await get().fetchUnreadCount();
-    } catch (error) {
-      set({ 
-        error: error instanceof Error ? error.message : 'Failed to mark message as read'
-      });
-    }
-  },
-
-  // Delete message
-  deleteMessage: async (messageId: string) => {
-    try {
-      const { user } = useAuthStore.getState();
-      if (!user) {
-        throw new Error('User not authenticated');
-      }
-
-      await deleteMessage(messageId, user.uid);
-      
-      // Remove from local state
-      set(state => ({
-        messages: state.messages.filter(msg => msg.id !== messageId),
-        sentMessages: state.sentMessages.filter(msg => msg.id !== messageId),
-        currentConversation: state.currentConversation.filter(msg => msg.id !== messageId)
-      }));
-
-      // Refresh conversations
-      await get().fetchConversations();
-    } catch (error) {
-      set({ 
-        error: error instanceof Error ? error.message : 'Failed to delete message'
-      });
-    }
-  },
-
-  // Fetch unread count
-  fetchUnreadCount: async () => {
-    try {
-      const { user } = useAuthStore.getState();
-      if (!user) return;
-
-      const unreadCount = await getUnreadMessageCount(user.uid);
-      set({ unreadCount });
-    } catch (error) {
-      console.error('Failed to fetch unread count:', error);
-    }
-  },
-
-  // Subscribe to real-time messages
-  subscribeToMessages: () => {
-    const { user } = useAuthStore.getState();
-    if (!user) return;
-
-    // Unsubscribe from previous subscription
-    const currentUnsubscribe = get().unsubscribeMessages;
-    if (currentUnsubscribe) {
-      currentUnsubscribe();
-    }
-
-    // Subscribe to new messages
-    const unsubscribe = subscribeToUserMessages(user.uid, (messages) => {
-      set({ messages });
-      // Update unread count
-      get().fetchUnreadCount();
-    });
-
-    set({ unsubscribeMessages: unsubscribe });
-  },
-
-  // Unsubscribe from real-time messages
-  unsubscribeFromMessages: () => {
-    const unsubscribe = get().unsubscribeMessages;
-    if (unsubscribe) {
-      unsubscribe();
-      set({ unsubscribeMessages: null });
-    }
-  },
-
-  // Clear error
-  clearError: () => {
-    set({ error: null });
-  },
-
-  // Set current conversation
-  setCurrentConversation: (messages: Message[]) => {
-    set({ currentConversation: messages });
-  }
 }));

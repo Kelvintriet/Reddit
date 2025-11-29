@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuthStore, useSubredditsStore } from '../store';
 import { validateSettingsToken } from '../services/settingsTokenService';
-import BotManager from '../components/subreddit/BotManager';
 import './SubredditSettings.css';
 
 const SubredditSettings: React.FC = () => {
@@ -11,11 +10,11 @@ const SubredditSettings: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuthStore();
   const { currentSubreddit, fetchSubredditByName, updateSubreddit, deleteSubreddit } = useSubredditsStore();
-  
+
   const [isValidToken, setIsValidToken] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'general' | 'rules' | 'bots' | 'danger'>('general');
-  
+  const [activeTab, setActiveTab] = useState<'general' | 'rules' | 'danger'>('general');
+
   // Form states
   const [description, setDescription] = useState('');
   const [rules, setRules] = useState<string[]>(['']);
@@ -40,7 +39,7 @@ const SubredditSettings: React.FC = () => {
       try {
         // Fetch subreddit data
         await fetchSubredditByName(subredditName);
-        
+
         // Validate token and ownership
         const isValid = await validateSettingsToken(subredditName, token, user.uid);
         if (!isValid) {
@@ -153,7 +152,7 @@ const SubredditSettings: React.FC = () => {
     <div className="subreddit-settings">
       <div className="settings-header">
         <h1>Cài đặt r/{currentSubreddit.name}</h1>
-        <button 
+        <button
           onClick={() => navigate(`/r/${currentSubreddit.name}`)}
           className="back-button"
         >
@@ -162,25 +161,19 @@ const SubredditSettings: React.FC = () => {
       </div>
 
       <div className="settings-tabs">
-        <button 
+        <button
           className={`tab ${activeTab === 'general' ? 'active' : ''}`}
           onClick={() => setActiveTab('general')}
         >
           Chung
         </button>
-        <button 
+        <button
           className={`tab ${activeTab === 'rules' ? 'active' : ''}`}
           onClick={() => setActiveTab('rules')}
         >
           Quy tắc
         </button>
-        <button 
-          className={`tab ${activeTab === 'bots' ? 'active' : ''}`}
-          onClick={() => setActiveTab('bots')}
-        >
-          Bot
-        </button>
-        <button 
+        <button
           className={`tab ${activeTab === 'danger' ? 'active' : ''}`}
           onClick={() => setActiveTab('danger')}
         >
@@ -192,7 +185,7 @@ const SubredditSettings: React.FC = () => {
         {activeTab === 'general' && (
           <div className="settings-section">
             <h2>Cài đặt chung</h2>
-            
+
             <div className="form-group">
               <label htmlFor="description">Mô tả cộng đồng</label>
               <textarea
@@ -227,13 +220,13 @@ const SubredditSettings: React.FC = () => {
         {activeTab === 'rules' && (
           <div className="settings-section">
             <h2>Quy tắc cộng đồng</h2>
-            
+
             {rules.map((rule, index) => (
               <div key={index} className="rule-item">
                 <div className="rule-header">
                   <span>Quy tắc {index + 1}</span>
                   {rules.length > 1 && (
-                    <button 
+                    <button
                       onClick={() => removeRule(index)}
                       className="remove-rule-button"
                     >
@@ -260,23 +253,16 @@ const SubredditSettings: React.FC = () => {
           </div>
         )}
 
-        {activeTab === 'bots' && (
-          <div className="settings-section">
-            <h2>Quản lý Bot</h2>
-            <BotManager subredditName={currentSubreddit.name} />
-          </div>
-        )}
-
         {activeTab === 'danger' && (
           <div className="settings-section danger-zone">
             <h2>Vùng nguy hiểm</h2>
-            
+
             <div className="danger-item">
               <h3>Giải tán cộng đồng</h3>
               <p>Hành động này sẽ xóa vĩnh viễn cộng đồng và tất cả dữ liệu liên quan. Không thể hoàn tác!</p>
-              
+
               {!showDisbandConfirm ? (
-                <button 
+                <button
                   onClick={() => setShowDisbandConfirm(true)}
                   className="danger-button"
                 >
@@ -295,7 +281,7 @@ const SubredditSettings: React.FC = () => {
                     <button onClick={handleDisband} className="danger-button">
                       Xác nhận giải tán
                     </button>
-                    <button 
+                    <button
                       onClick={() => {
                         setShowDisbandConfirm(false);
                         setDisbandConfirmText('');

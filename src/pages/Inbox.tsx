@@ -1,591 +1,499 @@
-import React, { useState, useEffect } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { useAuthStore } from '../store/authStore';
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuthStore } from '../store';
 import { useMessagesStore } from '../store/useMessagesStore';
+import { createReplyToken } from '../collections/messages';
+import { Mail, Star, Archive, Send, Trash2, Search, ArrowLeft, MoreVertical, Reply, Forward, MailOpen } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { vi } from 'date-fns/locale';
+import './Inbox.css';
 
-const Inbox: React.FC = () => {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const { user } = useAuthStore();
-  const {
-    messages,
-    sentMessages,
-    conversations,
-    unreadCount,
-    isLoading,
-    error,
-    fetchInboxMessages,
-    fetchSentMessages,
-    fetchConversations,
-    markAsRead,
-    deleteMessage,
-    subscribeToMessages,
-    unsubscribeFromMessages,
-    clearError
-  } = useMessagesStore();
+const Inbox = () => {
+    const { user } = useAuthStore();
+    const navigate = useNavigate();
+    const {
+        messages,
+        selectedMessage,
+        unreadCount,
+        isLoading,
+        currentView,
+        fetchInboxMessages,
+        fetchSentMessages,
+        fetchStarredMessages,
+        fetchTrashedMessages,
+        selectMessage,
+        markMessageAsUnread,
+        toggleMessageStar,
+        moveMessageToTrash,
+        archiveMessageAction,
+        setCurrentView,
+        subscribeToMessages,
+        unsubscribeFromMessages,
+        clearSelection
+    } = useMessagesStore();
 
-  const [activeTab, setActiveTab] = useState<'inbox' | 'sent' | 'conversations' | 'system'>('inbox');
-  const [selectedMessages, setSelectedMessages] = useState<string[]>([]);
-  const [showCompose, setShowCompose] = useState(false);
-  const [composeData, setComposeData] = useState({
-    to: '',
-    subject: '',
-    content: ''
-  });
-  const [showAttachmentMenu, setShowAttachmentMenu] = useState(false);
-  const [isSending, setIsSending] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [expandedReplies, setExpandedReplies] = useState<{ [key: string]: boolean }>({});
 
-  useEffect(() => {
-    if (!user) {
-      navigate('/login');
-      return;
-    }
-
-    // Initial data fetch
-    fetchInboxMessages();
-    fetchSentMessages();
-    fetchConversations();
-
-    // Subscribe to real-time updates
-    subscribeToMessages();
-
-    // Check for compose hash
-    if (location.hash === '#compose') {
-      setShowCompose(true);
-    }
-
-    // Cleanup subscription on unmount
-    return () => {
-      unsubscribeFromMessages();
-    };
-  }, [user, navigate, location.hash]);
-
-  const handleTabChange = (tab: 'inbox' | 'sent' | 'conversations' | 'system') => {
-    setActiveTab(tab);
-    setSelectedMessages([]);
-    clearError();
-  };
-
-  const handleComposeOpen = () => {
-    setShowCompose(true);
-    window.history.pushState(null, '', '/inbox#compose');
-  };
-
-  const handleComposeClose = () => {
-    setShowCompose(false);
-    setComposeData({ to: '', subject: '', content: '' });
-    setShowAttachmentMenu(false);
-    window.history.pushState(null, '', '/inbox');
-  };
-
-  const handleComposeSend = async () => {
-    if (!composeData.to.trim() || !composeData.subject.trim() || !composeData.content.trim()) {
-      alert('Please fill in all fields');
-      return;
-    }
-
-    setIsSending(true);
-    try {
-      // In a real app, you'd send the message here
-      console.log('Sending message:', composeData);
-
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      handleComposeClose();
-      alert('Message sent successfully!');
-    } catch (error) {
-      console.error('Error sending message:', error);
-      alert('Error sending message');
-    } finally {
-      setIsSending(false);
-    }
-  };
-
-  const handleMessageClick = async (messageId: string, isRead: boolean) => {
-    if (!isRead) {
-      await markAsRead(messageId);
-    }
-    navigate(`/message/${messageId}`);
-  };
-
-  const handleSelectMessage = (messageId: string) => {
-    setSelectedMessages(prev => 
-      prev.includes(messageId) 
-        ? prev.filter(id => id !== messageId)
-        : [...prev, messageId]
-    );
-  };
-
-  const handleSelectAll = () => {
-    const currentMessages = activeTab === 'inbox' ? messages : sentMessages;
-    if (selectedMessages.length === currentMessages.length) {
-      setSelectedMessages([]);
-    } else {
-      setSelectedMessages(currentMessages.map(msg => msg.id));
-    }
-  };
-
-  const handleDeleteSelected = async () => {
-    if (selectedMessages.length === 0) return;
-    
-    if (confirm(`Bạn có chắc chắn muốn xóa ${selectedMessages.length} tin nhắn?`)) {
-      try {
-        await Promise.all(selectedMessages.map(id => deleteMessage(id)));
-        setSelectedMessages([]);
-        
-        // Refresh current tab
-        if (activeTab === 'inbox') {
-          fetchInboxMessages();
-        } else if (activeTab === 'sent') {
-          fetchSentMessages();
+    useEffect(() => {
+        if (user) {
+            subscribeToMessages(user.uid);
         }
-      } catch (error) {
-        console.error('Error deleting messages:', error);
-      }
-    }
-  };
 
-  const formatMessageTime = (date: Date) => {
-    return formatDistanceToNow(date, { addSuffix: true, locale: vi });
-  };
+        return () => {
+            unsubscribeFromMessages();
+        };
+    }, [user, subscribeToMessages, unsubscribeFromMessages]);
 
-  const truncateContent = (content: string, maxLength: number = 100) => {
-    return content.length > maxLength ? content.substring(0, maxLength) + '...' : content;
-  };
+    const handleViewChange = async (view: 'inbox' | 'sent' | 'starred' | 'trash') => {
+        if (!user) return;
 
-  // System messages (app updates, bot messages)
-  const systemMessages = [
-    {
-      id: 'sys-1',
-      type: 'update',
-      title: 'New App Version Available',
-      content: 'Version 2.1.0 is now available with improved messaging features and bug fixes.',
-      createdAt: new Date(Date.now() - 86400000), // 1 day ago
-      isRead: false
-    },
-    {
-      id: 'sys-2',
-      type: 'bot',
-      title: 'Bot Message from r/technology',
-      content: 'Your post has been automatically approved by our moderation bot.',
-      createdAt: new Date(Date.now() - 172800000), // 2 days ago
-      isRead: true
-    }
-  ];
+        setCurrentView(view);
 
-  const [activeFilter, setActiveFilter] = useState<'all' | 'unread'>('all');
+        switch (view) {
+            case 'inbox':
+                await fetchInboxMessages(user.uid);
+                break;
+            case 'sent':
+                await fetchSentMessages(user.uid);
+                break;
+            case 'starred':
+                await fetchStarredMessages(user.uid);
+                break;
+            case 'trash':
+                await fetchTrashedMessages(user.uid);
+                break;
+        }
+    };
 
-  const getFilteredMessages = () => {
-    const currentMessages = activeTab === 'inbox' ? messages :
-                           activeTab === 'sent' ? sentMessages :
-                           activeTab === 'system' ? systemMessages : [];
+    const handleMessageClick = (messageId: string) => {
+        selectMessage(messageId);
+    };
 
-    if (activeFilter === 'unread') {
-      return currentMessages.filter(msg => !msg.isRead);
-    }
-    return currentMessages;
-  };
+    const handleBack = () => {
+        clearSelection();
+    };
 
-  if (!user) {
-    return (
-      <div className="inbox-container">
-        <div className="auth-required">
-          <h2>Đăng nhập để xem tin nhắn</h2>
-          <Link to="/login" className="login-button">Đăng nhập</Link>
-        </div>
-      </div>
+    const handleStar = () => {
+        if (selectedMessage) {
+            toggleMessageStar(selectedMessage.id, selectedMessage.isStarred);
+        }
+    };
+
+    const handleMarkUnread = () => {
+        if (selectedMessage) {
+            markMessageAsUnread(selectedMessage.id);
+        }
+    };
+
+    const handleArchive = () => {
+        if (selectedMessage) {
+            archiveMessageAction(selectedMessage.id);
+        }
+    };
+
+    const handleDelete = () => {
+        if (selectedMessage) {
+            moveMessageToTrash(selectedMessage.id);
+        }
+    };
+
+    const handleReply = async () => {
+        if (selectedMessage && user) {
+            try {
+                // Generate reply token
+                const token = await createReplyToken(selectedMessage.id, user.uid);
+                // Navigate to secure reply page
+                navigate(`/reply/${token}/${selectedMessage.fromUsername || 'user'}`);
+            } catch (error) {
+                console.error('Error creating reply token:', error);
+            }
+        }
+    };
+
+    const filteredMessages = messages.filter(msg =>
+        msg.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        msg.body.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (currentView === 'inbox' ? msg.fromDisplayName : msg.toDisplayName).toLowerCase().includes(searchQuery.toLowerCase())
     );
-  }
 
-  return (
-    <div className="inbox-container">
-      {/* Left Sidebar */}
-      <div className="inbox-sidebar">
-        {/* Sidebar Header */}
-        <div className="sidebar-header">
-          <button onClick={handleComposeOpen} className="new-message-btn">
-            <span className="new-message-icon">✏️</span>
-            New Message
-          </button>
-        </div>
+    const getUnreadInboxCount = () => {
+        return currentView === 'inbox' ? unreadCount : 0;
+    };
 
-        {/* Navigation */}
-        <div className="inbox-nav">
-          <div className="nav-section">
-            <button
-              className={`nav-item ${activeTab === 'inbox' ? 'active' : ''}`}
-              onClick={() => handleTabChange('inbox')}
-            >
-              <span className="nav-icon">📥</span>
-              Inbox
-              {unreadCount > 0 && <span className="nav-count">{unreadCount}</span>}
-            </button>
-            <button
-              className={`nav-item ${activeTab === 'sent' ? 'active' : ''}`}
-              onClick={() => handleTabChange('sent')}
-            >
-              <span className="nav-icon">📤</span>
-              Sent
-            </button>
-            <button
-              className={`nav-item ${activeTab === 'conversations' ? 'active' : ''}`}
-              onClick={() => handleTabChange('conversations')}
-            >
-              <span className="nav-icon">💬</span>
-              Conversations
-            </button>
-            <button
-              className={`nav-item ${activeTab === 'system' ? 'active' : ''}`}
-              onClick={() => handleTabChange('system')}
-            >
-              <span className="nav-icon">🔔</span>
-              System Messages
-              {systemMessages.filter(msg => !msg.isRead).length > 0 && (
-                <span className="nav-count">{systemMessages.filter(msg => !msg.isRead).length}</span>
-              )}
-            </button>
-          </div>
+    const getStarredCount = () => {
+        return messages.filter(m => m.isStarred).length;
+    };
 
-          {/* Recent Chats */}
-          <div className="recent-chats">
-            <div className="recent-chats-title">
-              Recent Chats
-              <button onClick={handleComposeOpen} className="start-chat-btn">+</button>
-            </div>
-            {conversations.slice(0, 5).map(conversation => {
-              const otherUserId = conversation.participants.find(id => id !== user.uid);
-              const otherUsername = conversation.participantUsernames.find(username =>
-                username !== (user.username || user.displayName)
-              );
-              const unreadForUser = conversation.unreadCount[user.uid] || 0;
-
-              return (
-                <div
-                  key={conversation.id}
-                  className="chat-item"
-                  onClick={() => navigate(`/conversation/${otherUserId}`)}
-                >
-                  <div className={`chat-avatar ${Math.random() > 0.5 ? 'online' : ''}`}>
-                    {otherUsername?.charAt(0).toUpperCase() || '?'}
-                  </div>
-                  <div className="chat-info">
-                    <div className="chat-name">{otherUsername}</div>
-                    <div className="chat-status">
-                      {formatMessageTime(conversation.lastMessageAt)}
-                    </div>
-                  </div>
-                  {unreadForUser > 0 && (
-                    <div className="chat-notification">{unreadForUser}</div>
-                  )}
+    if (!user) {
+        return (
+            <div className="inbox-container">
+                <div className="inbox-empty">
+                    <Mail size={48} />
+                    <h2>Vui lòng đăng nhập để xem tin nhắn</h2>
                 </div>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-
-      {/* Main Content */}
-      <div className="inbox-content">
-        {/* Top Header */}
-        <div className="inbox-header">
-          <div className="header-search">
-            <span className="search-icon">🔍</span>
-            <input
-              type="text"
-              className="search-input"
-              placeholder="Search from Message"
-            />
-            <span className="search-dropdown">▼</span>
-          </div>
-          <div className="header-actions">
-            <button className="theme-toggle">☀️</button>
-            <button className="refresh-btn">🔄</button>
-          </div>
-        </div>
-
-        {/* Filter Tabs */}
-        <div className="filter-tabs">
-          <div className="filter-list">
-            <button
-              className={`filter-item ${activeFilter === 'all' ? 'active' : ''}`}
-              onClick={() => setActiveFilter('all')}
-            >
-              <span className="filter-dot"></span>
-              All Messages
-              <span className="filter-count">
-                {activeTab === 'inbox' ? messages.length :
-                 activeTab === 'sent' ? sentMessages.length :
-                 activeTab === 'system' ? systemMessages.length :
-                 conversations.length}
-              </span>
-            </button>
-            <button
-              className={`filter-item ${activeFilter === 'unread' ? 'active' : ''}`}
-              onClick={() => setActiveFilter('unread')}
-            >
-              <span className="filter-dot"></span>
-              Unread
-              <span className="filter-count">
-                {activeTab === 'system' ? systemMessages.filter(msg => !msg.isRead).length : unreadCount}
-              </span>
-            </button>
-          </div>
-        </div>
-
-        {/* Messages List */}
-        <div className="messages-list">
-          {error && (
-            <div className="error-message">
-              <span>{error}</span>
-              <button onClick={clearError}>✕</button>
             </div>
-          )}
+        );
+    }
 
-          {isLoading ? (
-            <div className="loading-state">
-              <div className="loading-spinner"></div>
-              <p>Loading messages...</p>
-            </div>
-          ) : activeTab === 'conversations' ? (
-            <div className="conversations-list">
-              {conversations.length === 0 ? (
-                <div className="empty-state">
-                  <h3>No conversations</h3>
-                  <p>Start a new conversation to see it here</p>
+    return (
+        <div className="inbox-container">
+            {/* Sidebar */}
+            <div className="inbox-sidebar">
+                <div className="inbox-sidebar-header">
+                    <Mail size={24} />
+                    <h2>Hộp thư</h2>
                 </div>
-              ) : (
-                conversations.map(conversation => {
-                  const otherUserId = conversation.participants.find(id => id !== user.uid);
-                  const otherUsername = conversation.participantUsernames.find(username =>
-                    username !== (user.username || user.displayName)
-                  );
-                  const unreadForUser = conversation.unreadCount[user.uid] || 0;
 
-                  return (
-                    <div
-                      key={conversation.id}
-                      className={`message-item ${unreadForUser > 0 ? 'unread' : ''}`}
-                      onClick={() => navigate(`/conversation/${otherUserId}`)}
-                    >
-                      <div className="message-avatar online">
-                        {otherUsername?.charAt(0).toUpperCase() || '?'}
-                      </div>
-                      <div className="message-content">
-                        <div className="message-header">
-                          <div className="message-sender">{otherUsername}</div>
-                          <div className="message-time">
-                            {formatMessageTime(conversation.lastMessageAt)}
-                          </div>
-                        </div>
-                        <div className="message-preview">{truncateContent(conversation.lastMessage)}</div>
-                      </div>
-                      {unreadForUser > 0 && (
-                        <div className="chat-notification">{unreadForUser}</div>
-                      )}
-                    </div>
-                  );
-                })
-              )}
-            </div>
-          ) : activeTab === 'system' ? (
-            <div className="system-messages-list">
-              {getFilteredMessages().length === 0 ? (
-                <div className="empty-state">
-                  <h3>No system messages</h3>
-                  <p>System updates and bot messages will appear here</p>
-                </div>
-              ) : (
-                getFilteredMessages().map((message: any) => (
-                  <div
-                    key={message.id}
-                    className={`message-item system-message ${!message.isRead ? 'unread' : ''}`}
-                  >
-                    <div className="message-avatar system">
-                      {message.type === 'update' ? '🔄' : '🤖'}
-                    </div>
-                    <div className="message-content">
-                      <div className="message-header">
-                        <div className="message-sender">{message.title}</div>
-                        {!message.isRead && (
-                          <span className="message-badge new">NEW</span>
-                        )}
-                      </div>
-                      <div className="message-preview">{truncateContent(message.content)}</div>
-                    </div>
-                    <div className="message-meta">
-                      <div className="message-time">
-                        {formatMessageTime(message.createdAt)}
-                      </div>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          ) : (
-            <>
-              <div className="date-separator">Today</div>
-              {getFilteredMessages().length === 0 ? (
-                <div className="empty-state">
-                  <h3>No messages</h3>
-                  <p>Your {activeTab} is empty</p>
-                </div>
-              ) : (
-                getFilteredMessages().map((message: any, index: number) => {
-                  const allMessages = getFilteredMessages();
-                  const showDateSeparator = index > 0 &&
-                    new Date(message.createdAt).toDateString() !==
-                    new Date(allMessages[index - 1].createdAt).toDateString();
-
-                  return (
-                    <React.Fragment key={message.id}>
-                      {showDateSeparator && (
-                        <div className="date-separator">Yesterday</div>
-                      )}
-                      <div
-                        className={`message-item ${!message.isRead && activeTab === 'inbox' ? 'unread' : ''}`}
-                        onClick={() => handleMessageClick(message.id, message.isRead)}
-                      >
-                        <div className="message-avatar online">
-                          {(activeTab === 'inbox' ? message.senderUsername : message.receiverUsername)?.charAt(0).toUpperCase() || 'U'}
-                        </div>
-                        <div className="message-content">
-                          <div className="message-header">
-                            <div className="message-sender">
-                              {activeTab === 'inbox' ? message.senderUsername : message.receiverUsername}
-                            </div>
-                            <div className="message-subject">{message.subject}</div>
-                            {!message.isRead && activeTab === 'inbox' && (
-                              <span className="message-badge new">NEW</span>
-                            )}
-                          </div>
-                          <div className="message-preview">
-                            {activeTab === 'sent' ? 'You: ' : ''}{truncateContent(message.content)}
-                          </div>
-                        </div>
-                        <div className="message-meta">
-                          <div className="message-time">
-                            {formatMessageTime(message.createdAt)}
-                          </div>
-                          <div className="message-actions">
-                            <button className="message-action-btn" title="Archive">📁</button>
-                            <button className="message-action-btn" title="Delete">🗑️</button>
-                          </div>
-                        </div>
-                      </div>
-                    </React.Fragment>
-                  );
-                })
-              )}
-            </>
-          )}
-        </div>
-      </div>
-
-      {/* Compose Popup Overlay */}
-      {showCompose && (
-        <div className="compose-overlay">
-          <div className="compose-popup">
-            <div className="compose-header">
-              <div className="compose-title">
-                <span className="compose-icon">✉️</span>
-                New Message
-              </div>
-              <div className="compose-actions">
-                <button className="compose-minimize">−</button>
-                <button className="compose-expand">⛶</button>
-                <button onClick={handleComposeClose} className="compose-close">✕</button>
-              </div>
-            </div>
-
-            <div className="compose-form">
-              <div className="compose-field">
-                <label>To</label>
-                <input
-                  type="text"
-                  value={composeData.to}
-                  onChange={(e) => setComposeData({...composeData, to: e.target.value})}
-                  placeholder="Enter username"
-                />
-                <button className="cc-bcc-btn">Cc Bcc</button>
-              </div>
-
-              <div className="compose-field">
-                <label>Subject</label>
-                <input
-                  type="text"
-                  value={composeData.subject}
-                  onChange={(e) => setComposeData({...composeData, subject: e.target.value})}
-                  placeholder="Subject"
-                />
-              </div>
-
-              <div className="compose-body">
-                <textarea
-                  value={composeData.content}
-                  onChange={(e) => setComposeData({...composeData, content: e.target.value})}
-                  placeholder="Compose your message..."
-                  rows={12}
-                />
-              </div>
-
-              <div className="compose-toolbar">
-                <button
-                  onClick={handleComposeSend}
-                  disabled={isSending}
-                  className="send-btn"
-                >
-                  {isSending ? 'Sending...' : 'Send'}
+                <button className="inbox-compose-btn" onClick={() => navigate('/compose')}>
+                    Soạn tin nhắn
                 </button>
 
-                <div className="compose-tools">
-                  <button
-                    onClick={() => setShowAttachmentMenu(!showAttachmentMenu)}
-                    className="tool-btn attachment-btn"
-                  >
-                    📎
-                  </button>
-                  <button className="tool-btn">🔗</button>
-                  <button className="tool-btn">😊</button>
-                  <button className="tool-btn">⚠️</button>
-                  <button className="tool-btn">🖼️</button>
-                  <button className="tool-btn">🔒</button>
-                  <button className="tool-btn">✏️</button>
-                  <button className="tool-btn">⋮</button>
-                </div>
+                <nav className="inbox-nav">
+                    <button
+                        className={`inbox-nav-item ${currentView === 'inbox' ? 'active' : ''}`}
+                        onClick={() => handleViewChange('inbox')}
+                    >
+                        <Mail size={20} />
+                        <span>Hộp thư đến</span>
+                        {getUnreadInboxCount() > 0 && (
+                            <span className="inbox-badge">{getUnreadInboxCount()}</span>
+                        )}
+                    </button>
 
-                <button className="delete-draft-btn">🗑️</button>
-              </div>
+                    <button
+                        className={`inbox-nav-item ${currentView === 'starred' ? 'active' : ''}`}
+                        onClick={() => handleViewChange('starred')}
+                    >
+                        <Star size={20} />
+                        <span>Đã gắn sao</span>
+                        {currentView !== 'starred' && getStarredCount() > 0 && (
+                            <span className="inbox-badge">{getStarredCount()}</span>
+                        )}
+                    </button>
 
-              {/* Attachment Menu */}
-              {showAttachmentMenu && (
-                <div className="attachment-menu">
-                  <div className="attachment-option">
-                    <span className="attachment-icon">📁</span>
-                    My Drive
-                  </div>
-                  <div className="attachment-option">
-                    <span className="attachment-icon">📤</span>
-                    Upload
-                  </div>
-                  <div className="attachment-option">
-                    <span className="attachment-icon">📷</span>
-                    Insert photo
-                  </div>
-                  <div className="attachment-option">
-                    <span className="attachment-icon">📹</span>
-                    Insert video
-                  </div>
-                </div>
-              )}
+                    <button
+                        className={`inbox-nav-item ${currentView === 'sent' ? 'active' : ''}`}
+                        onClick={() => handleViewChange('sent')}
+                    >
+                        <Send size={20} />
+                        <span>Đã gửi</span>
+                    </button>
+
+                    <button
+                        className={`inbox-nav-item ${currentView === 'trash' ? 'active' : ''}`}
+                        onClick={() => handleViewChange('trash')}
+                    >
+                        <Trash2 size={20} />
+                        <span>Thùng rác</span>
+                    </button>
+                </nav>
             </div>
-          </div>
+
+            {/* Message List */}
+            <div className="inbox-message-list">
+                <div className="inbox-list-header">
+                    <h3>
+                        {currentView === 'inbox' && 'Hộp thư đến'}
+                        {currentView === 'sent' && 'Đã gửi'}
+                        {currentView === 'starred' && 'Đã gắn sao'}
+                        {currentView === 'trash' && 'Thùng rác'}
+                        {filteredMessages.length > 0 && ` (${filteredMessages.length})`}
+                    </h3>
+
+                    <div className="inbox-search">
+                        <Search size={18} />
+                        <input
+                            type="text"
+                            placeholder="Tìm kiếm..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                        />
+                    </div>
+                </div>
+
+                <div className="inbox-list-items">
+                    {isLoading && (
+                        <div className="inbox-loading">
+                            <div className="inbox-spinner"></div>
+                            <p>Đang tải tin nhắn...</p>
+                        </div>
+                    )}
+
+                    {!isLoading && filteredMessages.length === 0 && (
+                        <div className="inbox-empty-list">
+                            <Mail size={48} />
+                            <p>Không có tin nhắn</p>
+                        </div>
+                    )}
+
+                    {!isLoading && filteredMessages.map((message, index) => (
+                        <div
+                            key={`${currentView}-${message.id}-${index}`}
+                            className={`inbox-message-item ${!message.isRead && currentView === 'inbox' ? 'unread' : ''} ${selectedMessage?.id === message.id ? 'selected' : ''}`}
+                            onClick={() => handleMessageClick(message.id)}
+                        >
+                            <div className="inbox-message-item-left">
+                                {!message.isRead && currentView === 'inbox' && (
+                                    <div className="inbox-unread-dot"></div>
+                                )}
+                                <button
+                                    className={`inbox-star-btn ${message.isStarred ? 'starred' : ''}`}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        toggleMessageStar(message.id, message.isStarred);
+                                    }}
+                                >
+                                    <Star size={16} fill={message.isStarred ? '#FFC107' : 'none'} />
+                                </button>
+                            </div>
+
+                            <div className="inbox-message-item-content">
+                                <div className="inbox-message-item-header">
+                                    <span className="inbox-message-sender">
+                                        {currentView === 'inbox' || currentView === 'starred'
+                                            ? message.fromDisplayName
+                                            : `Đến: ${message.toDisplayName}`}
+                                    </span>
+                                    <span className="inbox-message-time">
+                                        {formatDistanceToNow(message.createdAt, { addSuffix: true, locale: vi })}
+                                    </span>
+                                </div>
+
+                                <div className="inbox-message-subject">
+                                    {message.subject || '(Không có tiêu đề)'}
+                                </div>
+
+                                <div className="inbox-message-preview">
+                                    {message.body.substring(0, 100)}...
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            {/* Message Detail */}
+            <div className="inbox-message-detail">
+                {selectedMessage ? (
+                    <>
+                        <div className="inbox-detail-actions">
+                            <button className="inbox-icon-btn" onClick={handleBack}>
+                                <ArrowLeft size={20} />
+                            </button>
+                            <button className="inbox-icon-btn" onClick={handleArchive}>
+                                <Archive size={20} />
+                            </button>
+                            <button className="inbox-icon-btn" onClick={handleDelete}>
+                                <Trash2 size={20} />
+                            </button>
+                            <button className="inbox-icon-btn" onClick={handleMarkUnread}>
+                                <MailOpen size={20} />
+                            </button>
+                            <button className="inbox-icon-btn" onClick={handleStar}>
+                                <Star size={20} fill={selectedMessage.isStarred ? '#FFC107' : 'none'} />
+                            </button>
+                            <button
+                                className="inbox-icon-btn inbox-thread-btn"
+                                onClick={() => navigate(`/inbox/thread/${selectedMessage.id}`)}
+                                title="Open as thread"
+                            >
+                                <Reply size={20} />
+                                <span>Open Thread</span>
+                            </button>
+                            <button className="inbox-icon-btn">
+                                <MoreVertical size={20} />
+                            </button>
+                        </div>
+
+                        <div className="inbox-detail-content">
+                            <div className="inbox-detail-header">
+                                <div className="inbox-detail-sender">
+                                    <div className="inbox-sender-avatar">
+                                        {selectedMessage.fromAvatarUrl ? (
+                                            <img src={selectedMessage.fromAvatarUrl} alt={selectedMessage.fromDisplayName} />
+                                        ) : (
+                                            <div className="inbox-sender-avatar-placeholder">
+                                                {selectedMessage.fromDisplayName.charAt(0).toUpperCase()}
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="inbox-sender-info">
+                                        <div className="inbox-sender-name">{selectedMessage.fromDisplayName}</div>
+                                        <div className="inbox-sender-email">@{selectedMessage.fromUsername}</div>
+                                    </div>
+                                </div>
+
+                                <div className="inbox-detail-meta">
+                                    <span className="inbox-detail-time">
+                                        {formatDistanceToNow(selectedMessage.createdAt, { addSuffix: true, locale: vi })}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div className="inbox-detail-subject">
+                                {selectedMessage.subject || '(Không có tiêu đề)'}
+                            </div>
+
+                            <div className="inbox-detail-body">
+                                {selectedMessage.body}
+                            </div>
+
+                            {/* Thread Replies - Gmail Style */}
+                            {selectedMessage.replies && selectedMessage.replies.length > 0 && (
+                                <div className="inbox-thread-replies" style={{ marginTop: '24px', borderTop: '1px solid var(--color-neutral-border-weak)', paddingTop: '16px' }}>
+                                    <div style={{
+                                        fontSize: '13px',
+                                        color: 'var(--color-neutral-content-weak)',
+                                        marginBottom: '12px',
+                                        fontWeight: 500
+                                    }}>
+                                        {selectedMessage.replies.length} {selectedMessage.replies.length === 1 ? 'phản hồi' : 'phản hồi'}
+                                    </div>
+
+                                    {selectedMessage.replies.map((reply) => (
+                                        <div
+                                            key={reply.id}
+                                            style={{
+                                                marginBottom: '12px',
+                                                padding: '12px',
+                                                backgroundColor: 'var(--color-neutral-background-weak)',
+                                                borderRadius: '8px',
+                                                border: '1px solid var(--color-neutral-border-weak)',
+                                                cursor: 'pointer',
+                                                transition: 'all 0.2s'
+                                            }}
+                                            onClick={() => navigate(`/inbox/thread/${reply.id}`)}
+                                            onMouseEnter={(e) => {
+                                                e.currentTarget.style.backgroundColor = 'var(--color-neutral-background)';
+                                                e.currentTarget.style.borderColor = 'var(--color-neutral-border)';
+                                            }}
+                                            onMouseLeave={(e) => {
+                                                e.currentTarget.style.backgroundColor = 'var(--color-neutral-background-weak)';
+                                                e.currentTarget.style.borderColor = 'var(--color-neutral-border-weak)';
+                                            }}
+                                        >
+                                            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', marginBottom: '8px' }}>
+                                                <div style={{
+                                                    width: '32px',
+                                                    height: '32px',
+                                                    borderRadius: '50%',
+                                                    backgroundColor: 'var(--color-neutral-border)',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    overflow: 'hidden',
+                                                    flexShrink: 0
+                                                }}>
+                                                    {reply.fromAvatarUrl ? (
+                                                        <img
+                                                            src={reply.fromAvatarUrl}
+                                                            alt={reply.fromDisplayName}
+                                                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                                        />
+                                                    ) : (
+                                                        <span style={{ fontSize: '14px', fontWeight: 'bold' }}>
+                                                            {reply.fromDisplayName.charAt(0).toUpperCase()}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <div style={{ flex: 1, minWidth: 0 }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                                                        <span style={{ fontWeight: 600, fontSize: '14px' }}>
+                                                            {reply.fromDisplayName}
+                                                        </span>
+                                                        <span style={{ fontSize: '12px', color: 'var(--color-neutral-content-weak)' }}>
+                                                            @{reply.fromUsername}
+                                                        </span>
+                                                        <span style={{ fontSize: '12px', color: 'var(--color-neutral-content-weak)' }}>
+                                                            •
+                                                        </span>
+                                                        <span style={{ fontSize: '12px', color: 'var(--color-neutral-content-weak)' }}>
+                                                            {formatDistanceToNow(reply.createdAt, { addSuffix: true, locale: vi })}
+                                                        </span>
+                                                    </div>
+                                                    <div
+                                                        style={{
+                                                            fontSize: '14px',
+                                                            lineHeight: '1.5',
+                                                            whiteSpace: 'pre-wrap',
+                                                            wordBreak: 'break-word'
+                                                        }}
+                                                        onClick={(e) => {
+                                                            // Prevent navigation when clicking "Xem thêm"
+                                                            if (e.target instanceof HTMLButtonElement) {
+                                                                e.stopPropagation();
+                                                            }
+                                                        }}
+                                                    >
+                                                        {expandedReplies[reply.id] ? reply.body : (
+                                                            reply.body.length > 200 ? (
+                                                                <>
+                                                                    {reply.body.substring(0, 200)}...
+                                                                    <button
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            setExpandedReplies(prev => ({ ...prev, [reply.id]: true }));
+                                                                        }}
+                                                                        style={{
+                                                                            marginLeft: '4px',
+                                                                            color: 'var(--color-primary)',
+                                                                            background: 'none',
+                                                                            border: 'none',
+                                                                            cursor: 'pointer',
+                                                                            fontSize: '13px',
+                                                                            fontWeight: 500
+                                                                        }}
+                                                                    >
+                                                                        Xem thêm
+                                                                    </button>
+                                                                </>
+                                                            ) : reply.body
+                                                        )}
+                                                    </div>
+                                                    <div style={{
+                                                        marginTop: '8px',
+                                                        fontSize: '12px',
+                                                        color: 'var(--color-primary)',
+                                                        fontWeight: 500
+                                                    }}>
+                                                        Click to view thread →
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
+                            <div className="inbox-detail-reply-actions">
+                                <button
+                                    className="inbox-reply-btn"
+                                    onClick={handleReply}
+                                >
+                                    <Reply size={18} />
+                                    Trả lời
+                                </button>
+                                <button
+                                    className="inbox-reply-btn"
+                                    onClick={() => navigate(`/compose?subject=Fwd: ${encodeURIComponent(selectedMessage.subject)}`)}
+                                >
+                                    <Forward size={18} />
+                                    Chuyển tiếp
+                                </button>
+                            </div>
+                        </div>
+                    </>
+                ) : (
+                    <div className="inbox-detail-empty">
+                        <Mail size={64} />
+                        <h3>Chọn tin nhắn để đọc</h3>
+                        <p>Chọn một tin nhắn từ danh sách để xem nội dung</p>
+                    </div>
+                )}
+            </div>
         </div>
-      )}
-    </div>
-  );
+    );
 };
 
 export default Inbox;

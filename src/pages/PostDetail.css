@@ -353,6 +353,17 @@
   transform: scale(0.9);
 }
 
+.vote-button.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.vote-button.disabled:hover {
+  transform: none;
+  background-color: transparent;
+}
+
 .vote-count {
   font-size: 16px;
   font-weight: 700;
@@ -915,6 +926,20 @@
   margin-bottom: var(--space-lg);
   word-wrap: break-word;
   font-size: 15px;
+}
+
+.deleted-text,
+.deleted-content {
+  color: var(--text-muted);
+  font-style: italic;
+  opacity: 0.7;
+}
+
+.deleted-content {
+  padding: 12px;
+  background-color: var(--bg-tertiary);
+  border-radius: var(--radius-sm);
+  margin: 8px 0;
 }
 
 .comment-actions {

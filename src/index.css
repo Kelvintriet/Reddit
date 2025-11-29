@@ -11,34 +11,34 @@
   --color-reddit-orange-hover: #E03D00;
   --color-reddit-blue: #0079D3;
   --color-reddit-blue-hover: #0066CC;
-  
+
   /* Background colors - Full screen white */
   --color-canvas-light: #FFFFFF;
   --color-neutral-background: #FFFFFF;
   --color-neutral-background-weak: #F6F7F8;
   --color-neutral-background-strong: #EDEFF1;
   --color-card-background: #FFFFFF;
-  
+
   /* Text colors */
   --color-neutral-content: #1A1A1B;
   --color-neutral-content-weak: #787C82;
   --color-neutral-content-strong: #000000;
   --color-meta-text: #7C7C83;
-  
+
   /* Border colors */
   --color-neutral-border: #CCCFD4;
   --color-neutral-border-weak: #EDEFF1;
   --color-neutral-border-strong: #898989;
-  
+
   /* Interactive colors */
   --color-upvote: #FF4500;
   --color-downvote: #7193FF;
   --color-vote-icons: #878A8C;
-  
+
   /* Layout - Full screen */
   --header-height: 48px;
   --sidebar-width: 280px;
-  
+
   /* Typography */
   --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   --font-size-base: 14px;
@@ -46,7 +46,7 @@
   --font-size-large: 16px;
   --font-size-xl: 18px;
   --font-size-xxl: 20px;
-  
+
   /* Spacing */
   --space-xs: 4px;
   --space-sm: 8px;
@@ -54,17 +54,42 @@
   --space-lg: 16px;
   --space-xl: 20px;
   --space-xxl: 32px;
-  
+
   /* Border radius */
   --radius-small: 4px;
   --radius-medium: 8px;
   --radius-large: 20px;
   --radius-full: 9999px;
-  
+
   /* Shadows */
   --shadow-small: 0 1px 3px rgba(0, 0, 0, 0.1);
   --shadow-medium: 0 2px 6px rgba(0, 0, 0, 0.1);
   --shadow-large: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+[data-theme='dark'] {
+  /* Dark Mode Colors */
+  --color-canvas-light: #030303;
+  --color-neutral-background: #030303;
+  --color-neutral-background-weak: #272729;
+  --color-neutral-background-strong: #343536;
+  --color-card-background: #1A1A1B;
+
+  /* Text colors */
+  --color-neutral-content: #D7DADC;
+  --color-neutral-content-weak: #818384;
+  --color-neutral-content-strong: #FFFFFF;
+  --color-meta-text: #818384;
+
+  /* Border colors */
+  --color-neutral-border: #343536;
+  --color-neutral-border-weak: #343536;
+  --color-neutral-border-strong: #474748;
+
+  /* Shadows */
+  --shadow-small: 0 1px 3px rgba(0, 0, 0, 0.5);
+  --shadow-medium: 0 2px 6px rgba(0, 0, 0, 0.5);
+  --shadow-large: 0 4px 12px rgba(0, 0, 0, 0.5);
 }
 
 html {
@@ -134,7 +159,7 @@ button:focus-visible {
   width: var(--sidebar-width);
   background-color: var(--color-canvas-light);
   border-right: 1px solid var(--color-neutral-border-weak);
-  padding: var(--space-lg);
+  padding: 16px 0;
   position: fixed;
   top: var(--header-height);
   left: 0;
@@ -144,14 +169,15 @@ button:focus-visible {
 }
 
 .sidebar-section {
-  margin-bottom: var(--space-xxl);
+  margin-bottom: 24px;
 }
 
 .sidebar-section h3 {
-  font-size: var(--font-size-small);
+  font-size: 11px;
   font-weight: 700;
-  color: var(--color-neutral-content-weak);
-  margin-bottom: var(--space-md);
+  color: #7c7c7c;
+  margin: 0 0 8px 16px;
+  padding: 0;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -163,45 +189,51 @@ button:focus-visible {
 }
 
 .nav-item {
-  margin-bottom: var(--space-xs);
+  margin: 0;
+  padding: 0;
+  display: block;
 }
 
 .nav-link {
   display: flex;
   align-items: center;
-  padding: var(--space-md) var(--space-lg);
+  padding: 10px 16px;
+  margin: 0;
   color: var(--color-neutral-content);
   text-decoration: none;
-  border-radius: var(--radius-medium);
+  border-radius: 0;
   font-weight: 500;
-  font-size: var(--font-size-base);
-  transition: all 0.2s ease;
+  font-size: 14px;
+  transition: background-color 0.2s ease, border-left 0.2s ease;
   position: relative;
+  width: 100%;
+  box-sizing: border-box;
+  border-left: 4px solid transparent;
 }
 
 .nav-link:hover {
-  background-color: var(--color-neutral-background-weak);
-  color: var(--color-reddit-blue);
+  background-color: #f6f7f8;
   text-decoration: none;
 }
 
 .nav-link.active {
-  background-color: var(--color-reddit-orange);
+  background-color: #0079d3;
   color: white;
   font-weight: 600;
+  border-left-color: #0079d3;
 }
 
 .nav-link.active:hover {
-  background-color: var(--color-reddit-orange-hover);
-  color: white;
+  background-color: #0079d3;
 }
 
 .nav-icon-sidebar {
   width: 20px;
   height: 20px;
-  margin-right: var(--space-lg);
-  color: var(--color-neutral-content-weak);
+  margin-right: 12px;
+  color: #7c7c7c;
   transition: color 0.2s ease;
+  flex-shrink: 0;
 }
 
 .nav-link.active .nav-icon-sidebar {
@@ -209,7 +241,7 @@ button:focus-visible {
 }
 
 .nav-link:hover .nav-icon-sidebar {
-  color: var(--color-reddit-blue);
+  color: #0079d3;
 }
 
 .nav-link.active:hover .nav-icon-sidebar {
@@ -737,6 +769,17 @@ button:focus-visible {
   height: 18px;
 }
 
+.vote-button.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.vote-button.disabled:hover {
+  transform: none;
+  background-color: transparent;
+}
+
 .vote-score {
   font-size: var(--font-size-small);
   font-weight: 700;
@@ -744,6 +787,20 @@ button:focus-visible {
   margin: var(--space-sm) 0;
   text-align: center;
   min-width: 20px;
+}
+
+.deleted-text,
+.deleted-content {
+  color: var(--color-neutral-content-weak);
+  font-style: italic;
+  opacity: 0.7;
+}
+
+.deleted-content {
+  padding: 12px;
+  background-color: var(--color-neutral-background-weak);
+  border-radius: 4px;
+  margin: 8px 0;
 }
 
 .text-upvote {
@@ -926,8 +983,13 @@ button:focus-visible {
 }
 
 @keyframes loading {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
 }
 
 /* Loading spinner for auth */
@@ -952,10 +1014,12 @@ button:focus-visible {
     stroke-dasharray: 1, 150;
     stroke-dashoffset: 0;
   }
+
   50% {
     stroke-dasharray: 90, 150;
     stroke-dashoffset: -35;
   }
+
   100% {
     stroke-dasharray: 90, 150;
     stroke-dashoffset: -124;
@@ -973,12 +1037,12 @@ button:focus-visible {
   .sidebar {
     display: none;
   }
-  
+
   .main-content {
     margin-left: 0;
-  width: 100%;
+    width: 100%;
   }
-  
+
   .reddit-quick-links {
     display: none;
   }
@@ -989,15 +1053,15 @@ button:focus-visible {
     margin: 0 12px;
     max-width: 300px;
   }
-  
+
   .reddit-header-container {
     padding: 0 12px;
   }
-  
+
   .sort-controls {
     overflow-x: auto;
   }
-  
+
   .sort-button {
     padding: var(--space-sm) var(--space-xs);
     font-size: var(--font-size-small);
@@ -1008,11 +1072,11 @@ button:focus-visible {
   .reddit-search {
     display: none;
   }
-  
+
   .reddit-user-info {
     display: none;
   }
-  
+
   .reddit-user-button {
     min-width: auto;
     padding: 4px;
@@ -1058,10 +1122,10 @@ button:focus-visible {
   .sm\:inline {
     display: inline;
   }
-  
+
   .sm\:block {
-  display: block;
-}
+    display: block;
+  }
 }
 
 /* Profile Page Styles */
@@ -1568,29 +1632,29 @@ button:focus-visible {
     text-align: center;
     gap: var(--space-md);
   }
-  
+
   .profile-avatar {
     width: 60px;
     height: 60px;
   }
-  
+
   .profile-info h1 {
     font-size: 1.5rem;
   }
-  
+
   .search-tabs {
     flex-wrap: wrap;
   }
-  
+
   .community-item {
-  flex-direction: column;
+    flex-direction: column;
     text-align: center;
   }
-  
+
   .community-info {
     text-align: center;
   }
-  
+
   .settings-actions {
     flex-direction: column;
   }
@@ -1835,7 +1899,7 @@ button:focus-visible {
     margin: var(--space-md);
     padding: var(--space-lg);
   }
-  
+
   .auth-page .auth-modal {
     margin: var(--space-md);
     width: calc(100% - 2 * var(--space-md));
@@ -2155,15 +2219,16 @@ button:focus-visible {
   .avatar-upload-container {
     gap: var(--space-sm);
   }
-  
+
   .avatar-upload-wrapper {
     gap: var(--space-sm);
   }
-  
+
   .avatar-overlay {
-    opacity: 0.8; /* More visible on mobile */
+    opacity: 0.8;
+    /* More visible on mobile */
   }
-  
+
   .avatar-upload:hover .avatar-overlay {
     opacity: 1;
   }
@@ -2356,55 +2421,55 @@ button:focus-visible {
   .user-item {
     padding: var(--space-md);
   }
-  
+
   .user-avatar {
     width: 40px;
     height: 40px;
   }
-  
+
   .user-avatar-placeholder {
     font-size: 1rem;
   }
-  
+
   .user-names {
     flex-direction: column;
     align-items: flex-start;
     gap: var(--space-xs);
   }
-  
+
   .user-display-name {
     font-size: 1rem;
   }
-  
+
   .user-username,
   .user-at-name {
     font-size: 0.8rem;
   }
-  
+
   .user-uid {
     font-size: 0.7rem;
   }
-  
+
   .user-bio {
     font-size: 0.85rem;
   }
-  
+
   .user-meta {
     font-size: 0.8rem;
   }
-  
+
   .search-tips {
     padding: var(--space-md);
   }
-  
+
   .search-tips h4 {
     font-size: 0.9rem;
   }
-  
+
   .search-tips li {
     font-size: 0.85rem;
   }
-} 
+}
 
 /* File Upload Styles */
 .file-upload-container {
@@ -2483,8 +2548,13 @@ button:focus-visible {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .upload-error {
@@ -2619,7 +2689,8 @@ button:focus-visible {
   color: #dc2626;
   transition: all 0.2s ease;
   flex-shrink: 0;
-  opacity: 0.7; /* Slightly visible */
+  opacity: 0.7;
+  /* Slightly visible */
 }
 
 .remove-file-btn:hover {
@@ -2645,16 +2716,16 @@ button:focus-visible {
   .files-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .file-upload-area {
     padding: var(--space-lg);
   }
-  
+
   .upload-icon {
     width: 36px;
     height: 36px;
   }
-} 
+}
 
 /* Post Images & Attachments */
 .post-images {
@@ -2909,39 +2980,40 @@ button:focus-visible {
   .post-images {
     margin: var(--space-md) 0;
   }
-  
+
   .attachment-actions {
-    opacity: 1; /* Always show on mobile */
+    opacity: 1;
+    /* Always show on mobile */
     position: static;
     margin-top: var(--space-sm);
     justify-content: flex-end;
   }
-  
+
   .download-btn {
     background: var(--color-neutral-background-weak);
     color: var(--color-neutral-content);
     border: 1px solid var(--color-neutral-border);
   }
-  
+
   .download-btn:hover {
     background: var(--color-neutral-background);
     transform: none;
   }
-  
+
   .file-attachment {
     flex-direction: column;
     align-items: flex-start;
     gap: var(--space-md);
   }
-  
+
   .file-attachment .file-info {
     width: 100%;
   }
-  
+
   .file-attachment .download-btn {
     align-self: flex-end;
   }
-} 
+}
 
 /* Image Viewer Styles */
 .image-viewer-overlay {
@@ -3128,33 +3200,33 @@ button:focus-visible {
     gap: var(--space-md);
     align-items: flex-start;
   }
-  
+
   .zoom-controls {
     order: 2;
   }
-  
+
   .close-btn {
     order: 1;
     align-self: flex-end;
   }
-  
+
   .nav-btn {
     padding: var(--space-md);
   }
-  
+
   .nav-btn svg {
     width: 20px;
     height: 20px;
   }
-  
+
   .viewer-instructions {
     display: none;
   }
-  
+
   .image-counter {
     bottom: var(--space-lg);
   }
-} 
+}
 
 /* Create Post Page Styles */
 .create-post-page {
@@ -3641,34 +3713,34 @@ button:focus-visible {
   .create-post-page {
     padding: 12px;
   }
-  
+
   .post-user-info {
     padding: 12px;
   }
-  
+
   .post-form {
     padding: 12px;
   }
-  
+
   .editor-tools {
     flex-wrap: wrap;
   }
-  
+
   .tool-btn {
     width: 28px;
     height: 28px;
   }
-  
+
   .tool-btn svg {
     width: 14px;
     height: 14px;
   }
-  
+
   .submit-actions {
     flex-direction: column-reverse;
     gap: 12px;
   }
-  
+
   .cancel-btn,
   .submit-btn {
     width: 100%;
@@ -3680,21 +3752,21 @@ button:focus-visible {
   .create-post-header h1 {
     font-size: 16px;
   }
-  
+
   .title-input {
     font-size: 14px;
   }
-  
+
   .editor-header {
     flex-direction: column;
     gap: 8px;
     align-items: stretch;
   }
-  
+
   .editor-tools {
     justify-content: center;
   }
-  
+
   .tags-list {
     gap: 4px;
   }
@@ -3939,26 +4011,26 @@ button:focus-visible {
     gap: 8px;
     align-items: stretch;
   }
-  
+
   .editor-tools {
     justify-content: center;
     flex-wrap: wrap;
   }
-  
+
   .tool-btn {
     width: 28px;
     height: 28px;
   }
-  
+
   .tool-btn svg {
     width: 14px;
     height: 14px;
   }
-  
+
   .markdown-content {
     font-size: 13px;
   }
-  
+
   .markdown-content code {
     font-size: 12px;
   }
@@ -4333,9 +4405,12 @@ button:focus-visible {
 }
 
 @keyframes warningPulse {
-  0%, 100% {
+
+  0%,
+  100% {
     background: #fff3cd;
   }
+
   50% {
     background: #ffeaa7;
   }
@@ -4535,10 +4610,21 @@ button:focus-visible {
   flex-shrink: 0;
 }
 
-.category-dot.work { background: #28a745; }
-.category-dot.accountant { background: #dc3545; }
-.category-dot.works { background: #fd7e14; }
-.category-dot.marketing { background: #20c997; }
+.category-dot.work {
+  background: #28a745;
+}
+
+.category-dot.accountant {
+  background: #dc3545;
+}
+
+.category-dot.works {
+  background: #fd7e14;
+}
+
+.category-dot.marketing {
+  background: #20c997;
+}
 
 .category-count {
   margin-left: auto;
@@ -4984,8 +5070,13 @@ button:focus-visible {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .empty-state {
@@ -5309,7 +5400,8 @@ button:focus-visible {
 /* Message Body */
 .message-body-content {
   margin: 24px 0;
-  padding-left: 56px; /* Align with sender info */
+  padding-left: 56px;
+  /* Align with sender info */
 }
 
 .message-text {
@@ -5334,7 +5426,8 @@ button:focus-visible {
   align-items: center;
   gap: 16px;
   padding: 16px 0;
-  margin-left: 56px; /* Align with message content */
+  margin-left: 56px;
+  /* Align with message content */
   border-top: 1px solid #f1f3f4;
 }
 
@@ -5558,7 +5651,7 @@ button:focus-visible {
   padding: 8px;
   display: flex;
   gap: 4px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
   z-index: 1000;
 }
 
@@ -5712,7 +5805,7 @@ button:focus-visible {
   padding: 12px 16px;
   background: #ff4500;
   color: white;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
 .conversation-header .back-btn {
@@ -5728,7 +5821,7 @@ button:focus-visible {
 }
 
 .conversation-header .back-btn:hover {
-  background: rgba(255,255,255,0.1);
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .contact-info {
@@ -5783,7 +5876,7 @@ button:focus-visible {
 }
 
 .header-action-btn:hover {
-  background: rgba(255,255,255,0.1);
+  background: rgba(255, 255, 255, 0.1);
 }
 
 /* Date Header */
@@ -5794,12 +5887,12 @@ button:focus-visible {
 }
 
 .date-badge {
-  background: rgba(255,255,255,0.9);
+  background: rgba(255, 255, 255, 0.9);
   padding: 6px 12px;
   border-radius: 12px;
   font-size: 12px;
   color: #54656f;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 /* Messages */
@@ -5864,7 +5957,7 @@ button:focus-visible {
   background: white;
   border-radius: 8px;
   padding: 8px 12px;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
   position: relative;
 }
 
@@ -5929,7 +6022,7 @@ button:focus-visible {
   background: white;
   border-radius: 24px;
   padding: 8px 16px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .attachment-btn {
@@ -6017,6 +6110,7 @@ button:focus-visible {
     transform: translateY(100%);
     opacity: 0;
   }
+
   to {
     transform: translateY(0);
     opacity: 1;
@@ -6539,10 +6633,14 @@ button:focus-visible {
 }
 
 @keyframes typing {
-  0%, 80%, 100% {
+
+  0%,
+  80%,
+  100% {
     transform: scale(0.8);
     opacity: 0.5;
   }
+
   40% {
     transform: scale(1);
     opacity: 1;
@@ -6646,9 +6744,17 @@ button:focus-visible {
 }
 
 @keyframes pulse {
-  0% { opacity: 1; }
-  50% { opacity: 0.5; }
-  100% { opacity: 1; }
+  0% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.5;
+  }
+
+  100% {
+    opacity: 1;
+  }
 }
 
 .bot-tabs {
@@ -6764,24 +6870,28 @@ button:focus-visible {
   font-size: 13px;
 }
 
-.conditions, .actions {
+.conditions,
+.actions {
   background: #f8f9fa;
   padding: 12px;
   border-radius: 6px;
 }
 
-.conditions strong, .actions strong {
+.conditions strong,
+.actions strong {
   color: #202124;
   display: block;
   margin-bottom: 8px;
 }
 
-.conditions ul, .actions ul {
+.conditions ul,
+.actions ul {
   margin: 0;
   padding-left: 16px;
 }
 
-.conditions li, .actions li {
+.conditions li,
+.actions li {
   margin-bottom: 4px;
   color: #5f6368;
 }
@@ -7300,7 +7410,7 @@ button:focus-visible {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 0 20px rgba(0,0,0,0.1);
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
 }
 
 .conversation-header {
@@ -7310,7 +7420,7 @@ button:focus-visible {
   display: flex;
   align-items: center;
   gap: 16px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   position: sticky;
   top: 0;
   z-index: 100;
@@ -7331,7 +7441,7 @@ button:focus-visible {
 }
 
 .conversation-back-btn:hover {
-  background-color: rgba(255,255,255,0.1);
+  background-color: rgba(255, 255, 255, 0.1);
 }
 
 .conversation-user-info {
@@ -7372,7 +7482,7 @@ button:focus-visible {
 }
 
 .conversation-action-btn:hover {
-  background-color: rgba(255,255,255,0.1);
+  background-color: rgba(255, 255, 255, 0.1);
 }
 
 .conversation-messages {
@@ -7399,6 +7509,7 @@ button:focus-visible {
     opacity: 0;
     transform: translateY(10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -7526,14 +7637,23 @@ button:focus-visible {
   animation: typingBounce 1.4s infinite ease-in-out;
 }
 
-.typing-dot:nth-child(1) { animation-delay: -0.32s; }
-.typing-dot:nth-child(2) { animation-delay: -0.16s; }
+.typing-dot:nth-child(1) {
+  animation-delay: -0.32s;
+}
+
+.typing-dot:nth-child(2) {
+  animation-delay: -0.16s;
+}
 
 @keyframes typingBounce {
-  0%, 80%, 100% {
+
+  0%,
+  80%,
+  100% {
     transform: scale(0.8);
     opacity: 0.5;
   }
+
   40% {
     transform: scale(1);
     opacity: 1;
@@ -7546,7 +7666,7 @@ button:focus-visible {
   margin: 0 auto;
   background-color: white;
   min-height: 100vh;
-  box-shadow: 0 0 20px rgba(0,0,0,0.1);
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
 }
 
 .compose-header {
@@ -7556,7 +7676,7 @@ button:focus-visible {
   display: flex;
   align-items: center;
   gap: 16px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .compose-back-btn {
@@ -7571,7 +7691,7 @@ button:focus-visible {
 }
 
 .compose-back-btn:hover {
-  background-color: rgba(255,255,255,0.1);
+  background-color: rgba(255, 255, 255, 0.1);
 }
 
 .compose-title {
@@ -7633,7 +7753,7 @@ button:focus-visible {
   background: white;
   border: 1px solid #e0e0e0;
   border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   z-index: 10;
   max-height: 200px;
   overflow-y: auto;
@@ -7715,8 +7835,13 @@ button:focus-visible {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .message-user {

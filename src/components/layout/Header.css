@@ -6,7 +6,7 @@
 .reddit-quick-link {
   display: flex;
   align-items: center;
-  color: #1c1c1c;
+  color: var(--color-neutral-content);
   text-decoration: none;
   padding: 8px 12px;
   border-radius: 4px;
@@ -17,7 +17,7 @@
 }
 
 .reddit-quick-link:hover {
-  background-color: #f2f2f2;
+  background-color: var(--color-neutral-background-strong);
 }
 
 .reddit-quick-link svg {
@@ -35,7 +35,7 @@
   position: absolute;
   top: -4px;
   right: -4px;
-  background-color: #ff4500;
+  background-color: var(--color-reddit-orange);
   color: white;
   font-size: 10px;
   font-weight: 600;
@@ -47,15 +47,4 @@
   align-items: center;
   justify-content: center;
   line-height: 1;
-}
-
-/* Dark mode support */
-@media (prefers-color-scheme: dark) {
-  .reddit-quick-link {
-    color: #d7dadc;
-  }
-
-  .reddit-quick-link:hover {
-    background-color: #272729;
-  }
 }

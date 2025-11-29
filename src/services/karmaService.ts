@@ -21,8 +21,8 @@ export interface KarmaMilestone {
 // Karma point values
 export const KARMA_VALUES = {
   POST_CREATED: 1,
-  POST_UPVOTED: 2,
-  POST_DOWNVOTED: -2,
+  POST_UPVOTED: 1,
+  POST_DOWNVOTED: -1,
   COMMENT_UPVOTED: 1,
   COMMENT_DOWNVOTED: -1,
   CONTENT_DELETED: 0 // Points are removed when content is deleted
@@ -83,8 +83,11 @@ export const KARMA_MILESTONES: KarmaMilestone[] = [
 // Process karma action (called when user performs karma-worthy actions)
 export const processKarmaAction = async (action: KarmaAction): Promise<number> => {
   try {
-    // In a real app, this would update the database
     console.log(`Processing karma action: ${action.type} for user ${action.userId}, points: ${action.points}`);
+    
+    // Import updateUserKarma dynamically to avoid circular dependencies
+    const { updateUserKarma } = await import('../collections/users');
+    await updateUserKarma(action.userId, action.points);
     
     // Return the karma points awarded/deducted
     return action.points;

@@ -1,0 +1,351 @@
+{
+    "design_system": {
+        "overview": {
+            "style": "Modern email client interface with clean, minimalist design",
+            "layout": "Three-column layout: navigation sidebar, email list, and email detail view",
+            "color_scheme": "Light mode with purple/blue accent color, neutral grays, and white backgrounds"
+        },
+        "colors": {
+            "primary": "#5B51FF",
+            "primary_hover": "#4B41EF",
+            "background_main": "#FFFFFF",
+            "background_secondary": "#F5F5F5",
+            "text_primary": "#000000",
+            "text_secondary": "#666666",
+            "text_tertiary": "#999999",
+            "border": "#E5E5E5",
+            "icon_default": "#999999",
+            "star_yellow": "#FFC107",
+            "label_pink": "#FF1493",
+            "label_blue": "#5B51FF",
+            "label_green": "#7CFC00"
+        },
+        "typography": {
+            "font_family": "System UI, -apple-system, sans-serif",
+            "heading_large": {
+                "size": "24px",
+                "weight": "600",
+                "line_height": "1.3"
+            },
+            "heading_medium": {
+                "size": "18px",
+                "weight": "600",
+                "line_height": "1.4"
+            },
+            "body_regular": {
+                "size": "14px",
+                "weight": "400",
+                "line_height": "1.5"
+            },
+            "body_small": {
+                "size": "13px",
+                "weight": "400",
+                "line_height": "1.4"
+            },
+            "caption": {
+                "size": "12px",
+                "weight": "400",
+                "line_height": "1.3"
+            },
+            "label": {
+                "size": "11px",
+                "weight": "500",
+                "letter_spacing": "0.3px"
+            }
+        },
+        "spacing": {
+            "xs": "4px",
+            "sm": "8px",
+            "md": "12px",
+            "lg": "16px",
+            "xl": "24px",
+            "xxl": "32px"
+        },
+        "components": {
+            "sidebar": {
+                "width": "252px",
+                "background": "#FFFFFF",
+                "padding": "16px",
+                "sections": [
+                    {
+                        "type": "header",
+                        "contains": "Logo and title",
+                        "layout": "Horizontal flex with icon and text"
+                    },
+                    {
+                        "type": "primary_action",
+                        "element": "Compose button",
+                        "style": "Full width, primary color background, white text, rounded corners (8px), height 40px"
+                    },
+                    {
+                        "type": "tabs",
+                        "options": [
+                            "Inbox",
+                            "Messages"
+                        ],
+                        "style": "Horizontal tabs with subtle underline indicator"
+                    },
+                    {
+                        "type": "navigation_list",
+                        "items": [
+                            "Inbox with count badge",
+                            "Starred with count",
+                            "Snoozed with count",
+                            "Sent with count",
+                            "Drafts",
+                            "Trash with count"
+                        ],
+                        "item_style": {
+                            "padding": "8px 12px",
+                            "border_radius": "6px",
+                            "hover_background": "#F5F5F5",
+                            "active_background": "#F0EDFF",
+                            "active_border_left": "3px solid primary color"
+                        }
+                    },
+                    {
+                        "type": "collapsible_section",
+                        "title": "FOLDERS",
+                        "expandable": true,
+                        "items_with_counts": true
+                    },
+                    {
+                        "type": "collapsible_section",
+                        "title": "LABELS",
+                        "expandable": true,
+                        "items_with_color_indicators": true
+                    }
+                ]
+            },
+            "email_list": {
+                "width": "350px",
+                "background": "#FFFFFF",
+                "border_right": "1px solid #E5E5E5",
+                "header": {
+                    "title": "Inbox",
+                    "unread_count": true,
+                    "search_bar": {
+                        "placeholder": "Search",
+                        "keyboard_shortcut": "⌘K",
+                        "style": "Light gray background, rounded, icon on left"
+                    }
+                },
+                "email_item": {
+                    "padding": "16px",
+                    "border_bottom": "1px solid #E5E5E5",
+                    "hover_background": "#F9F9F9",
+                    "layout": "Vertical stack",
+                    "elements": {
+                        "sender": {
+                            "font_weight": "600",
+                            "color": "text_primary",
+                            "unread_indicator": "Colored dot on left"
+                        },
+                        "subject": {
+                            "font_weight": "600",
+                            "color": "text_primary",
+                            "truncate": true
+                        },
+                        "preview": {
+                            "font_weight": "400",
+                            "color": "text_secondary",
+                            "lines": "2",
+                            "truncate": true
+                        },
+                        "timestamp": {
+                            "position": "top right",
+                            "color": "text_tertiary",
+                            "size": "12px"
+                        },
+                        "attachment_indicator": {
+                            "type": "icon with count",
+                            "style": "Small chip with file icon"
+                        },
+                        "star_indicator": {
+                            "position": "left of sender",
+                            "color": "star_yellow when active"
+                        }
+                    }
+                }
+            },
+            "email_detail": {
+                "background": "#FFFFFF",
+                "padding": "24px",
+                "header": {
+                    "layout": "Horizontal flex with space between",
+                    "left_section": {
+                        "sender_info": {
+                            "avatar": "40px circle",
+                            "name": "Bold, 14px",
+                            "email": "Regular, 12px, gray",
+                            "recipient": "To: Me dropdown"
+                        }
+                    },
+                    "right_section": {
+                        "timestamp": "12px, gray",
+                        "actions": [
+                            "Reply",
+                            "Forward",
+                            "Star",
+                            "More menu"
+                        ]
+                    },
+                    "action_bar": {
+                        "icons": [
+                            "Back arrow",
+                            "Archive",
+                            "Report spam",
+                            "Delete",
+                            "Mark unread",
+                            "Snooze",
+                            "Move to folder",
+                            "Labels",
+                            "More"
+                        ],
+                        "style": "Icon buttons with hover state, 32px touch targets"
+                    }
+                },
+                "content": {
+                    "subject": {
+                        "font_size": "24px",
+                        "font_weight": "600",
+                        "margin_bottom": "16px"
+                    },
+                    "body": {
+                        "font_size": "14px",
+                        "line_height": "1.6",
+                        "color": "text_primary",
+                        "max_width": "650px"
+                    },
+                    "images": {
+                        "max_width": "100%",
+                        "border_radius": "8px",
+                        "margin": "16px 0"
+                    },
+                    "attachments_section": {
+                        "title": "Attachments",
+                        "link_to_view_all": "Right aligned, primary color",
+                        "attachment_cards": {
+                            "layout": "Horizontal grid",
+                            "card_style": {
+                                "width": "180px",
+                                "height": "100px",
+                                "border_radius": "8px",
+                                "border": "1px solid #E5E5E5",
+                                "padding": "8px",
+                                "thumbnail": "Cover image",
+                                "filename": "Truncated, 13px",
+                                "filesize": "12px, gray"
+                            }
+                        }
+                    },
+                    "cta_section": {
+                        "text": "Regular paragraph text",
+                        "link": {
+                            "style": "Primary color, underline on hover",
+                            "font_weight": "500"
+                        }
+                    }
+                }
+            },
+            "buttons": {
+                "primary": {
+                    "background": "primary",
+                    "color": "#FFFFFF",
+                    "border_radius": "8px",
+                    "padding": "10px 20px",
+                    "font_weight": "500",
+                    "hover": "Slightly darker background"
+                },
+                "icon_button": {
+                    "size": "32px",
+                    "border_radius": "6px",
+                    "hover_background": "#F5F5F5",
+                    "icon_color": "icon_default"
+                }
+            },
+            "badges": {
+                "count": {
+                    "background": "#E5E5E5",
+                    "color": "text_secondary",
+                    "border_radius": "12px",
+                    "padding": "2px 8px",
+                    "font_size": "12px",
+                    "font_weight": "500"
+                },
+                "unread_dot": {
+                    "size": "8px",
+                    "border_radius": "50%",
+                    "colors": [
+                        "primary",
+                        "star_yellow",
+                        "label_pink"
+                    ]
+                }
+            },
+            "avatars": {
+                "sizes": {
+                    "small": "24px",
+                    "medium": "32px",
+                    "large": "40px"
+                },
+                "border_radius": "50%",
+                "fallback": "Colored background with initials"
+            },
+            "dividers": {
+                "horizontal": {
+                    "height": "1px",
+                    "background": "border",
+                    "margin": "16px 0"
+                }
+            },
+            "search_input": {
+                "background": "#F5F5F5",
+                "border": "none",
+                "border_radius": "8px",
+                "padding": "8px 12px 8px 36px",
+                "icon_position": "Left, 12px from edge",
+                "placeholder_color": "text_tertiary",
+                "focus_outline": "2px solid primary color"
+            }
+        },
+        "interactions": {
+            "hover_states": {
+                "list_items": "Light gray background",
+                "icon_buttons": "Light gray background, subtle scale",
+                "links": "Underline appears"
+            },
+            "active_states": {
+                "navigation_items": "Purple tinted background with left border accent",
+                "selected_email": "Subtle background highlight"
+            },
+            "transitions": {
+                "default": "150ms ease-in-out",
+                "properties": [
+                    "background-color",
+                    "color",
+                    "transform",
+                    "opacity"
+                ]
+            }
+        },
+        "iconography": {
+            "style": "Outlined, minimalist, 20px default size",
+            "stroke_width": "1.5px",
+            "color": "Inherits from parent or icon_default"
+        },
+        "shadows": {
+            "none": "none",
+            "sm": "0 1px 2px rgba(0, 0, 0, 0.05)",
+            "md": "0 2px 4px rgba(0, 0, 0, 0.08)",
+            "lg": "0 4px 12px rgba(0, 0, 0, 0.1)"
+        },
+        "border_radius": {
+            "sm": "4px",
+            "md": "6px",
+            "lg": "8px",
+            "xl": "12px",
+            "full": "9999px"
+        }
+    }
+}

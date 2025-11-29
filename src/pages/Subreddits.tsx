@@ -2,61 +2,70 @@ import { useState, useEffect } from 'react'
 import { useSubredditsStore, useAuthStore } from '../store'
 import SubredditCard from '../components/subreddit/SubredditCard'
 import CreateSubredditForm from '../components/subreddit/CreateSubredditForm'
+import { Search, Plus, Users } from 'lucide-react'
 
 const Subreddits = () => {
   const { subreddits, fetchSubreddits, isLoading, error, joinSubreddit, leaveSubreddit } = useSubredditsStore()
   const { user } = useAuthStore()
   const [showCreateForm, setShowCreateForm] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
-  
+
   useEffect(() => {
     fetchSubreddits()
   }, [])
-  
+
   const filteredSubreddits = subreddits.filter(
     (subreddit) => subreddit.name.toLowerCase().includes(searchTerm.toLowerCase())
   )
-  
+
   const handleJoin = (id: string) => {
     if (!user) return
     joinSubreddit(id)
   }
-  
+
   const handleLeave = (id: string) => {
     if (!user) return
     leaveSubreddit(id)
   }
-  
+
   return (
-    <div>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold mb-4">Cộng đồng</h1>
-        
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-2">
-          <div className="relative w-full sm:w-auto">
-            <input
-              type="text"
-              placeholder=""
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full sm:w-80 px-4 py-2 pr-10 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
-            />
-            <span className="absolute right-3 top-2.5 text-gray-400">🔍</span>
-          </div>
-          
+    <div className="subreddits-page">
+      <div className="page-header mb-6">
+        <div className="flex justify-between items-center mb-4">
+          <h1 className="text-2xl font-bold">Communities</h1>
           {user && (
             <button
               onClick={() => setShowCreateForm(!showCreateForm)}
-              className="w-full sm:w-auto bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition"
+              className="reddit-btn reddit-btn-filled flex items-center gap-2"
             >
-              {showCreateForm ? 'Hủy' : 'Tạo cộng đồng mới'}
+              {showCreateForm ? (
+                'Cancel'
+              ) : (
+                <>
+                  <Plus size={16} />
+                  Create Community
+                </>
+              )}
             </button>
           )}
         </div>
-        
+
+        <div className="search-bar-container relative max-w-md">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <Search size={18} className="text-gray-400" />
+          </div>
+          <input
+            type="text"
+            placeholder="Search communities..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="reddit-input pl-10 w-full"
+          />
+        </div>
+
         {showCreateForm && (
-          <div className="mb-6">
-            <CreateSubredditForm 
+          <div className="mt-6 bg-card rounded-lg shadow-sm p-6 border border-border">
+            <CreateSubredditForm
               onSuccess={() => {
                 setShowCreateForm(false)
                 fetchSubreddits()
@@ -66,25 +75,36 @@ const Subreddits = () => {
           </div>
         )}
       </div>
-      
+
       {error && (
-        <div className="bg-red-100 text-red-700 p-4 rounded-md mb-4">
+        <div className="error-message mb-6">
           {error}
         </div>
       )}
-      
+
       {isLoading ? (
         <div className="flex justify-center py-10">
-          <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
+          <div className="loading-spinner"></div>
         </div>
       ) : filteredSubreddits.length === 0 ? (
-        <div className="bg-yellow-50 dark:bg-gray-700 p-8 rounded-lg text-center">
-          <h3 className="text-xl font-semibold mb-2">Không tìm thấy cộng đồng nào</h3>
-          <p className="text-gray-600 dark:text-gray-300 mb-4">
-            {searchTerm 
-              ? `Không tìm thấy cộng đồng phù hợp với "${searchTerm}"`
-              : 'Chưa có cộng đồng nào được tạo. Hãy là người đầu tiên tạo cộng đồng!'}
+        <div className="empty-state bg-neutral-background-weak rounded-lg p-12 text-center">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-neutral-background-strong mb-4">
+            <Users size={32} className="text-neutral-content-weak" />
+          </div>
+          <h3 className="text-xl font-semibold mb-2">No communities found</h3>
+          <p className="text-neutral-content-weak mb-6">
+            {searchTerm
+              ? `No communities matching "${searchTerm}"`
+              : 'Be the first to create a community!'}
           </p>
+          {user && !showCreateForm && (
+            <button
+              onClick={() => setShowCreateForm(true)}
+              className="reddit-btn reddit-btn-outline"
+            >
+              Create Community
+            </button>
+          )}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

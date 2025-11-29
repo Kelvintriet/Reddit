@@ -1,0 +1,182 @@
+/* Compose Message Modal */
+.compose-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 24px;
+}
+
+.compose-modal {
+    background: #FFFFFF;
+    border-radius: 12px;
+    width: 100%;
+    max-width: 600px;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.compose-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 24px;
+    border-bottom: 1px solid #E5E5E5;
+}
+
+.compose-header h2 {
+    font-size: 18px;
+    font-weight: 600;
+    margin: 0;
+    color: #000000;
+}
+
+.compose-close-btn {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+    color: #999999;
+    cursor: pointer;
+    transition: all 150ms ease-in-out;
+}
+
+.compose-close-btn:hover {
+    background: #F5F5F5;
+    color: #000000;
+}
+
+.compose-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 24px;
+    overflow-y: auto;
+}
+
+.compose-field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.compose-field label {
+    font-size: 14px;
+    font-weight: 500;
+    color: #000000;
+}
+
+.compose-field input,
+.compose-field textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #E5E5E5;
+    border-radius: 8px;
+    font-size: 14px;
+    color: #000000;
+    font-family: inherit;
+    outline: none;
+    transition: all 150ms ease-in-out;
+}
+
+.compose-field input:focus,
+.compose-field textarea:focus {
+    border-color: #5B51FF;
+    outline: 2px solid rgba(91, 81, 255, 0.1);
+    outline-offset: 0;
+}
+
+.compose-field input:disabled,
+.compose-field textarea:disabled {
+    background: #F5F5F5;
+    cursor: not-allowed;
+}
+
+.compose-field textarea {
+    resize: vertical;
+    min-height: 200px;
+    line-height: 1.5;
+}
+
+.compose-error {
+    padding: 12px;
+    background: #FEE;
+    border: 1px solid #FCC;
+    border-radius: 8px;
+    font-size: 14px;
+    color: #C00;
+}
+
+.compose-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+    padding-top: 8px;
+    border-top: 1px solid #E5E5E5;
+}
+
+.compose-cancel-btn,
+.compose-send-btn {
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 150ms ease-in-out;
+    border: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.compose-cancel-btn {
+    background: transparent;
+    border: 1px solid #E5E5E5;
+    color: #000000;
+}
+
+.compose-cancel-btn:hover:not(:disabled) {
+    background: #F5F5F5;
+}
+
+.compose-send-btn {
+    background: #5B51FF;
+    color: #FFFFFF;
+}
+
+.compose-send-btn:hover:not(:disabled) {
+    background: #4B41EF;
+}
+
+.compose-cancel-btn:disabled,
+.compose-send-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.compose-spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top-color: #FFFFFF;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}

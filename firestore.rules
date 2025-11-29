@@ -1,6 +1,21 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    // CAPTCHA verification collections - allow unauthenticated reads/writes
+    // These are temporary records used for bot protection
+    match /captchaVerifications/{token} {
+      allow read, write: if true;
+    }
+    
+    match /captchaChallenges/{challengeId} {
+      allow read, write: if true;
+    }
+    
+    // Orphaned files tracking - allow unauthenticated reads/writes
+    match /orphanedFiles/{fileId} {
+      allow read, write: if true;
+    }
+    
     // Allow authenticated users to read and write all documents
     match /{document=**} {
       allow read, write: if request.auth != null;

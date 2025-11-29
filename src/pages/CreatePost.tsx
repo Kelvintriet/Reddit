@@ -6,7 +6,8 @@ import { validateEditToken, expireTokenAfterEdit } from '../services/editTokenSe
 import FileUpload from '../components/post/FileUpload'
 import RichTextEditor from '../components/editor/RichTextEditor'
 import type { UploadedFile } from '../services/appwrite/storage'
-import { SUPPORTED_IMAGE_TYPES, SUPPORTED_VIDEO_TYPES } from '../services/appwrite/storage'
+import { SUPPORTED_IMAGE_TYPES, SUPPORTED_VIDEO_TYPES, SUPPORTED_DOCUMENT_TYPES } from '../services/appwrite/storage'
+import { getFileCleanupWebSocket } from '../services/websocket/fileCleanup'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 
@@ -16,7 +17,7 @@ const CreatePost = () => {
   const { user } = useAuthStore()
   const { createPost, isLoading } = usePostsStore()
   const { subreddits, fetchSubreddits } = useSubredditsStore()
-  
+
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
   const [selectedSubreddit, setSelectedSubreddit] = useState(subredditParam || '')
@@ -32,6 +33,28 @@ const CreatePost = () => {
   const [tokenError, setTokenError] = useState<string | null>(null)
   const [canViewContent, setCanViewContent] = useState(false)
   const [savedContent, setSavedContent] = useState({ title: '', content: '' })
+  const wsRef = useRef<ReturnType<typeof getFileCleanupWebSocket> | null>(null)
+
+  // WebSocket connection for file cleanup tracking (only for new posts, not edits)
+  useEffect(() => {
+    if (!isEditMode && user) {
+      // Connect WebSocket for new post creation
+      const ws = getFileCleanupWebSocket(user.uid);
+      wsRef.current = ws;
+      
+      ws.connect().catch(error => {
+        console.warn('Failed to connect WebSocket for file cleanup:', error);
+      });
+
+      // Cleanup on unmount
+      return () => {
+        if (wsRef.current) {
+          wsRef.current.disconnect();
+          wsRef.current = null;
+        }
+      };
+    }
+  }, [isEditMode, user]);
 
   // Auto-save content when user types (for recovery purposes)
   useEffect(() => {
@@ -95,27 +118,27 @@ const CreatePost = () => {
 
   const loadPostForEdit = async () => {
     if (!postId || !user) return
-    
+
     try {
       const post = await getPost(postId)
       if (!post) {
         setError('Bài viết không tồn tại')
         return
       }
-      
+
       // Check if user is the author
       if (post.authorId !== user.uid) {
         setError('Bạn không có quyền chỉnh sửa bài viết này')
         return
       }
-      
+
       // Load post data
       setOriginalPost(post)
       setTitle(post.title)
       setContent(post.content)
       setSelectedSubreddit(post.subreddit || '')
       setTags(post.tags || [])
-      
+
       // Convert attachments to UploadedFile format if needed
       if (post.attachments && post.attachments.length > 0) {
         const convertedFiles: UploadedFile[] = post.attachments.map((att: any) => ({
@@ -139,7 +162,7 @@ const CreatePost = () => {
       navigate('/login')
       return
     }
-    
+
     fetchSubreddits()
   }, [user, navigate, fetchSubreddits])
 
@@ -151,10 +174,22 @@ const CreatePost = () => {
 
   const handleFilesUploaded = (files: UploadedFile[]) => {
     setUploadedFiles(prev => [...prev, ...files])
+    
+    // Track files via WebSocket
+    if (wsRef.current && !isEditMode) {
+      files.forEach(file => {
+        wsRef.current?.trackFile(file.id);
+      });
+    }
   }
 
   const handleFileRemoved = (fileId: string) => {
     setUploadedFiles(prev => prev.filter(file => file.id !== fileId))
+    
+    // Remove from WebSocket tracking
+    if (wsRef.current && !isEditMode) {
+      wsRef.current.removeFile(fileId);
+    }
   }
 
   const handleAddTag = (e: React.KeyboardEvent) => {
@@ -173,7 +208,7 @@ const CreatePost = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (!user) {
       setError('Bạn cần đăng nhập để tạo bài viết')
       return
@@ -205,12 +240,12 @@ const CreatePost = () => {
 
     try {
       setError(null)
-      
+
       // Get image URLs from uploaded files
       const imageUrls = uploadedFiles
         .filter(file => file.type.startsWith('image/'))
         .map(file => file.url)
-      
+
       // Get all attachments
       const attachments = uploadedFiles.map(file => ({
         id: file.id,
@@ -242,7 +277,8 @@ const CreatePost = () => {
         }
 
         // Navigate to the edited post
-        if (selectedSubreddit) {
+        // Check if posting to user profile (starts with u/)
+        if (selectedSubreddit && !selectedSubreddit.startsWith('u/')) {
           navigate(`/r/${selectedSubreddit}/post/${originalPost.id}`)
         } else {
           navigate(`/post/${originalPost.id}`)
@@ -262,8 +298,14 @@ const CreatePost = () => {
         }, user.uid, user.displayName || user.username || 'Người dùng ẩn danh');
 
         if (postId) {
+          // Notify WebSocket that post was submitted (files should be kept)
+          if (wsRef.current && !isEditMode) {
+            wsRef.current.notifyPostSubmitted();
+          }
+          
           // Navigate to the created post
-          if (selectedSubreddit) {
+          // Check if posting to user profile (starts with u/)
+          if (selectedSubreddit && !selectedSubreddit.startsWith('u/')) {
             navigate(`/r/${selectedSubreddit}/post/${postId}`)
           } else {
             navigate(`/post/${postId}`)
@@ -288,10 +330,10 @@ const CreatePost = () => {
   if (error && (error.includes('hết hạn') || error.includes('không hợp lệ') || error.includes('xác thực'))) {
     return (
       <div className="container">
-        <div className="error-message" style={{ 
-          padding: '2rem', 
-          background: '#fee', 
-          border: '1px solid #fcc', 
+        <div className="error-message" style={{
+          padding: '2rem',
+          background: '#fee',
+          border: '1px solid #fcc',
           borderRadius: '8px',
           textAlign: 'center',
           margin: '2rem auto',
@@ -309,7 +351,7 @@ const CreatePost = () => {
     <div className="create-post-page">
       <div className="create-post-header">
         <h1>{isEditMode ? 'Chỉnh sửa bài viết' : 'Tạo bài viết'}</h1>
-        
+
         {/* Token expiry warning */}
         {isEditMode && tokenExpired && (
           <div className="token-warning" style={{
@@ -352,7 +394,7 @@ const CreatePost = () => {
         <div className="post-user-info">
           <div className="user-avatar">
             {(user.avatarUrl || user.photoURL) ? (
-              <img src={user.avatarUrl || user.photoURL} alt={user.displayName || 'User'} />
+              <img src={user.avatarUrl || user.photoURL || undefined} alt={user.displayName || 'User'} />
             ) : (
               <div className="avatar-placeholder">
                 {(user.displayName || user.username || 'U')[0].toUpperCase()}
@@ -367,10 +409,7 @@ const CreatePost = () => {
                 onChange={(e) => setSelectedSubreddit(e.target.value)}
                 className="community-select"
               >
-                <option value="">Chọn cộng đồng</option>
-                <option value={`u/${user.displayName || user.username}`}>
-                  u/{user.displayName || user.username} (Profile của bạn)
-                </option>
+                <option value="">Không chọn cộng đồng</option>
                 {subreddits.map((sub) => (
                   <option key={sub.id} value={sub.name}>
                     r/{sub.name}
@@ -426,7 +465,7 @@ const CreatePost = () => {
                 {isMarkdown ? 'Markdown' : 'Rich Text'}
               </button>
             </div>
-            
+
             {isMarkdown ? (
               <>
                 <textarea
@@ -455,10 +494,10 @@ const CreatePost = () => {
                     backgroundColor: '#f8f9fa',
                     minHeight: '100px'
                   }}>
-                    <ReactMarkdown 
+                    <ReactMarkdown
                       remarkPlugins={[remarkGfm]}
                       components={{
-                        table: ({children}) => (
+                        table: ({ children }) => (
                           <table style={{
                             border: '1px solid #ddd',
                             borderCollapse: 'collapse',
@@ -468,7 +507,7 @@ const CreatePost = () => {
                             {children}
                           </table>
                         ),
-                        th: ({children}) => (
+                        th: ({ children }) => (
                           <th style={{
                             border: '1px solid #ddd',
                             padding: '8px',
@@ -478,7 +517,7 @@ const CreatePost = () => {
                             {children}
                           </th>
                         ),
-                        td: ({children}) => (
+                        td: ({ children }) => (
                           <td style={{
                             border: '1px solid #ddd',
                             padding: '8px'
@@ -486,7 +525,7 @@ const CreatePost = () => {
                             {children}
                           </td>
                         ),
-                        code: ({children, className}) => {
+                        code: ({ children, className }) => {
                           const isInline = !className
                           return isInline ? (
                             <code style={{
@@ -508,7 +547,7 @@ const CreatePost = () => {
                             </pre>
                           )
                         },
-                        blockquote: ({children}) => (
+                        blockquote: ({ children }) => (
                           <blockquote style={{
                             borderLeft: '4px solid #ddd',
                             paddingLeft: '1rem',
@@ -547,8 +586,9 @@ const CreatePost = () => {
               onFileRemoved={handleFileRemoved}
               uploadedFiles={uploadedFiles}
               maxFiles={10}
-              acceptedTypes={[...SUPPORTED_IMAGE_TYPES, ...SUPPORTED_VIDEO_TYPES]}
+              acceptedTypes={[...SUPPORTED_IMAGE_TYPES, ...SUPPORTED_VIDEO_TYPES, 'application/pdf', ...SUPPORTED_DOCUMENT_TYPES]}
               multiple={true}
+              userId={user?.uid}
             />
           </div>
 
