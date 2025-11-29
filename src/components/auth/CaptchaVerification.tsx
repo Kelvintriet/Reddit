@@ -1,197 +1,153 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useCaptchaStore } from '../../store/useCaptchaStore';
 import './CaptchaVerification.css';
 
 /**
- * Simple, creative CAPTCHA - no icons, no gradients
+ * Simple dot-click CAPTCHA
+ * - Shows 5 dots that appear one by one
+ * - User must click each dot
+ * - Bot detection: too fast (<150ms) or too consistent timing = bot
  */
+
+interface Dot {
+  id: number;
+  x: number;
+  y: number;
+  clicked: boolean;
+}
+
+// Generate random position within bounds
+const randomPos = () => ({
+  x: 20 + Math.random() * 60, // 20-80% from left
+  y: 20 + Math.random() * 60  // 20-80% from top
+});
+
 export const CaptchaVerificationModal: React.FC = () => {
-  const {
-    challenge,
-    isLoadingChallenge,
-    showVerificationModal,
-    error,
-    fetchChallenge,
-    verifyHold,
-    closeVerificationModal,
-    clearError,
-    clientIP,
-    fetchIP,
-    getReleaseTolerance
-  } = useCaptchaStore();
-
-  const [isHolding, setIsHolding] = useState(false);
-  const [progress, setProgress] = useState(0);
+  const { showModal, error, verify, closeModal, clearError, clientIP } = useCaptchaStore();
+  
+  const [dots, setDots] = useState<Dot[]>([]);
+  const [currentDot, setCurrentDot] = useState(0);
+  const [clickTimes, setClickTimes] = useState<number[]>([]);
+  const [lastClickTime, setLastClickTime] = useState<number>(0);
   const [isVerifying, setIsVerifying] = useState(false);
-  const [verified, setVerified] = useState(false);
-  const [showReleasePrompt, setShowReleasePrompt] = useState(false);
-  const [elapsedTime, setElapsedTime] = useState(0);
+  const [success, setSuccess] = useState(false);
+  const [localError, setLocalError] = useState<string | null>(null);
 
-  const holdStartTime = useRef<number | null>(null);
-  const progressInterval = useRef<NodeJS.Timeout | null>(null);
-  const releaseTolerance = getReleaseTolerance();
+  const TOTAL_DOTS = 5;
 
-  useEffect(() => {
-    if (showVerificationModal) {
-      if (!clientIP) fetchIP();
-      if (!challenge) fetchChallenge();
+  // Initialize dots
+  const initDots = useCallback(() => {
+    const newDots: Dot[] = [];
+    for (let i = 0; i < TOTAL_DOTS; i++) {
+      const pos = randomPos();
+      newDots.push({ id: i, x: pos.x, y: pos.y, clicked: false });
     }
-  }, [showVerificationModal, clientIP, challenge, fetchIP, fetchChallenge]);
-
-  useEffect(() => {
-    return () => {
-      if (progressInterval.current) clearInterval(progressInterval.current);
-    };
-  }, []);
-
-  const startHold = useCallback(() => {
-    if (isVerifying || verified || !challenge) return;
-
+    setDots(newDots);
+    setCurrentDot(0);
+    setClickTimes([]);
+    setLastClickTime(Date.now());
+    setSuccess(false);
+    setLocalError(null);
     clearError();
-    setIsHolding(true);
-    setShowReleasePrompt(false);
-    holdStartTime.current = Date.now();
-    setProgress(0);
-    setElapsedTime(0);
+  }, [clearError]);
 
-    progressInterval.current = setInterval(() => {
-      if (holdStartTime.current && challenge) {
-        const elapsed = Date.now() - holdStartTime.current;
-        const newProgress = Math.min((elapsed / challenge.requiredHoldTime) * 100, 100);
-
-        setProgress(newProgress);
-        setElapsedTime(elapsed);
-
-        if (newProgress >= 95 && !showReleasePrompt) {
-          setShowReleasePrompt(true);
-        }
-
-        if (elapsed >= challenge.requiredHoldTime + 500) {
-          if (progressInterval.current) {
-            clearInterval(progressInterval.current);
-            progressInterval.current = null;
-          }
-        }
-      }
-    }, 16);
-  }, [isVerifying, verified, challenge, clearError, showReleasePrompt]);
-
-  const endHold = useCallback(async () => {
-    if (!isHolding || isVerifying || verified || !challenge || !holdStartTime.current) return;
-
-    if (progressInterval.current) {
-      clearInterval(progressInterval.current);
-      progressInterval.current = null;
+  useEffect(() => {
+    if (showModal) {
+      initDots();
     }
+  }, [showModal, initDots]);
 
-    const holdTime = Date.now() - holdStartTime.current;
+  const handleDotClick = async (dotId: number) => {
+    if (dotId !== currentDot || isVerifying || success) return;
 
-    setIsHolding(false);
-    setShowReleasePrompt(false);
+    const now = Date.now();
+    const timeSinceLast = now - lastClickTime;
+    
+    // Record click time
+    const newClickTimes = [...clickTimes, timeSinceLast];
+    setClickTimes(newClickTimes);
+    setLastClickTime(now);
 
-    if (holdTime < challenge.requiredHoldTime - releaseTolerance) {
-      setProgress(0);
-      setElapsedTime(0);
-      holdStartTime.current = null;
-      return;
-    }
+    // Mark dot as clicked
+    setDots(prev => prev.map(d => 
+      d.id === dotId ? { ...d, clicked: true } : d
+    ));
 
-    setIsVerifying(true);
-
-    const success = await verifyHold(holdTime, challenge.requiredHoldTime);
-
-    if (success) {
-      setVerified(true);
-      setProgress(100);
-      setTimeout(() => {
-        closeVerificationModal();
-        setVerified(false);
-        setProgress(0);
-        setElapsedTime(0);
-      }, 800);
+    // Move to next dot or verify
+    if (currentDot < TOTAL_DOTS - 1) {
+      setCurrentDot(currentDot + 1);
     } else {
-      setProgress(0);
-      setElapsedTime(0);
+      // All dots clicked - verify
+      setIsVerifying(true);
+      
+      const result = await verify(newClickTimes);
+      
+      if (result) {
+        setSuccess(true);
+        setTimeout(() => {
+          closeModal();
+        }, 500);
+      } else {
+        // Reset for retry
+        setTimeout(() => {
+          initDots();
+        }, 1000);
+      }
+      
+      setIsVerifying(false);
     }
-
-    setIsVerifying(false);
-    holdStartTime.current = null;
-  }, [isHolding, isVerifying, verified, challenge, releaseTolerance, verifyHold, closeVerificationModal]);
-
-  const handleRefresh = () => {
-    setProgress(0);
-    setElapsedTime(0);
-    setIsHolding(false);
-    clearError();
-    fetchChallenge();
   };
 
-  if (!showVerificationModal) return null;
+  const handleMissClick = () => {
+    if (isVerifying || success) return;
+    setLocalError('Click the dot!');
+    setTimeout(() => setLocalError(null), 1000);
+  };
 
-  const formatTime = (ms: number) => (ms / 1000).toFixed(2);
+  if (!showModal) return null;
 
   return (
-    <div className="cv-overlay" onClick={() => closeVerificationModal()}>
+    <div className="cv-overlay">
       <div className="cv-modal" onClick={(e) => e.stopPropagation()}>
-        <button className="cv-close" onClick={() => closeVerificationModal()}>×</button>
-
+        <button className="cv-close" onClick={closeModal}>x</button>
+        
         <div className="cv-header">
-          <span className="cv-title">are you human?</span>
-          <span className="cv-subtitle">hold the button for exactly {challenge ? formatTime(challenge.requiredHoldTime) : '...'}s</span>
+          <span className="cv-title">click the dots</span>
+          <span className="cv-subtitle">{currentDot + 1} / {TOTAL_DOTS}</span>
         </div>
 
-        {error && <div className="cv-error">{error}</div>}
+        {(error || localError) && (
+          <div className="cv-error">{error || localError}</div>
+        )}
 
-        <div className="cv-content">
-          {isLoadingChallenge ? (
-            <div className="cv-loading">
-              <span className="cv-dots">...</span>
-            </div>
-          ) : verified ? (
-            <div className="cv-success">
-              <span className="cv-check">✓</span>
-              <span>verified</span>
-            </div>
-          ) : challenge ? (
-            <>
-              <div className="cv-stats">
-                <div className="cv-stat">
-                  <span className="cv-stat-label">target</span>
-                  <span className="cv-stat-value">{formatTime(challenge.requiredHoldTime)}s</span>
-                </div>
-                <div className="cv-stat">
-                  <span className="cv-stat-label">current</span>
-                  <span className="cv-stat-value">{formatTime(elapsedTime)}s</span>
-                </div>
-                <div className="cv-stat">
-                  <span className="cv-stat-label">tolerance</span>
-                  <span className="cv-stat-value">±{releaseTolerance}ms</span>
-                </div>
-              </div>
+        {success ? (
+          <div className="cv-success">
+            <span className="cv-check">OK</span>
+            <span>verified</span>
+          </div>
+        ) : (
+          <div className="cv-dot-area" onClick={handleMissClick}>
+            {dots.map((dot, index) => (
+              <div
+                key={dot.id}
+                className={`cv-dot ${dot.clicked ? 'clicked' : ''} ${index === currentDot ? 'active' : ''} ${index < currentDot ? 'done' : ''}`}
+                style={{ left: `${dot.x}%`, top: `${dot.y}%` }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDotClick(dot.id);
+                }}
+              />
+            ))}
+            
+            {isVerifying && (
+              <div className="cv-verifying">checking...</div>
+            )}
+          </div>
+        )}
 
-              <div className="cv-bar-container">
-                <div className="cv-bar" style={{ width: `${progress}%` }} />
-                <span className="cv-bar-text">{Math.round(progress)}%</span>
-              </div>
-
-              <button
-                className={`cv-hold-btn ${isHolding ? 'holding' : ''} ${isVerifying ? 'verifying' : ''} ${showReleasePrompt ? 'release' : ''}`}
-                onMouseDown={startHold}
-                onMouseUp={endHold}
-                onMouseLeave={endHold}
-                onTouchStart={startHold}
-                onTouchEnd={endHold}
-                disabled={isVerifying || verified}
-              >
-                {isVerifying ? 'checking...' : isHolding ? (showReleasePrompt ? 'RELEASE!' : 'holding...') : 'hold me'}
-              </button>
-
-              <button className="cv-refresh" onClick={handleRefresh}>
-                ↻ new challenge
-              </button>
-            </>
-          ) : null}
-        </div>
+        <button className="cv-refresh" onClick={initDots} disabled={isVerifying}>
+          reset
+        </button>
 
         {clientIP && <div className="cv-ip">{clientIP}</div>}
       </div>
@@ -200,16 +156,17 @@ export const CaptchaVerificationModal: React.FC = () => {
 };
 
 /**
- * CAPTCHA Gate - blocks app until verified
+ * CAPTCHA Gate - blocks app until IP is verified
  */
 export const CaptchaGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { isVerified, isCheckingStatus, checkStatus, openVerificationModal, showVerificationModal } = useCaptchaStore();
+  const { isVerified, isChecking, checkIP, openModal, showModal } = useCaptchaStore();
 
   useEffect(() => {
-    checkStatus();
-  }, [checkStatus]);
+    checkIP();
+  }, [checkIP]);
 
-  if (isCheckingStatus) {
+  // Still checking IP
+  if (isChecking) {
     return (
       <div className="cv-gate">
         <span className="cv-gate-dots">...</span>
@@ -217,19 +174,20 @@ export const CaptchaGate: React.FC<{ children: React.ReactNode }> = ({ children 
     );
   }
 
+  // Not verified - show gate
   if (!isVerified) {
     return (
       <>
         <div className="cv-gate">
           <div className="cv-gate-box">
-            <span className="cv-gate-title">⚡</span>
-            <span className="cv-gate-text">quick verification needed</span>
-            <button className="cv-gate-btn" onClick={openVerificationModal}>
-              i'm not a robot
+            <span className="cv-gate-title">!</span>
+            <span className="cv-gate-text">quick check needed</span>
+            <button className="cv-gate-btn" onClick={openModal}>
+              verify
             </button>
           </div>
         </div>
-        {showVerificationModal && <CaptchaVerificationModal />}
+        {showModal && <CaptchaVerificationModal />}
       </>
     );
   }
@@ -243,31 +201,26 @@ export const CaptchaGate: React.FC<{ children: React.ReactNode }> = ({ children 
 export const CaptchaVerifiedBadge: React.FC = () => {
   const { isVerified } = useCaptchaStore();
   if (!isVerified) return null;
-  return <span className="cv-badge">✓ verified</span>;
+  return <span className="cv-badge">OK</span>;
 };
 
 /**
- * Hook for CAPTCHA verification
+ * Hook
  */
 export const useRequireCaptcha = () => {
-  const { isVerified, getToken, openVerificationModal, checkStatus } = useCaptchaStore();
+  const { isVerified, openModal, checkIP } = useCaptchaStore();
 
   const requireVerification = useCallback(async (action: () => void | Promise<void>) => {
-    const verified = await checkStatus();
+    const verified = await checkIP();
     if (!verified) {
-      openVerificationModal();
+      openModal();
       return false;
     }
     await action();
     return true;
-  }, [checkStatus, openVerificationModal]);
+  }, [checkIP, openModal]);
 
-  const getCaptchaHeaders = useCallback(() => {
-    const token = getToken();
-    return token ? { 'X-Captcha-Token': token } : {};
-  }, [getToken]);
-
-  return { isVerified, requireVerification, getCaptchaHeaders, openVerificationModal };
+  return { isVerified, requireVerification, openModal };
 };
 
 export default CaptchaVerificationModal;

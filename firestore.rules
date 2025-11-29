@@ -11,6 +11,11 @@ service cloud.firestore {
       allow read, write: if true;
     }
     
+    // Verified IPs collection - allow unauthenticated reads/writes for bot protection
+    match /verifiedIPs/{ipId} {
+      allow read, write: if true;
+    }
+    
     // Orphaned files tracking - allow unauthenticated reads/writes
     match /orphanedFiles/{fileId} {
       allow read, write: if true;

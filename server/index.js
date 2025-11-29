@@ -9,7 +9,7 @@ import { checkBlockedUser } from './middleware/checkBlockedUser.js';
 import { verifyCaptchaToken, checkCaptchaOptional } from './middleware/verifyCaptcha.js';
 import { proxyAttachment } from './routes/attachments.js';
 import { cleanupOrphanedFiles } from './routes/cleanup.js';
-import { getCaptchaChallenge, verifyCaptcha, getCaptchaStatus, getIPAddress } from './routes/captcha.js';
+import { getCaptchaChallenge, verifyCaptcha, getCaptchaStatus, getIPAddress, checkIPVerification } from './routes/captcha.js';
 import { initializeFileCleanupWebSocket } from './websocket/fileCleanup.js';
 
 const app = new Koa();
@@ -21,7 +21,14 @@ app.use(bodyParser());
 
 // CORS configuration
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  origin: (ctx) => {
+    // Allow localhost origins for development
+    const origin = ctx.request.header.origin;
+    if (origin && (origin.includes('localhost') || origin.includes('127.0.0.1'))) {
+      return origin;
+    }
+    return process.env.FRONTEND_URL || 'http://localhost:3000';
+  },
   credentials: true,
   allowHeaders: ['Content-Type', 'Authorization', 'X-Captcha-Token']
 }));
@@ -50,6 +57,9 @@ router.get('/health', async (ctx) => {
 
 // Get client IP address
 router.get('/api/ip', getIPAddress);
+
+// Check if IP is verified
+router.get('/api/captcha/check', checkIPVerification);
 
 // Get CAPTCHA challenge (math problem)
 router.get('/api/captcha/challenge', getCaptchaChallenge);

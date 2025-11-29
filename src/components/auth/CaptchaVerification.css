@@ -147,6 +147,57 @@
   font-weight: 600;
 }
 
+/* Dot click area */
+.cv-dot-area {
+  position: relative;
+  height: 200px;
+  background: #f5f5f5;
+  border: 1px solid #ddd;
+  border-radius: 12px;
+  cursor: crosshair;
+  margin-bottom: 16px;
+}
+
+.cv-dot {
+  position: absolute;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #ccc;
+  transform: translate(-50%, -50%);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  opacity: 0.3;
+}
+
+.cv-dot.active {
+  background: #1a1a1a;
+  opacity: 1;
+  animation: cvPulse 1s infinite;
+}
+
+.cv-dot.clicked {
+  background: #4caf50;
+  opacity: 1;
+}
+
+.cv-dot.done {
+  background: #4caf50;
+  opacity: 0.5;
+}
+
+.cv-verifying {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 12px;
+  font-size: 14px;
+  color: #666;
+}
+
 /* Stats */
 .cv-stats {
   display: flex;

@@ -1,6 +1,5 @@
 import { initializeApp, getApps } from 'firebase/app';
 import { getFirestore, doc, setDoc, getDoc, deleteDoc, Timestamp } from 'firebase/firestore';
-import crypto from 'crypto';
 
 // Initialize Firebase (reuse existing app if available)
 const firebaseConfig = {
@@ -15,74 +14,19 @@ const firebaseConfig = {
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
 const db = getFirestore(app);
 
-// CAPTCHA token expiration time (24 hours in milliseconds)
-const CAPTCHA_TOKEN_EXPIRY = 24 * 60 * 60 * 1000;
-
-// Minimum hold time (in milliseconds) - will be randomized
-const MIN_HOLD_TIME = 1000; // 1 second minimum
-const MAX_HOLD_TIME = 4000; // 4 seconds maximum
-
-// Allowed variance on release (tolerance for early/late release)
-const RELEASE_TOLERANCE = 100; // 100ms tolerance
-
-/**
- * Generate random hold time between 1-4 seconds
- */
-const generateRandomHoldTime = () => {
-  return Math.floor(Math.random() * (MAX_HOLD_TIME - MIN_HOLD_TIME + 1)) + MIN_HOLD_TIME;
-};
-
-/**
- * Generate random speed profile for the progress bar
- * Returns segments with different speeds (fast, slow, variable)
- */
-const generateSpeedProfile = (totalTime) => {
-  const profiles = [];
-  let currentTime = 0;
-
-  // Randomly decide number of segments (1-3)
-  const numSegments = Math.floor(Math.random() * 3) + 1;
-  const segmentDuration = totalTime / numSegments;
-
-  for (let i = 0; i < numSegments; i++) {
-    const speedOptions = ['slow', 'fast', 'variable'];
-    const speed = speedOptions[Math.floor(Math.random() * speedOptions.length)];
-
-    let speedMultiplier = 1;
-    if (speed === 'slow') {
-      speedMultiplier = 0.3 + Math.random() * 0.3; // 30-60% speed
-    } else if (speed === 'fast') {
-      speedMultiplier = 1.7 + Math.random() * 0.3; // 170-200% speed
-    } else {
-      speedMultiplier = 0.8 + Math.random() * 0.4; // 80-120% speed
-    }
-
-    profiles.push({
-      startTime: currentTime,
-      endTime: currentTime + segmentDuration,
-      speed,
-      speedMultiplier
-    });
-
-    currentTime += segmentDuration;
-  }
-
-  return profiles;
-};
+// IP verification expiry (24 hours)
+const IP_VERIFY_EXPIRY = 24 * 60 * 60 * 1000;
 
 /**
  * Get client IP address from request (Koa style)
  */
 export const getClientIP = (ctx) => {
-  // Use x-forwarded-for header or socket remote address (like Express style)
   const ip = ctx.headers['x-forwarded-for'] || ctx.socket?.remoteAddress;
 
-  // Clean up IPv6 localhost format
   if (ip === '::1' || ip === '::ffff:127.0.0.1') {
     return '127.0.0.1';
   }
 
-  // Handle comma-separated list (first IP is the client)
   if (ip && ip.includes(',')) {
     return ip.split(',')[0].trim();
   }
@@ -94,207 +38,141 @@ export const getClientIP = (ctx) => {
  * GET /api/ip - Return client IP address
  */
 export const getIPAddress = async (ctx) => {
-  const ip = ctx.headers['x-forwarded-for'] || ctx.socket?.remoteAddress;
-
-  // Clean up IPv6 localhost format
-  let cleanIP = ip;
-  if (ip === '::1' || ip === '::ffff:127.0.0.1') {
-    cleanIP = '127.0.0.1';
-  } else if (ip && ip.includes(',')) {
-    cleanIP = ip.split(',')[0].trim();
-  }
-
-  ctx.body = {
-    ip: cleanIP || 'unknown',
-    message: `Your IP is ${cleanIP || 'unknown'}`
-  };
+  const ip = getClientIP(ctx);
+  ctx.body = { ip };
 };
 
 /**
- * Generate a verification token
+ * Bot detection algorithm based on click timing
+ * Returns: { isBot: boolean, reason?: string }
  */
-const generateVerificationToken = () => {
-  return crypto.randomBytes(32).toString('hex');
+const detectBot = (clickTimes) => {
+  if (!clickTimes || clickTimes.length < 3) {
+    return { isBot: true, reason: 'Not enough clicks' };
+  }
+
+  // Filter out the first click (time since page load, not relevant)
+  const intervals = clickTimes.slice(1);
+
+  // Check 1: Any click too fast (<100ms) = bot
+  const tooFast = intervals.some(t => t < 100);
+  if (tooFast) {
+    return { isBot: true, reason: 'Clicks too fast' };
+  }
+
+  // Check 2: All clicks suspiciously consistent (variance < 30ms) = bot
+  const avg = intervals.reduce((a, b) => a + b, 0) / intervals.length;
+  const variance = intervals.reduce((sum, t) => sum + Math.pow(t - avg, 2), 0) / intervals.length;
+  const stdDev = Math.sqrt(variance);
+
+  if (stdDev < 30 && intervals.length >= 4) {
+    return { isBot: true, reason: 'Timing too consistent' };
+  }
+
+  // Check 3: All clicks exactly the same = bot
+  const allSame = intervals.every(t => t === intervals[0]);
+  if (allSame) {
+    return { isBot: true, reason: 'Identical timing' };
+  }
+
+  // Check 4: Average speed too fast (<150ms average) = bot
+  if (avg < 150) {
+    return { isBot: true, reason: 'Average speed too fast' };
+  }
+
+  return { isBot: false };
+};
+
+/**
+ * GET /api/captcha/check
+ * Check if IP is already verified
+ */
+export const checkIPVerification = async (ctx) => {
+  try {
+    const ip = getClientIP(ctx);
+
+    // Check if this IP is already verified
+    const ipRef = doc(db, 'verifiedIPs', ip.replace(/\./g, '_'));
+    const ipSnap = await getDoc(ipRef);
+
+    if (ipSnap.exists()) {
+      const data = ipSnap.data();
+
+      // Check if not expired
+      if (data.expiresAt.toDate() > new Date()) {
+        ctx.body = { verified: true, ip };
+        return;
+      } else {
+        // Expired - delete it
+        await deleteDoc(ipRef);
+      }
+    }
+
+    ctx.body = { verified: false, ip };
+  } catch (error) {
+    console.error('Error checking IP:', error);
+    ctx.body = { verified: false, ip: getClientIP(ctx) };
+  }
 };
 
 /**
  * POST /api/captcha/verify
- * Verify slider hold time and release timing
+ * Verify click timing and save IP as verified
  */
 export const verifyCaptcha = async (ctx) => {
   try {
-    const clientIP = getClientIP(ctx);
-    const { holdTime, requiredHoldTime, releaseError } = ctx.request.body || {};
+    const ip = getClientIP(ctx);
+    const { clickTimes } = ctx.request.body || {};
 
-    // Validate required hold time was provided
-    if (!requiredHoldTime || requiredHoldTime < MIN_HOLD_TIME || requiredHoldTime > MAX_HOLD_TIME) {
+    // Run bot detection
+    const detection = detectBot(clickTimes);
+
+    if (detection.isBot) {
+      console.log(`🤖 Bot detected from IP: ${ip} - ${detection.reason}`);
       ctx.status = 400;
       ctx.body = {
-        error: 'Invalid challenge configuration',
-        code: 'INVALID_CHALLENGE'
+        error: detection.reason || 'Bot detected',
+        code: 'BOT_DETECTED'
       };
       return;
     }
 
-    // Check if user held long enough and released at right time
-    if (!holdTime) {
-      ctx.status = 400;
-      ctx.body = {
-        error: 'Failed to verify hold time',
-        code: 'NO_HOLD_TIME'
-      };
-      return;
-    }
+    // Human verified - save IP to Firestore
+    const expiresAt = new Date(Date.now() + IP_VERIFY_EXPIRY);
+    const ipRef = doc(db, 'verifiedIPs', ip.replace(/\./g, '_'));
 
-    // Calculate how close the release was to the required time
-    const timingError = Math.abs(holdTime - requiredHoldTime);
-
-    // Allow 100ms tolerance
-    if (timingError > RELEASE_TOLERANCE) {
-      ctx.status = 400;
-      ctx.body = {
-        error: `Release timing off by ${timingError}ms. Try again.`,
-        code: 'TIMING_ERROR',
-        required: requiredHoldTime,
-        actual: holdTime,
-        tolerance: RELEASE_TOLERANCE,
-        error_ms: timingError
-      };
-      return;
-    }
-
-    // Verification successful!
-    const verificationToken = generateVerificationToken();
-    const expiresAt = new Date(Date.now() + CAPTCHA_TOKEN_EXPIRY);
-
-    // Store verification token in Firestore
-    const tokenRef = doc(db, 'captchaVerifications', verificationToken);
-    await setDoc(tokenRef, {
-      ip: clientIP,
+    await setDoc(ipRef, {
+      ip,
       verifiedAt: Timestamp.now(),
       expiresAt: Timestamp.fromDate(expiresAt),
-      holdTime: holdTime,
-      requiredHoldTime: requiredHoldTime,
-      timingError: timingError,
+      clickTimes,
       userAgent: ctx.headers['user-agent'] || 'unknown'
     });
 
-    console.log(`✅ CAPTCHA verified for IP: ${clientIP}, Hold: ${holdTime}ms (required: ${requiredHoldTime}ms, error: ${timingError}ms)`);
+    console.log(`✅ Human verified: ${ip}`);
 
     ctx.body = {
       success: true,
-      token: verificationToken,
-      expiresAt: expiresAt.toISOString(),
-      message: 'Verification successful',
-      stats: {
-        holdTime,
-        requiredHoldTime,
-        timingError
-      }
+      ip,
+      expiresAt: expiresAt.toISOString()
     };
   } catch (error) {
-    console.error('Error verifying CAPTCHA:', error);
+    console.error('Error verifying:', error);
     ctx.status = 500;
-    ctx.body = { error: 'Failed to verify CAPTCHA' };
+    ctx.body = { error: 'Verification failed' };
   }
 };
 
 /**
- * GET /api/captcha/status
- * Check if current session has valid CAPTCHA verification
- * Validates both token AND IP match
+ * GET /api/captcha/status - Alias for check
  */
 export const getCaptchaStatus = async (ctx) => {
-  try {
-    const clientIP = getClientIP(ctx);
-    const token = ctx.headers['x-captcha-token'];
-
-    if (!token) {
-      ctx.body = {
-        verified: false,
-        ipMatch: false,
-        ip: clientIP,
-        message: 'No verification token provided'
-      };
-      return;
-    }
-
-    // Check token in Firestore
-    const tokenRef = doc(db, 'captchaVerifications', token);
-    const tokenSnap = await getDoc(tokenRef);
-
-    if (!tokenSnap.exists()) {
-      ctx.body = {
-        verified: false,
-        ipMatch: false,
-        ip: clientIP,
-        message: 'Invalid verification token'
-      };
-      return;
-    }
-
-    const tokenData = tokenSnap.data();
-
-    // Check if token is expired
-    if (tokenData.expiresAt.toDate() < new Date()) {
-      await deleteDoc(tokenRef);
-      ctx.body = {
-        verified: false,
-        ipMatch: false,
-        ip: clientIP,
-        message: 'Verification token expired'
-      };
-      return;
-    }
-
-    // Check if IP matches the original verification IP
-    const ipMatch = tokenData.ip === clientIP;
-
-    if (!ipMatch) {
-      ctx.body = {
-        verified: false,
-        ipMatch: false,
-        ip: clientIP,
-        originalIP: tokenData.ip,
-        message: 'IP address mismatch - re-verification required'
-      };
-      return;
-    }
-
-    ctx.body = {
-      verified: true,
-      ipMatch: true,
-      ip: clientIP,
-      verifiedAt: tokenData.verifiedAt.toDate().toISOString(),
-      expiresAt: tokenData.expiresAt.toDate().toISOString(),
-      message: 'Verification valid'
-    };
-  } catch (error) {
-    console.error('Error checking CAPTCHA status:', error);
-    ctx.status = 500;
-    ctx.body = { error: 'Failed to check verification status' };
-  }
+  return checkIPVerification(ctx);
 };
 
 /**
- * GET /api/captcha/challenge
- * Get a new challenge with random hold time and speed profile
+ * GET /api/captcha/challenge - Not needed for dot-click, but keep for compatibility
  */
 export const getCaptchaChallenge = async (ctx) => {
-  try {
-    const requiredHoldTime = generateRandomHoldTime();
-    const speedProfile = generateSpeedProfile(requiredHoldTime);
-
-    ctx.body = {
-      type: 'slider',
-      requiredHoldTime,
-      speedProfile,
-      message: `Hold for ${requiredHoldTime}ms then release`,
-      maxTime: MAX_HOLD_TIME
-    };
-  } catch (error) {
-    console.error('Error generating challenge:', error);
-    ctx.status = 500;
-    ctx.body = { error: 'Failed to generate challenge' };
-  }
+  ctx.body = { type: 'dot-click', dots: 5 };
 };
