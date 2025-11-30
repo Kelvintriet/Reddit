@@ -14,7 +14,7 @@ import remarkGfm from 'remark-gfm'
 const CreatePost = () => {
   const { subreddit: subredditParam, postId, token } = useParams<{ subreddit?: string; postId?: string; token?: string }>()
   const navigate = useNavigate()
-  const { user } = useAuthStore()
+  const { user, isInitialized } = useAuthStore()
   const { createPost, isLoading } = usePostsStore()
   const { subreddits, fetchSubreddits } = useSubredditsStore()
 
@@ -158,13 +158,16 @@ const CreatePost = () => {
   }
 
   useEffect(() => {
+    // Wait for auth to initialize before checking user
+    if (!isInitialized) return
+
     if (!user) {
       navigate('/login')
       return
     }
 
     fetchSubreddits()
-  }, [user, navigate, fetchSubreddits])
+  }, [user, isInitialized, navigate, fetchSubreddits])
 
   useEffect(() => {
     if (subredditParam) {
@@ -316,6 +319,15 @@ const CreatePost = () => {
       console.error('Error creating post:', error)
       setError(error instanceof Error ? error.message : 'Đã xảy ra lỗi khi tạo bài viết')
     }
+  }
+
+  // Show loading while auth is initializing
+  if (!isInitialized) {
+    return (
+      <div className="container">
+        <p>Đang tải...</p>
+      </div>
+    )
   }
 
   if (!user) {

@@ -32,6 +32,7 @@
     "code": "^5.2.4",
     "cohere-ai": "^7.17.1",
     "date-fns": "^4.1.0",
+    "dotenv": "^17.2.3",
     "firebase": "^11.10.0",
     "koa": "^2.15.0",
     "koa-bodyparser": "^4.4.1",

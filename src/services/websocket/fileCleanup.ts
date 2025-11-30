@@ -25,11 +25,13 @@ export class FileCleanupWebSocket {
       const backendUrl = (import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000').replace('localhost', '127.0.0.1');
       const wsUrl = backendUrl.replace('http://', 'ws://').replace('https://', 'wss://') + '/ws/file-cleanup';
 
+      console.log('🔗 Connecting to WebSocket:', wsUrl);
+
       try {
         this.ws = new WebSocket(wsUrl);
 
         this.ws.onopen = () => {
-          console.log('🔌 File cleanup WebSocket connected');
+          console.log('🔌 File cleanup WebSocket connected to:', wsUrl);
           this.reconnectAttempts = 0;
 
           // Register session with current fileIds
