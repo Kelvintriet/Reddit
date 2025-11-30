@@ -186,6 +186,41 @@
   opacity: 0.5;
 }
 
+/* Hard mode dots - smaller and varying */
+.cv-dot-hard {
+  width: 16px;
+  height: 16px;
+}
+
+.cv-dot-hard.active {
+  animation: cvPulseFast 0.3s ease infinite;
+}
+
+@keyframes cvPulseFast {
+  0%, 100% {
+    transform: translate(-50%, -50%) scale(1);
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.15);
+  }
+}
+
+/* Hard mode modal - larger */
+.cv-modal-hard {
+  max-width: 420px;
+}
+
+/* Hard mode dot area - taller */
+.cv-dot-area-hard {
+  height: 350px;
+}
+
+/* Timer styling */
+.cv-timer {
+  color: #e53935;
+  font-weight: 700;
+}
+
 .cv-verifying {
   position: absolute;
   inset: 0;
@@ -341,6 +376,26 @@
   padding-top: 16px;
   border-top: 1px solid #f0f0f0;
   font-family: monospace;
+}
+
+/* Device UID */
+.cv-uid {
+  text-align: center;
+  font-size: 10px;
+  color: #ddd;
+  margin-top: 4px;
+  font-family: monospace;
+}
+
+/* Flagged warning */
+.cv-flagged {
+  text-align: center;
+  font-size: 11px;
+  color: #e67700;
+  margin-top: 8px;
+  padding: 4px 8px;
+  background: #fff8e6;
+  border-radius: 4px;
 }
 
 /* Gate */

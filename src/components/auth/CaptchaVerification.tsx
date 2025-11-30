@@ -4,8 +4,8 @@ import './CaptchaVerification.css';
 
 /**
  * Simple dot-click CAPTCHA
- * - Shows 5 dots that appear one by one
- * - User must click each dot
+ * - Normal: 5 dots that appear one by one
+ * - Flagged (new device): 20 dots, smaller, faster timeout, more random
  * - Bot detection: too fast (<150ms) or too consistent timing = bot
  */
 
@@ -14,16 +14,29 @@ interface Dot {
   x: number;
   y: number;
   clicked: boolean;
+  size?: number; // For harder mode - varying sizes
 }
 
 // Generate random position within bounds
-const randomPos = () => ({
-  x: 20 + Math.random() * 60, // 20-80% from left
-  y: 20 + Math.random() * 60  // 20-80% from top
-});
+const randomPos = (harder: boolean = false) => {
+  if (harder) {
+    // Harder mode: more spread out, near edges too
+    return {
+      x: 5 + Math.random() * 90, // 5-95% from left
+      y: 5 + Math.random() * 90  // 5-95% from top
+    };
+  }
+  return {
+    x: 20 + Math.random() * 60, // 20-80% from left
+    y: 20 + Math.random() * 60  // 20-80% from top
+  };
+};
+
+// Random dot size for harder mode
+const randomSize = () => 12 + Math.random() * 16; // 12-28px
 
 export const CaptchaVerificationModal: React.FC = () => {
-  const { showModal, error, verify, closeModal, clearError, clientIP } = useCaptchaStore();
+  const { showModal, error, verify, closeModal, clearError, clientIP, deviceUID, isFlagged } = useCaptchaStore();
   
   const [dots, setDots] = useState<Dot[]>([]);
   const [currentDot, setCurrentDot] = useState(0);
@@ -32,15 +45,24 @@ export const CaptchaVerificationModal: React.FC = () => {
   const [isVerifying, setIsVerifying] = useState(false);
   const [success, setSuccess] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
+  const [timeLeft, setTimeLeft] = useState<number | null>(null);
 
-  const TOTAL_DOTS = 5;
+  // Normal: 5 dots, Flagged: 20 dots
+  const TOTAL_DOTS = isFlagged ? 20 : 5;
+  const TIME_LIMIT = isFlagged ? 30 : 0; // 30 seconds for flagged, no limit for normal
 
   // Initialize dots
   const initDots = useCallback(() => {
     const newDots: Dot[] = [];
     for (let i = 0; i < TOTAL_DOTS; i++) {
-      const pos = randomPos();
-      newDots.push({ id: i, x: pos.x, y: pos.y, clicked: false });
+      const pos = randomPos(isFlagged);
+      newDots.push({ 
+        id: i, 
+        x: pos.x, 
+        y: pos.y, 
+        clicked: false,
+        size: isFlagged ? randomSize() : undefined
+      });
     }
     setDots(newDots);
     setCurrentDot(0);
@@ -48,8 +70,28 @@ export const CaptchaVerificationModal: React.FC = () => {
     setLastClickTime(Date.now());
     setSuccess(false);
     setLocalError(null);
+    setTimeLeft(TIME_LIMIT > 0 ? TIME_LIMIT : null);
     clearError();
-  }, [clearError]);
+  }, [clearError, TOTAL_DOTS, TIME_LIMIT, isFlagged]);
+
+  // Timer for harder mode
+  useEffect(() => {
+    if (!showModal || !timeLeft || success || isVerifying) return;
+
+    const timer = setInterval(() => {
+      setTimeLeft(prev => {
+        if (prev === null || prev <= 1) {
+          // Time's up - reset
+          setLocalError('Time\'s up! Try again.');
+          setTimeout(() => initDots(), 1500);
+          return null;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [showModal, timeLeft, success, isVerifying, initDots]);
 
   useEffect(() => {
     if (showModal) {
@@ -108,12 +150,15 @@ export const CaptchaVerificationModal: React.FC = () => {
 
   return (
     <div className="cv-overlay">
-      <div className="cv-modal" onClick={(e) => e.stopPropagation()}>
+      <div className={`cv-modal ${isFlagged ? 'cv-modal-hard' : ''}`} onClick={(e) => e.stopPropagation()}>
         <button className="cv-close" onClick={closeModal}>x</button>
         
         <div className="cv-header">
-          <span className="cv-title">click the dots</span>
-          <span className="cv-subtitle">{currentDot + 1} / {TOTAL_DOTS}</span>
+          <span className="cv-title">{isFlagged ? '🚩 harder check' : 'click the dots'}</span>
+          <span className="cv-subtitle">
+            {currentDot + 1} / {TOTAL_DOTS}
+            {timeLeft !== null && <span className="cv-timer"> ({timeLeft}s)</span>}
+          </span>
         </div>
 
         {(error || localError) && (
@@ -126,12 +171,16 @@ export const CaptchaVerificationModal: React.FC = () => {
             <span>verified</span>
           </div>
         ) : (
-          <div className="cv-dot-area" onClick={handleMissClick}>
+          <div className={`cv-dot-area ${isFlagged ? 'cv-dot-area-hard' : ''}`} onClick={handleMissClick}>
             {dots.map((dot, index) => (
               <div
                 key={dot.id}
-                className={`cv-dot ${dot.clicked ? 'clicked' : ''} ${index === currentDot ? 'active' : ''} ${index < currentDot ? 'done' : ''}`}
-                style={{ left: `${dot.x}%`, top: `${dot.y}%` }}
+                className={`cv-dot ${dot.clicked ? 'clicked' : ''} ${index === currentDot ? 'active' : ''} ${index < currentDot ? 'done' : ''} ${isFlagged ? 'cv-dot-hard' : ''}`}
+                style={{ 
+                  left: `${dot.x}%`, 
+                  top: `${dot.y}%`,
+                  ...(dot.size ? { width: `${dot.size}px`, height: `${dot.size}px` } : {})
+                }}
                 onClick={(e) => {
                   e.stopPropagation();
                   handleDotClick(dot.id);
@@ -150,6 +199,8 @@ export const CaptchaVerificationModal: React.FC = () => {
         </button>
 
         {clientIP && <div className="cv-ip">{clientIP}</div>}
+        {deviceUID && <div className="cv-uid" title="Device ID">{deviceUID.slice(0, 8)}...</div>}
+        {isFlagged && <div className="cv-flagged">🚩 New device detected</div>}
       </div>
     </div>
   );
@@ -159,7 +210,7 @@ export const CaptchaVerificationModal: React.FC = () => {
  * CAPTCHA Gate - blocks app until IP is verified
  */
 export const CaptchaGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { isVerified, isChecking, checkIP, openModal, showModal } = useCaptchaStore();
+  const { isVerified, isChecking, checkIP, openModal, showModal, isFlagged } = useCaptchaStore();
 
   useEffect(() => {
     checkIP();
@@ -181,7 +232,9 @@ export const CaptchaGate: React.FC<{ children: React.ReactNode }> = ({ children 
         <div className="cv-gate">
           <div className="cv-gate-box">
             <span className="cv-gate-title">!</span>
-            <span className="cv-gate-text">quick check needed</span>
+            <span className="cv-gate-text">
+              {isFlagged ? '🚩 new device on this network' : 'quick check needed'}
+            </span>
             <button className="cv-gate-btn" onClick={openModal}>
               verify
             </button>

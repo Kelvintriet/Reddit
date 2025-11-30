@@ -1,5 +1,5 @@
 import { initializeApp, getApps } from 'firebase/app';
-import { getFirestore, doc, setDoc, getDoc, deleteDoc, Timestamp } from 'firebase/firestore';
+import { getFirestore, doc, setDoc, getDoc, deleteDoc, Timestamp, collection, query, where, getDocs } from 'firebase/firestore';
 
 // Initialize Firebase (reuse existing app if available)
 const firebaseConfig = {
@@ -85,50 +85,90 @@ const detectBot = (clickTimes) => {
 
 /**
  * GET /api/captcha/check
- * Check if IP is already verified
+ * Check if IP + UID combination is verified
+ * If same IP with different UID, flag and require re-verification
  */
 export const checkIPVerification = async (ctx) => {
   try {
     const ip = getClientIP(ctx);
+    const uid = ctx.query.uid || ctx.headers['x-device-uid'] || null;
 
-    // Check if this IP is already verified
-    const ipRef = doc(db, 'verifiedIPs', ip.replace(/\./g, '_'));
-    const ipSnap = await getDoc(ipRef);
+    if (!uid) {
+      // No UID provided - require verification
+      ctx.body = { verified: false, ip, reason: 'no_uid' };
+      return;
+    }
 
-    if (ipSnap.exists()) {
-      const data = ipSnap.data();
+    // Check if this specific IP+UID is verified
+    const ipUidRef = doc(db, 'verifiedIPs', `${ip.replace(/\./g, '_')}_${uid}`);
+    const ipUidSnap = await getDoc(ipUidRef);
+
+    if (ipUidSnap.exists()) {
+      const data = ipUidSnap.data();
 
       // Check if not expired
       if (data.expiresAt.toDate() > new Date()) {
-        ctx.body = { verified: true, ip };
+        ctx.body = { verified: true, ip, uid };
         return;
       } else {
         // Expired - delete it
-        await deleteDoc(ipRef);
+        await deleteDoc(ipUidRef);
       }
     }
 
-    ctx.body = { verified: false, ip };
+    // Check if this IP has been used with other UIDs (flagging check)
+    const verifiedIPsRef = collection(db, 'verifiedIPs');
+    const q = query(verifiedIPsRef, where('ip', '==', ip));
+    const existingDocs = await getDocs(q);
+
+    let flagged = false;
+    let existingUIDs = [];
+
+    existingDocs.forEach(docSnap => {
+      const data = docSnap.data();
+      if (data.uid && data.uid !== uid && data.expiresAt.toDate() > new Date()) {
+        existingUIDs.push(data.uid);
+        flagged = true;
+      }
+    });
+
+    if (flagged) {
+      console.log(`🚩 Flagged: IP ${ip} used with new UID ${uid}. Known UIDs: ${existingUIDs.join(', ')}`);
+    }
+
+    ctx.body = { 
+      verified: false, 
+      ip, 
+      uid,
+      flagged,
+      reason: flagged ? 'new_device' : 'not_verified'
+    };
   } catch (error) {
     console.error('Error checking IP:', error);
-    ctx.body = { verified: false, ip: getClientIP(ctx) };
+    ctx.body = { verified: false, ip: getClientIP(ctx), error: error.message };
   }
 };
 
 /**
  * POST /api/captcha/verify
- * Verify click timing and save IP as verified
+ * Verify click timing and save IP+UID as verified
  */
 export const verifyCaptcha = async (ctx) => {
   try {
     const ip = getClientIP(ctx);
-    const { clickTimes } = ctx.request.body || {};
+    const { clickTimes, uid } = ctx.request.body || {};
+
+    if (!uid) {
+      ctx.status = 400;
+      ctx.body = { error: 'Device UID required', code: 'NO_UID' };
+      return;
+    }
 
     // Run bot detection
     const detection = detectBot(clickTimes);
 
     if (detection.isBot) {
-      console.log(`🤖 Bot detected from IP: ${ip} - ${detection.reason}`);
+      console.log(`🤖 Bot detected from IP: ${ip}, UID: ${uid} - ${detection.reason}`);
       ctx.status = 400;
       ctx.body = {
         error: detection.reason || 'Bot detected',
@@ -137,23 +177,25 @@ export const verifyCaptcha = async (ctx) => {
       return;
     }
 
-    // Human verified - save IP to Firestore
+    // Human verified - save IP+UID to Firestore
     const expiresAt = new Date(Date.now() + IP_VERIFY_EXPIRY);
-    const ipRef = doc(db, 'verifiedIPs', ip.replace(/\./g, '_'));
+    const ipUidRef = doc(db, 'verifiedIPs', `${ip.replace(/\./g, '_')}_${uid}`);
 
-    await setDoc(ipRef, {
+    await setDoc(ipUidRef, {
       ip,
+      uid,
       verifiedAt: Timestamp.now(),
       expiresAt: Timestamp.fromDate(expiresAt),
       clickTimes,
       userAgent: ctx.headers['user-agent'] || 'unknown'
     });
 
-    console.log(`✅ Human verified: ${ip}`);
+    console.log(`✅ Human verified: IP ${ip}, UID ${uid}`);
 
     ctx.body = {
       success: true,
       ip,
+      uid,
       expiresAt: expiresAt.toISOString()
     };
   } catch (error) {
