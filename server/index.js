@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import Koa from 'koa';
 import Router from '@koa/router';
 import cors from '@koa/cors';
@@ -19,12 +20,28 @@ const server = http.createServer(app.callback());
 // Body parser for JSON requests
 app.use(bodyParser());
 
+// Allowed origins for CORS
+const allowedOrigins = [
+  'http://localhost:3000',
+  'http://localhost:5173',
+  'http://localhost:5174',
+  'http://127.0.0.1:3000',
+  'http://127.0.0.1:5173',
+  'http://127.0.0.1:5174',
+  process.env.FRONTEND_URL,
+  'https://reddit.koolname.asia'
+].filter(Boolean);
+
 // CORS configuration
 app.use(cors({
   origin: (ctx) => {
-    // Allow localhost origins for development
     const origin = ctx.request.header.origin;
+    // Allow any localhost/127.0.0.1 origin for development
     if (origin && (origin.includes('localhost') || origin.includes('127.0.0.1'))) {
+      return origin;
+    }
+    // Check if origin is in allowed list
+    if (origin && allowedOrigins.includes(origin)) {
       return origin;
     }
     return process.env.FRONTEND_URL || 'http://localhost:3000';
