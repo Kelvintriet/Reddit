@@ -37,7 +37,7 @@ const randomSize = () => 12 + Math.random() * 16; // 12-28px
 
 export const CaptchaVerificationModal: React.FC = () => {
   const { showModal, error, verify, closeModal, clearError, clientIP, deviceUID, isFlagged } = useCaptchaStore();
-  
+
   const [dots, setDots] = useState<Dot[]>([]);
   const [currentDot, setCurrentDot] = useState(0);
   const [clickTimes, setClickTimes] = useState<number[]>([]);
@@ -56,10 +56,10 @@ export const CaptchaVerificationModal: React.FC = () => {
     const newDots: Dot[] = [];
     for (let i = 0; i < TOTAL_DOTS; i++) {
       const pos = randomPos(isFlagged);
-      newDots.push({ 
-        id: i, 
-        x: pos.x, 
-        y: pos.y, 
+      newDots.push({
+        id: i,
+        x: pos.x,
+        y: pos.y,
         clicked: false,
         size: isFlagged ? randomSize() : undefined
       });
@@ -104,14 +104,14 @@ export const CaptchaVerificationModal: React.FC = () => {
 
     const now = Date.now();
     const timeSinceLast = now - lastClickTime;
-    
+
     // Record click time
     const newClickTimes = [...clickTimes, timeSinceLast];
     setClickTimes(newClickTimes);
     setLastClickTime(now);
 
     // Mark dot as clicked
-    setDots(prev => prev.map(d => 
+    setDots(prev => prev.map(d =>
       d.id === dotId ? { ...d, clicked: true } : d
     ));
 
@@ -121,9 +121,9 @@ export const CaptchaVerificationModal: React.FC = () => {
     } else {
       // All dots clicked - verify
       setIsVerifying(true);
-      
+
       const result = await verify(newClickTimes);
-      
+
       if (result) {
         setSuccess(true);
         setTimeout(() => {
@@ -135,7 +135,7 @@ export const CaptchaVerificationModal: React.FC = () => {
           initDots();
         }, 1000);
       }
-      
+
       setIsVerifying(false);
     }
   };
@@ -152,9 +152,9 @@ export const CaptchaVerificationModal: React.FC = () => {
     <div className="cv-overlay">
       <div className={`cv-modal ${isFlagged ? 'cv-modal-hard' : ''}`} onClick={(e) => e.stopPropagation()}>
         <button className="cv-close" onClick={closeModal}>x</button>
-        
+
         <div className="cv-header">
-          <span className="cv-title">{isFlagged ? '🚩 harder check' : 'click the dots'}</span>
+          <span className="cv-title">click the dots</span>
           <span className="cv-subtitle">
             {currentDot + 1} / {TOTAL_DOTS}
             {timeLeft !== null && <span className="cv-timer"> ({timeLeft}s)</span>}
@@ -176,8 +176,8 @@ export const CaptchaVerificationModal: React.FC = () => {
               <div
                 key={dot.id}
                 className={`cv-dot ${dot.clicked ? 'clicked' : ''} ${index === currentDot ? 'active' : ''} ${index < currentDot ? 'done' : ''} ${isFlagged ? 'cv-dot-hard' : ''}`}
-                style={{ 
-                  left: `${dot.x}%`, 
+                style={{
+                  left: `${dot.x}%`,
                   top: `${dot.y}%`,
                   ...(dot.size ? { width: `${dot.size}px`, height: `${dot.size}px` } : {})
                 }}
@@ -187,7 +187,7 @@ export const CaptchaVerificationModal: React.FC = () => {
                 }}
               />
             ))}
-            
+
             {isVerifying && (
               <div className="cv-verifying">checking...</div>
             )}

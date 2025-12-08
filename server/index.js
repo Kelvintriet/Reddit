@@ -11,6 +11,7 @@ import { verifyCaptchaToken, checkCaptchaOptional } from './middleware/verifyCap
 import { proxyAttachment } from './routes/attachments.js';
 import { cleanupOrphanedFiles } from './routes/cleanup.js';
 import { getCaptchaChallenge, verifyCaptcha, getCaptchaStatus, getIPAddress, checkIPVerification } from './routes/captcha.js';
+import { checkChangelogAuth, verifyChangelogPassword, updateChangelogPassword } from './routes/changelog.js';
 import { initializeFileCleanupWebSocket } from './websocket/fileCleanup.js';
 
 const app = new Koa();
@@ -93,6 +94,19 @@ router.get('/api/captcha/status', getCaptchaStatus);
 
 // Cleanup orphaned files (can be called by cron job)
 router.post('/api/cleanup/orphaned-files', cleanupOrphanedFiles);
+
+// ============================================
+// Changelog Routes (Optional CAPTCHA check)
+// ============================================
+
+// Check if user is authorized to create changelogs
+router.get('/api/changelog/check-auth', checkCaptchaOptional, verifyAuth, checkChangelogAuth);
+
+// Verify changelog password
+router.post('/api/changelog/verify-password', checkCaptchaOptional, verifyAuth, verifyChangelogPassword);
+
+// Update changelog password (admin only)
+router.post('/api/changelog/update-password', checkCaptchaOptional, verifyAuth, updateChangelogPassword);
 
 // Secure attachment proxy route (requires CAPTCHA + Auth)
 // Format: /api/attachments/:fileId?postId=xxx

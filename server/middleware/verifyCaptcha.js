@@ -24,6 +24,22 @@ const db = getFirestore(app);
  */
 export const verifyCaptchaToken = async (ctx, next) => {
   try {
+    // Skip CAPTCHA in local development
+    const isLocalDev = process.env.NODE_ENV !== 'production' ||
+      ctx.request.hostname === 'localhost' ||
+      ctx.request.hostname === '127.0.0.1';
+
+    if (isLocalDev) {
+      console.log('🔓 CAPTCHA bypassed for local development');
+      ctx.state.captcha = {
+        verified: true,
+        bypassed: true,
+        reason: 'local_development'
+      };
+      await next();
+      return;
+    }
+
     const token = ctx.headers['x-captcha-token'];
     const clientIP = getClientIP(ctx);
 

@@ -11,12 +11,15 @@
   --color-reddit-orange-hover: #E03D00;
   --color-reddit-blue: #0079D3;
   --color-reddit-blue-hover: #0066CC;
+  --color-primary: #0079D3;
+  --color-secondary: #818384;
 
   /* Background colors - Full screen white */
   --color-canvas-light: #FFFFFF;
   --color-neutral-background: #FFFFFF;
   --color-neutral-background-weak: #F6F7F8;
   --color-neutral-background-strong: #EDEFF1;
+  --color-neutral-background-hover: #F6F7F8;
   --color-card-background: #FFFFFF;
 
   /* Text colors */
@@ -69,10 +72,16 @@
 
 [data-theme='dark'] {
   /* Dark Mode Colors */
+  --color-reddit-orange: #FF4500;
+  --color-reddit-orange-hover: #E03D00;
+  --color-primary: #000000;
+  --color-secondary: #9D7DF1;
+
   --color-canvas-light: #030303;
   --color-neutral-background: #030303;
   --color-neutral-background-weak: #272729;
   --color-neutral-background-strong: #343536;
+  --color-neutral-background-hover: #272729;
   --color-card-background: #1A1A1B;
 
   /* Text colors */
@@ -90,6 +99,26 @@
   --shadow-small: 0 1px 3px rgba(0, 0, 0, 0.5);
   --shadow-medium: 0 2px 6px rgba(0, 0, 0, 0.5);
   --shadow-large: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-neutral-background);
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: var(--color-neutral-border);
+  border-radius: 6px;
+  border: 3px solid var(--color-neutral-background);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-neutral-border-strong);
 }
 
 html {
@@ -157,7 +186,7 @@ button:focus-visible {
 
 .sidebar {
   width: var(--sidebar-width);
-  background-color: var(--color-canvas-light);
+  background-color: var(--color-neutral-background);
   border-right: 1px solid var(--color-neutral-border-weak);
   padding: 16px 0;
   position: fixed;
@@ -175,7 +204,7 @@ button:focus-visible {
 .sidebar-section h3 {
   font-size: 11px;
   font-weight: 700;
-  color: #7c7c7c;
+  color: var(--color-neutral-content-weak);
   margin: 0 0 8px 16px;
   padding: 0;
   text-transform: uppercase;
@@ -212,26 +241,26 @@ button:focus-visible {
 }
 
 .nav-link:hover {
-  background-color: #f6f7f8;
+  background-color: var(--color-neutral-background-hover);
   text-decoration: none;
 }
 
 .nav-link.active {
-  background-color: #0079d3;
+  background-color: var(--color-primary);
   color: white;
   font-weight: 600;
-  border-left-color: #0079d3;
+  border-left-color: var(--color-primary);
 }
 
 .nav-link.active:hover {
-  background-color: #0079d3;
+  background-color: var(--color-primary);
 }
 
 .nav-icon-sidebar {
   width: 20px;
   height: 20px;
   margin-right: 12px;
-  color: #7c7c7c;
+  color: var(--color-neutral-content-weak);
   transition: color 0.2s ease;
   flex-shrink: 0;
 }
@@ -241,7 +270,7 @@ button:focus-visible {
 }
 
 .nav-link:hover .nav-icon-sidebar {
-  color: #0079d3;
+  color: var(--color-secondary);
 }
 
 .nav-link.active:hover .nav-icon-sidebar {
@@ -4541,15 +4570,15 @@ button:focus-visible {
 }
 
 .nav-item:hover:not(.active) {
-  background: #f1f3f4;
-  color: #24292e;
+  background: var(--color-neutral-background-hover);
+  color: var(--color-neutral-content);
   border-radius: 8px;
   margin: 2px 8px;
   width: calc(100% - 16px);
 }
 
 .nav-item.active {
-  background: #ff4500;
+  background: var(--color-primary);
   color: white;
   font-weight: 600;
   border-radius: 8px;

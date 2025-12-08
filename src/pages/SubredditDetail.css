@@ -12,7 +12,7 @@
 .subreddit-banner-skeleton {
   width: 100%;
   height: 200px;
-  background-color: #f0f0f0;
+  background-color: var(--color-neutral-background-weak);
   border-radius: 12px 12px 0 0;
 }
 
@@ -27,7 +27,7 @@
   width: 80px;
   height: 80px;
   border-radius: 50%;
-  background-color: #f0f0f0;
+  background-color: var(--color-neutral-background-weak);
 }
 
 .subreddit-text-skeleton {
@@ -37,7 +37,7 @@
 .subreddit-name-skeleton {
   width: 200px;
   height: 32px;
-  background-color: #f0f0f0;
+  background-color: var(--color-neutral-background-weak);
   border-radius: 4px;
   margin-bottom: 8px;
 }
@@ -45,20 +45,27 @@
 .subreddit-meta-skeleton {
   width: 300px;
   height: 20px;
-  background-color: #f0f0f0;
+  background-color: var(--color-neutral-background-weak);
   border-radius: 4px;
 }
 
 @keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.6; }
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.6;
+  }
 }
 
 /* Not Found */
 .subreddit-not-found {
   text-align: center;
   padding: 60px 20px;
-  background-color: white;
+  background-color: var(--color-card-background);
   border-radius: 12px;
   box-shadow: var(--shadow-medium);
   margin: 20px;
@@ -94,7 +101,7 @@
 
 /* Subreddit Header */
 .subreddit-header {
-  background-color: white;
+  background-color: var(--color-card-background);
   border-radius: 12px;
   box-shadow: var(--shadow-medium);
   margin-bottom: 20px;
@@ -567,7 +574,7 @@
   .subreddit-content {
     grid-template-columns: 1fr;
   }
-  
+
   .subreddit-sidebar {
     position: static;
     order: -1;
@@ -580,19 +587,19 @@
     align-items: center;
     text-align: center;
   }
-  
+
   .subreddit-text-info {
     margin-top: 0;
   }
-  
+
   .subreddit-stats {
     grid-template-columns: 1fr;
   }
-  
+
   .sort-controls {
     padding: 12px;
   }
-  
+
   .sort-button {
     padding: 8px 12px;
     font-size: 0.85rem;
@@ -603,22 +610,22 @@
   .subreddit-detail-container {
     margin: 0 8px;
   }
-  
+
   .subreddit-header {
     margin-bottom: 12px;
   }
-  
+
   .subreddit-info {
     padding: 16px;
   }
-  
+
   .subreddit-actions {
     flex-direction: column;
     align-items: stretch;
   }
-  
+
   .join-button,
   .create-post-btn {
     justify-content: center;
   }
-} 
+}

@@ -258,6 +258,32 @@ const Profile = () => {
                   </>
                 )}
               </p>
+              
+              {!isOwnProfile && (
+                <div className="profile-actions" style={{ marginTop: '16px' }}>
+                  <button 
+                    className="btn btn-primary"
+                    onClick={() => {
+                      navigate('/inbox', { 
+                        state: { 
+                          startChatWith: {
+                            id: profileUser.id,
+                            username: profileUser.username,
+                            displayName: profileUser.displayName,
+                            avatarUrl: profileUser.avatarUrl || profileUser.photoURL
+                          } 
+                        } 
+                      });
+                    }}
+                    style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+                  >
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z" />
+                    </svg>
+                    Chat
+                  </button>
+                </div>
+              )}
             </div>
 
           </div>

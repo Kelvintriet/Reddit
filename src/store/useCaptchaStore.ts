@@ -23,12 +23,12 @@ const generateDeviceUID = (): string => {
  */
 const getDeviceUID = (): string => {
   let uid = localStorage.getItem(DEVICE_UID_KEY);
-  
+
   if (!uid) {
     uid = generateDeviceUID();
     localStorage.setItem(DEVICE_UID_KEY, uid);
   }
-  
+
   return uid;
 };
 
@@ -129,7 +129,7 @@ export const useCaptchaStore = create<CaptchaState>()((set, get) => ({
   openModal: () => set({ showModal: true, error: null }),
   closeModal: () => set({ showModal: false, error: null }),
   clearError: () => set({ error: null }),
-  
+
   // Regenerate device UID (for testing or manual reset)
   regenerateUID: () => {
     const newUID = generateDeviceUID();

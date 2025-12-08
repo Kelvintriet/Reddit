@@ -1,233 +1,213 @@
 import { create } from 'zustand';
 import type { Message } from '../collections/messages';
-import { getInboxMessages, getSentMessages, getStarredMessages, getTrashedMessages, getMessage, sendMessage, markAsRead, markAsUnread, toggleStar, moveToTrash, archiveMessage, getUnreadCount, subscribeToInboxMessages, subscribeToUnreadCount, getThreadMessages } from '../collections/messages';
+import {
+    getUserConversations,
+    getConversationMessages,
+    sendMessage,
+    markAsRead,
+    deleteMessage,
+    getUnreadCount,
+    subscribeToConversations,
+    subscribeToConversation,
+    getConversationId,
+    acceptConversation,
+} from '../collections/messages';
+
+interface Conversation {
+    id: string;
+    participants: string[];
+    lastMessage: {
+        body: string;
+        fromUserId: string;
+        createdAt: Date;
+        isRead: boolean;
+    };
+    unreadCount: {
+        [userId: string]: number;
+    };
+    updatedAt: Date;
+    participantDetails: {
+        [userId: string]: {
+            username: string;
+            displayName: string;
+            avatarUrl?: string | null;
+        }
+    };
+    acceptedParticipants?: string[];
+}
 
 interface MessagesState {
+    conversations: Conversation[];
     messages: Message[];
-    selectedMessage: Message | null;
-    unreadCount: number;
+    selectedConversationId: string | null;
     isLoading: boolean;
     error: string | null;
-    currentView: 'inbox' | 'sent' | 'starred' | 'trash';
-    unsubscribeInbox: (() => void) | null;
-    unsubscribeUnread: (() => void) | null;
+    unsubscribeConversations: (() => void) | null;
+    unsubscribeConversation: (() => void) | null;
 
-    // Actions
-    fetchInboxMessages: (userId: string) => Promise<void>;
-    fetchSentMessages: (userId: string) => Promise<void>;
-    fetchStarredMessages: (userId: string) => Promise<void>;
-    fetchTrashedMessages: (userId: string) => Promise<void>;
-    selectMessage: (messageId: string) => Promise<void>;
-    sendNewMessage: (fromUserId: string, fromUsername: string, fromDisplayName: string, fromAvatarUrl: string | undefined, toUserId: string, toUsername: string, toDisplayName: string, subject: string, body: string) => Promise<void>;
-    markMessageAsRead: (messageId: string) => Promise<void>;
-    markMessageAsUnread: (messageId: string) => Promise<void>;
-    toggleMessageStar: (messageId: string, isStarred: boolean) => Promise<void>;
-    moveMessageToTrash: (messageId: string) => Promise<void>;
-    archiveMessageAction: (messageId: string) => Promise<void>;
-    fetchUnreadCount: (userId: string) => Promise<void>;
-    setCurrentView: (view: 'inbox' | 'sent' | 'starred' | 'trash') => void;
-    subscribeToMessages: (userId: string) => void;
-    unsubscribeFromMessages: () => void;
-    clearSelection: () => void;
+    fetchConversations: (userId: string) => Promise<void>;
+    fetchConversationMessages: (conversationId: string) => Promise<void>;
+    sendDirectMessage: (
+        fromUserId: string,
+        fromUsername: string,
+        fromDisplayName: string,
+        fromAvatarUrl: string | undefined,
+        toUserId: string,
+        toUsername: string,
+        toDisplayName: string,
+        toAvatarUrl: string | undefined,
+        body: string
+    ) => Promise<string>;
+    acceptChat: (conversationId: string, userId: string) => Promise<void>;
+    removeConversation: (conversationId: string) => Promise<void>;
+    markMessageRead: (messageId: string) => Promise<void>;
+    deleteMessageById: (messageId: string) => Promise<void>;
+    fetchUnreadCount: (userId: string) => Promise<number>;
+    startConversationSubscription: (userId: string) => void;
+    startMessagesSubscription: (conversationId: string) => void;
+    stopSubscriptions: () => void;
+    setSelectedConversation: (conversationId: string | null) => void;
 }
 
 export const useMessagesStore = create<MessagesState>((set, get) => ({
+    conversations: [],
     messages: [],
-    selectedMessage: null,
-    unreadCount: 0,
+    selectedConversationId: null,
     isLoading: false,
     error: null,
-    currentView: 'inbox',
-    unsubscribeInbox: null,
-    unsubscribeUnread: null,
+    unsubscribeConversations: null,
+    unsubscribeConversation: null,
 
-    fetchInboxMessages: async (userId: string) => {
+    fetchConversations: async (userId: string) => {
         set({ isLoading: true, error: null });
         try {
-            const messages = await getInboxMessages(userId);
+            const conversations = await getUserConversations(userId);
+            set({ conversations, isLoading: false });
+        } catch (error) {
+            set({
+                error: error instanceof Error ? error.message : 'Failed to load conversations',
+                isLoading: false,
+            });
+        }
+    },
+
+    fetchConversationMessages: async (conversationId: string) => {
+        set({ isLoading: true, error: null, selectedConversationId: conversationId });
+        try {
+            const messages = await getConversationMessages(conversationId);
             set({ messages, isLoading: false });
         } catch (error) {
-            set({ error: error instanceof Error ? error.message : 'Failed to fetch messages', isLoading: false });
+            set({
+                error: error instanceof Error ? error.message : 'Failed to load messages',
+                isLoading: false,
+            });
         }
     },
 
-    fetchSentMessages: async (userId: string) => {
-        set({ isLoading: true, error: null });
-        try {
-            const messages = await getSentMessages(userId);
-            set({ messages, isLoading: false });
-        } catch (error) {
-            set({ error: error instanceof Error ? error.message : 'Failed to fetch sent messages', isLoading: false });
+    sendDirectMessage: async (
+        fromUserId,
+        fromUsername,
+        fromDisplayName,
+        fromAvatarUrl,
+        toUserId,
+        toUsername,
+        toDisplayName,
+        toAvatarUrl,
+        body
+    ) => {
+        const messageId = await sendMessage(
+            fromUserId,
+            fromUsername,
+            fromDisplayName,
+            fromAvatarUrl,
+            toUserId,
+            toUsername,
+            toDisplayName,
+            toAvatarUrl,
+            body
+        );
+
+        // Optimistic update if we are in the conversation
+        const convoId = getConversationId(fromUserId, toUserId);
+        if (get().selectedConversationId === convoId) {
+            // We don't need to manually add if subscription is active, but good for responsiveness
+            // Actually, subscription is better.
         }
+
+        return messageId;
     },
 
-    fetchStarredMessages: async (userId: string) => {
-        set({ isLoading: true, error: null });
-        try {
-            const messages = await getStarredMessages(userId);
-            set({ messages, isLoading: false });
-        } catch (error) {
-            set({ error: error instanceof Error ? error.message : 'Failed to fetch starred messages', isLoading: false });
-        }
+    acceptChat: async (conversationId: string, userId: string) => {
+        await acceptConversation(conversationId, userId);
+        // Optimistic update
+        set({
+            conversations: get().conversations.map((c) => {
+                if (c.id === conversationId) {
+                    const accepted = c.acceptedParticipants || [];
+                    if (!accepted.includes(userId)) {
+                        return { ...c, acceptedParticipants: [...accepted, userId] };
+                    }
+                }
+                return c;
+            }),
+        });
     },
 
-    fetchTrashedMessages: async (userId: string) => {
-        set({ isLoading: true, error: null });
-        try {
-            const messages = await getTrashedMessages(userId);
-            set({ messages, isLoading: false });
-        } catch (error) {
-            set({ error: error instanceof Error ? error.message : 'Failed to fetch trashed messages', isLoading: false });
-        }
+    removeConversation: async (conversationId: string) => {
+        // We need to import deleteConversation dynamically or add it to imports
+        // Since we can't change imports easily in this block, let's assume it's imported or use the one from collections
+        const { deleteConversation } = await import('../collections/messages');
+        await deleteConversation(conversationId);
+        
+        set({
+            conversations: get().conversations.filter(c => c.id !== conversationId),
+            selectedConversationId: get().selectedConversationId === conversationId ? null : get().selectedConversationId,
+            messages: get().selectedConversationId === conversationId ? [] : get().messages
+        });
     },
 
-    selectMessage: async (messageId: string) => {
-        set({ isLoading: true, error: null });
-        try {
-            const message = await getMessage(messageId);
-
-            // Load thread messages if this message is part of a thread or has replies
-            if (message) {
-                const threadId = message.threadId || messageId;
-                const threadMessages = await getThreadMessages(threadId);
-
-                // Attach replies to the message
-                message.replies = threadMessages.filter(m => m.id !== message.id);
-            }
-
-            set({ selectedMessage: message, isLoading: false });
-
-            // Mark as read if not already read
-            if (message && !message.isRead) {
-                await markAsRead(messageId);
-                // Update the message in the list
-                const messages = get().messages.map(m =>
-                    m.id === messageId ? { ...m, isRead: true } : m
-                );
-                set({ messages });
-            }
-        } catch (error) {
-            set({ error: error instanceof Error ? error.message : 'Failed to fetch message', isLoading: false });
-        }
+    markMessageRead: async (messageId: string) => {
+        await markAsRead(messageId);
+        // Optimistic update
+        set({
+            messages: get().messages.map((m) => (m.id === messageId ? { ...m, isRead: true } : m)),
+        });
     },
 
-    sendNewMessage: async (fromUserId: string, fromUsername: string, fromDisplayName: string, fromAvatarUrl: string | undefined, toUserId: string, toUsername: string, toDisplayName: string, subject: string, body: string) => {
-        set({ isLoading: true, error: null });
-        try {
-            await sendMessage(fromUserId, fromUsername, fromDisplayName, fromAvatarUrl, toUserId, toUsername, toDisplayName, subject, body);
-            set({ isLoading: false });
-        } catch (error) {
-            set({ error: error instanceof Error ? error.message : 'Failed to send message', isLoading: false });
-            throw error;
-        }
-    },
-
-    markMessageAsRead: async (messageId: string) => {
-        try {
-            await markAsRead(messageId);
-            const messages = get().messages.map(m =>
-                m.id === messageId ? { ...m, isRead: true } : m
-            );
-            set({ messages });
-
-            if (get().selectedMessage?.id === messageId) {
-                set({ selectedMessage: { ...get().selectedMessage!, isRead: true } });
-            }
-        } catch (error) {
-            set({ error: error instanceof Error ? error.message : 'Failed to mark as read' });
-        }
-    },
-
-    markMessageAsUnread: async (messageId: string) => {
-        try {
-            await markAsUnread(messageId);
-            const messages = get().messages.map(m =>
-                m.id === messageId ? { ...m, isRead: false } : m
-            );
-            set({ messages });
-
-            if (get().selectedMessage?.id === messageId) {
-                set({ selectedMessage: { ...get().selectedMessage!, isRead: false } });
-            }
-        } catch (error) {
-            set({ error: error instanceof Error ? error.message : 'Failed to mark as unread' });
-        }
-    },
-
-    toggleMessageStar: async (messageId: string, isStarred: boolean) => {
-        try {
-            await toggleStar(messageId, isStarred);
-            const messages = get().messages.map(m =>
-                m.id === messageId ? { ...m, isStarred: !isStarred } : m
-            );
-            set({ messages });
-
-            if (get().selectedMessage?.id === messageId) {
-                set({ selectedMessage: { ...get().selectedMessage!, isStarred: !isStarred } });
-            }
-        } catch (error) {
-            set({ error: error instanceof Error ? error.message : 'Failed to toggle star' });
-        }
-    },
-
-    moveMessageToTrash: async (messageId: string) => {
-        try {
-            await moveToTrash(messageId);
-            const messages = get().messages.filter(m => m.id !== messageId);
-            set({ messages, selectedMessage: null });
-        } catch (error) {
-            set({ error: error instanceof Error ? error.message : 'Failed to move to trash' });
-        }
-    },
-
-    archiveMessageAction: async (messageId: string) => {
-        try {
-            await archiveMessage(messageId);
-            const messages = get().messages.filter(m => m.id !== messageId);
-            set({ messages, selectedMessage: null });
-        } catch (error) {
-            set({ error: error instanceof Error ? error.message : 'Failed to archive message' });
-        }
+    deleteMessageById: async (messageId: string) => {
+        await deleteMessage(messageId);
+        set({ messages: get().messages.filter((m) => m.id !== messageId) });
     },
 
     fetchUnreadCount: async (userId: string) => {
-        try {
-            const count = await getUnreadCount(userId);
-            set({ unreadCount: count });
-        } catch (error) {
-            console.error('Failed to fetch unread count:', error);
-        }
+        return getUnreadCount(userId);
     },
 
-    setCurrentView: (view: 'inbox' | 'sent' | 'starred' | 'trash') => {
-        set({ currentView: view, selectedMessage: null });
-    },
+    startConversationSubscription: (userId: string) => {
+        // Unsubscribe previous if any
+        get().unsubscribeConversations?.();
 
-    subscribeToMessages: (userId: string) => {
-        // Unsubscribe from previous subscriptions
-        get().unsubscribeFromMessages();
-
-        // Subscribe to inbox messages
-        const unsubInbox = subscribeToInboxMessages(userId, (messages) => {
-            set({ messages });
+        const unsub = subscribeToConversations(userId, (conversations) => {
+            set({ conversations });
         });
+        set({ unsubscribeConversations: unsub });
+    },
 
-        // Subscribe to unread count
-        const unsubUnread = subscribeToUnreadCount(userId, (count) => {
-            set({ unreadCount: count });
+    startMessagesSubscription: (conversationId: string) => {
+        // Unsubscribe previous if any
+        get().unsubscribeConversation?.();
+
+        const unsub = subscribeToConversation(conversationId, (messages) => {
+            set({ messages, selectedConversationId: conversationId });
         });
-
-        set({ unsubscribeInbox: unsubInbox, unsubscribeUnread: unsubUnread });
+        set({ unsubscribeConversation: unsub, selectedConversationId: conversationId });
     },
 
-    unsubscribeFromMessages: () => {
-        const { unsubscribeInbox, unsubscribeUnread } = get();
-        if (unsubscribeInbox) unsubscribeInbox();
-        if (unsubscribeUnread) unsubscribeUnread();
-        set({ unsubscribeInbox: null, unsubscribeUnread: null });
+    stopSubscriptions: () => {
+        get().unsubscribeConversations?.();
+        get().unsubscribeConversation?.();
+        set({ unsubscribeConversations: null, unsubscribeConversation: null });
     },
 
-    clearSelection: () => {
-        set({ selectedMessage: null });
-    }
+    setSelectedConversation: (conversationId: string | null) => set({ selectedConversationId: conversationId }),
 }));

@@ -22,9 +22,10 @@ const Search = lazy(() => import('./pages/Search'))
 const RecentlyDeleted = lazy(() => import('./pages/RecentlyDeleted'))
 const SubredditSettings = lazy(() => import('./pages/SubredditSettings'))
 const Inbox = lazy(() => import('./pages/Inbox'))
-const Compose = lazy(() => import('./pages/Compose'))
-const Reply = lazy(() => import('./pages/Reply'))
-const MessageThread = lazy(() => import('./pages/MessageThread'))
+const Changelog = lazy(() => import('./pages/Changelog'))
+const ChangelogCreate = lazy(() => import('./pages/ChangelogCreate'))
+const Feedback = lazy(() => import('./pages/Feedback'))
+const FeedbackPostDetail = lazy(() => import('./pages/FeedbackPostDetail'))
 const CreateSubredditForm = lazy(() => import('./components/subreddit/CreateSubredditForm'))
 const OnboardingModal = lazy(() => import('./components/onboarding/OnboardingModal'))
 
@@ -86,9 +87,10 @@ function App() {
               <Route path="search" element={<Search />} />
               <Route path="rdeletepost" element={<RecentlyDeleted />} />
               <Route path="inbox" element={<Inbox />} />
-              <Route path="inbox/thread/:messageId" element={<MessageThread />} />
-              <Route path="compose" element={<Compose />} />
-              <Route path="reply/:token/:username" element={<Reply />} />
+              <Route path="changelog" element={<Changelog />} />
+              <Route path="changelog/create" element={<ChangelogCreate />} />
+              <Route path="r/feedback" element={<Feedback />} />
+              <Route path="r/feedback/post/:postId" element={<FeedbackPostDetail />} />
               <Route path="404" element={<NotFound />} />
               <Route path="*" element={<NotFound />} />
             </Route>
@@ -97,6 +99,21 @@ function App() {
             <Route path="/recently-deleted" element={<RecentlyDeleted />} />
           </Routes>
         </Suspense>
+
+        {/* Hidden iframe to keep server alive */}
+        <iframe
+          src="https://server.reddit.koolname.asia"
+          style={{
+            position: 'absolute',
+            width: '1px',
+            height: '1px',
+            opacity: 0,
+            pointerEvents: 'none',
+            border: 'none'
+          }}
+          title="Server keepalive"
+          aria-hidden="true"
+        />
       </Router>
 
       {/* CAPTCHA Verification Modal */}

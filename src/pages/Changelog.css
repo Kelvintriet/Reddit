@@ -1,0 +1,260 @@
+/* Changelog Page Styles */
+.changelog-page {
+  min-height: calc(100vh - var(--header-height));
+  background-color: var(--color-canvas-light);
+  padding: var(--space-xxl) var(--space-lg);
+}
+
+.changelog-container {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+/* Header */
+.changelog-header {
+  margin-bottom: var(--space-xxl);
+  text-align: center;
+}
+
+.changelog-title {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--color-neutral-content);
+  margin: 0 0 var(--space-md);
+}
+
+.changelog-subtitle {
+  font-size: var(--font-size-large);
+  color: var(--color-neutral-content-weak);
+  margin: 0;
+}
+
+.changelog-create-button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-top: var(--space-lg);
+  padding: var(--space-sm) var(--space-lg);
+  background-color: var(--color-reddit-orange);
+  color: white;
+  text-decoration: none;
+  border-radius: var(--radius-full);
+  font-weight: 600;
+  font-size: var(--font-size-base);
+  transition: all 0.2s ease;
+  box-shadow: var(--shadow-small);
+}
+
+.changelog-create-button:hover {
+  background-color: var(--color-reddit-orange-hover);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-medium);
+  text-decoration: none;
+}
+
+.changelog-create-button svg {
+  flex-shrink: 0;
+}
+
+/* Timeline */
+.changelog-timeline {
+  position: relative;
+}
+
+/* Entry */
+.changelog-entry {
+  background-color: var(--color-card-background);
+  border: 1px solid var(--color-neutral-border-weak);
+  border-radius: var(--radius-medium);
+  padding: var(--space-xl);
+  margin-bottom: var(--space-xl);
+  box-shadow: var(--shadow-small);
+  transition: all 0.2s ease;
+}
+
+.changelog-entry:hover {
+  box-shadow: var(--shadow-medium);
+  border-color: var(--color-neutral-border);
+}
+
+.changelog-entry-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-lg);
+  padding-bottom: var(--space-md);
+  border-bottom: 1px solid var(--color-neutral-border-weak);
+}
+
+.changelog-version-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+  background-color: var(--color-reddit-orange);
+  color: white;
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-full);
+  font-weight: 600;
+  font-size: var(--font-size-base);
+}
+
+.changelog-version-badge svg {
+  flex-shrink: 0;
+}
+
+.changelog-date {
+  font-size: var(--font-size-small);
+  color: var(--color-neutral-content-weak);
+  font-weight: 500;
+}
+
+/* Changes */
+.changelog-changes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.changelog-change {
+  display: flex;
+  gap: var(--space-md);
+  padding: var(--space-md);
+  border-radius: var(--radius-small);
+  background-color: var(--color-neutral-background-weak);
+  transition: all 0.2s ease;
+}
+
+.changelog-change:hover {
+  background-color: var(--color-neutral-background-hover);
+  transform: translateX(4px);
+}
+
+.changelog-change-icon {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-small);
+  color: white;
+}
+
+.changelog-change-feature .changelog-change-icon {
+  background-color: #10B981;
+}
+
+.changelog-change-improvement .changelog-change-icon {
+  background-color: var(--color-reddit-blue);
+}
+
+.changelog-change-bugfix .changelog-change-icon {
+  background-color: #F59E0B;
+}
+
+.changelog-change-breaking .changelog-change-icon {
+  background-color: #EF4444;
+}
+
+.changelog-change-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.changelog-change-type {
+  display: inline-block;
+  font-size: var(--font-size-small);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: var(--space-xs);
+}
+
+.changelog-change-feature .changelog-change-type {
+  color: #10B981;
+}
+
+.changelog-change-improvement .changelog-change-type {
+  color: var(--color-reddit-blue);
+}
+
+.changelog-change-bugfix .changelog-change-type {
+  color: #F59E0B;
+}
+
+.changelog-change-breaking .changelog-change-type {
+  color: #EF4444;
+}
+
+.changelog-change-description {
+  font-size: var(--font-size-base);
+  color: var(--color-neutral-content);
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Divider */
+.changelog-divider {
+  height: 1px;
+  background-color: var(--color-neutral-border-weak);
+  margin: var(--space-xl) 0;
+}
+
+/* Footer */
+.changelog-footer {
+  text-align: center;
+  margin-top: var(--space-xxl);
+  padding-top: var(--space-xl);
+  border-top: 1px solid var(--color-neutral-border-weak);
+}
+
+.changelog-footer p {
+  font-size: var(--font-size-base);
+  color: var(--color-neutral-content-weak);
+  margin: 0;
+}
+
+.changelog-link {
+  color: var(--color-reddit-blue);
+  text-decoration: none;
+  font-weight: 600;
+  transition: color 0.2s ease;
+}
+
+.changelog-link:hover {
+  color: var(--color-reddit-blue-hover);
+  text-decoration: underline;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .changelog-page {
+    padding: var(--space-lg) var(--space-md);
+  }
+
+  .changelog-title {
+    font-size: 24px;
+  }
+
+  .changelog-subtitle {
+    font-size: var(--font-size-base);
+  }
+
+  .changelog-entry {
+    padding: var(--space-md);
+  }
+
+  .changelog-entry-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-sm);
+  }
+
+  .changelog-change {
+    padding: var(--space-sm);
+  }
+
+  .changelog-change:hover {
+    transform: none;
+  }
+}

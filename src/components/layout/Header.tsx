@@ -10,10 +10,15 @@ const Header: React.FC = () => {
   const [showAuthModal, setShowAuthModal] = useState<'login' | 'signup' | null>(null);
   const { user, logout } = useAuthStore();
   const { theme, toggleTheme } = useThemeStore();
-  const { unreadCount, subscribeToMessages, unsubscribeFromMessages } = useMessagesStore();
+  const { conversations, startConversationSubscription, stopSubscriptions } = useMessagesStore();
   const navigate = useNavigate();
   const location = useLocation();
   const menuRef = useRef<HTMLDivElement>(null);
+
+  // Calculate unread count
+  const unreadCount = conversations.reduce((acc, conv) => {
+    return acc + (conv.unreadCount?.[user?.uid || ''] || 0);
+  }, 0);
 
   // Kiểm tra hash URL để hiển thị modal đăng nhập/đăng ký
   useEffect(() => {
@@ -29,15 +34,15 @@ const Header: React.FC = () => {
   // Subscribe to messages
   useEffect(() => {
     if (user) {
-      subscribeToMessages(user.uid);
+      startConversationSubscription(user.uid);
     } else {
-      unsubscribeFromMessages();
+      stopSubscriptions();
     }
 
     return () => {
-      unsubscribeFromMessages();
+      stopSubscriptions();
     };
-  }, [user, subscribeToMessages, unsubscribeFromMessages]);
+  }, [user, startConversationSubscription, stopSubscriptions]);
 
   // Đóng dropdown khi click bên ngoài
   useEffect(() => {

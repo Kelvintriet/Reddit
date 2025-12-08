@@ -136,9 +136,9 @@ export const checkIPVerification = async (ctx) => {
       console.log(`🚩 Flagged: IP ${ip} used with new UID ${uid}. Known UIDs: ${existingUIDs.join(', ')}`);
     }
 
-    ctx.body = { 
-      verified: false, 
-      ip, 
+    ctx.body = {
+      verified: false,
+      ip,
       uid,
       flagged,
       reason: flagged ? 'new_device' : 'not_verified'

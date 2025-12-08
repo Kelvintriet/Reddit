@@ -1,0 +1,293 @@
+/* Feedback Page */
+.feedback-page {
+    min-height: calc(100vh - var(--header-height));
+    background-color: var(--color-canvas-light);
+    padding: var(--space-xl) var(--space-lg);
+}
+
+.feedback-container {
+    max-width: 700px;
+    margin: 0 auto;
+}
+
+/* Header */
+.feedback-header {
+    text-align: center;
+    margin-bottom: var(--space-xxl);
+    position: relative;
+}
+
+.feedback-header h1 {
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--color-neutral-content);
+    margin: 0 0 var(--space-sm);
+}
+
+.feedback-header p {
+    font-size: var(--font-size-large);
+    color: var(--color-neutral-content-weak);
+    margin: 0 0 var(--space-lg);
+}
+
+.create-feedback-button {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-sm);
+    padding: var(--space-md) var(--space-xl);
+    background-color: var(--color-reddit-orange);
+    color: white;
+    border: none;
+    border-radius: var(--radius-full);
+    font-size: var(--font-size-base);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: var(--shadow-small);
+    text-decoration: none;
+}
+
+.create-feedback-button:hover {
+    background-color: var(--color-reddit-orange-hover);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-medium);
+    text-decoration: none;
+    color: white;
+}
+
+.create-feedback-button svg {
+    flex-shrink: 0;
+}
+
+/* Tabs */
+.feedback-tabs {
+    display: flex;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-xl);
+    background-color: var(--color-card-background);
+    border-radius: var(--radius-medium);
+    padding: var(--space-sm);
+    box-shadow: var(--shadow-small);
+}
+
+.feedback-tab {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-sm);
+    padding: var(--space-md) var(--space-lg);
+    background-color: transparent;
+    color: var(--color-neutral-content-weak);
+    border: none;
+    border-radius: var(--radius-small);
+    font-size: var(--font-size-base);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.feedback-tab:hover {
+    background-color: var(--color-neutral-background-weak);
+    color: var(--color-neutral-content);
+}
+
+.feedback-tab.active {
+    background-color: var(--color-reddit-blue);
+    color: white;
+}
+
+.tab-icon {
+    font-size: 20px;
+}
+
+.tab-label {
+    font-size: var(--font-size-base);
+}
+
+/* Content */
+.feedback-content {
+    min-height: 400px;
+}
+
+.feedback-loading,
+.feedback-empty {
+    text-align: center;
+    padding: var(--space-xxl);
+    color: var(--color-neutral-content-weak);
+}
+
+.feedback-empty {
+    background-color: var(--color-card-background);
+    border-radius: var(--radius-medium);
+    border: 2px dashed var(--color-neutral-border);
+}
+
+.empty-icon {
+    font-size: 64px;
+    display: block;
+    margin-bottom: var(--space-lg);
+}
+
+.feedback-empty h3 {
+    font-size: var(--font-size-xlarge);
+    color: var(--color-neutral-content);
+    margin: 0 0 var(--space-sm);
+}
+
+.feedback-empty p {
+    font-size: var(--font-size-base);
+    margin: 0;
+}
+
+/* Posts - COMPACT WITH RIGHT SIDE INFO */
+.feedback-posts {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+}
+
+.feedback-post {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: var(--color-card-background);
+    border: 1px solid var(--color-neutral-border-weak);
+    border-radius: var(--radius-small);
+    padding: var(--space-sm) var(--space-md);
+    transition: all 0.2s ease;
+    gap: var(--space-md);
+}
+
+.feedback-post:hover {
+    border-color: var(--color-neutral-border);
+    box-shadow: var(--shadow-small);
+    transform: translateY(-1px);
+}
+
+.post-left {
+    flex: 1;
+    min-width: 0;
+}
+
+.post-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: var(--space-xs);
+    flex-shrink: 0;
+}
+
+.post-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--color-neutral-content);
+    margin: 0 0 4px;
+    line-height: 1.3;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.post-meta {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    font-size: 11px;
+    color: var(--color-neutral-content-weak);
+    margin-bottom: 4px;
+}
+
+.post-author {
+    font-weight: 500;
+    color: var(--color-neutral-content);
+}
+
+.post-author.anonymous {
+    color: var(--color-neutral-content-weak);
+    font-style: italic;
+}
+
+.post-date {
+    color: var(--color-neutral-content-weak);
+}
+
+.post-content-preview {
+    font-size: 12px;
+    line-height: 1.4;
+    color: var(--color-neutral-content-weak);
+    margin: 0;
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.post-status {
+    padding: 4px 10px;
+    border-radius: var(--radius-full);
+    font-size: 11px;
+    font-weight: 600;
+    color: white;
+    white-space: nowrap;
+}
+
+.post-reactions-preview {
+    display: flex;
+    gap: var(--space-xs);
+}
+
+.reaction-preview {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    padding: 2px 6px;
+    background-color: var(--color-neutral-background-weak);
+    border-radius: var(--radius-full);
+    font-size: 11px;
+}
+
+.reaction-emoji {
+    font-size: 14px;
+    line-height: 1;
+}
+
+.reaction-count {
+    font-weight: 600;
+    color: var(--color-neutral-content);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .feedback-page {
+        padding: var(--space-lg) var(--space-md);
+    }
+
+    .feedback-header h1 {
+        font-size: 24px;
+    }
+
+    .feedback-tabs {
+        flex-direction: column;
+    }
+
+    .feedback-tab {
+        width: 100%;
+    }
+
+    .feedback-post {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .post-right {
+        width: 100%;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .post-title {
+        white-space: normal;
+    }
+}

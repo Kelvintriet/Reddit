@@ -10,6 +10,7 @@ import { SUPPORTED_IMAGE_TYPES, SUPPORTED_VIDEO_TYPES, SUPPORTED_DOCUMENT_TYPES 
 import { getFileCleanupWebSocket } from '../services/websocket/fileCleanup'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import { db } from '../lib/firebase'
 
 const CreatePost = () => {
   const { subreddit: subredditParam, postId, token } = useParams<{ subreddit?: string; postId?: string; token?: string }>()
@@ -34,6 +35,13 @@ const CreatePost = () => {
   const [_canViewContent, setCanViewContent] = useState(false)
   const [savedContent, setSavedContent] = useState({ title: '', content: '' })
   const wsRef = useRef<ReturnType<typeof getFileCleanupWebSocket> | null>(null)
+
+  // Feedback-specific states
+  const [feedbackCategory, setFeedbackCategory] = useState<'bugs' | 'ideas' | 'questions'>('ideas')
+  const [anonymousType, setAnonymousType] = useState<'none' | 'hide_author' | 'private'>('none')
+
+  // Check if current subreddit is feedback
+  const isFeedbackSubreddit = selectedSubreddit === 'feedback'
 
   // WebSocket connection for file cleanup tracking (only for new posts, not edits)
   useEffect(() => {
@@ -287,6 +295,49 @@ const CreatePost = () => {
           navigate(`/post/${originalPost.id}`)
         }
       } else {
+        // Prepare tags for feedback or regular posts
+        let postTags = tags;
+        let isAnonymous = false;
+        let isPrivate = false;
+
+        if (isFeedbackSubreddit) {
+          // For feedback, use category as the only tag
+          const categoryEmoji = feedbackCategory === 'bugs' ? '🐛' : feedbackCategory === 'ideas' ? '💡' : '❓';
+          postTags = [`${categoryEmoji} ${feedbackCategory}`];
+
+          // Handle anonymous options
+          isAnonymous = anonymousType === 'hide_author';
+          isPrivate = anonymousType === 'private';
+
+          // Save feedback to separate collection
+          const { addDoc, collection, serverTimestamp } = await import('firebase/firestore');
+          const feedbackData = {
+            title,
+            content,
+            contentType: isMarkdown ? 'markdown' : 'html',
+            feedbackCategory,
+            isAnonymous,
+            isPrivate,
+            authorId: user.uid,
+            authorUsername: isAnonymous ? '[deleted]' : (user.displayName || user.username || 'Người dùng ẩn danh'),
+            tags: postTags,
+            imageUrls: imageUrls.length > 0 ? imageUrls : undefined,
+            attachments: attachments.length > 0 ? attachments : undefined,
+            upvotes: 0,
+            downvotes: 0,
+            commentCount: 0,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp()
+          };
+
+          // Save to feedbackPosts collection
+          const feedbackRef = await addDoc(collection(db, 'feedbackPosts'), feedbackData);
+
+          // Navigate to feedback post
+          navigate(`/r/feedback/post/${feedbackRef.id}`);
+          return;
+        }
+
         const postId = await createPost({
           title,
           content,
@@ -297,7 +348,7 @@ const CreatePost = () => {
           attachments: attachments.length > 0 ? attachments : undefined,
           authorId: user.uid,
           authorUsername: user.displayName || user.username || 'Người dùng ẩn danh',
-          tags: tags.length > 0 ? tags : undefined
+          tags: postTags.length > 0 ? postTags : undefined
         }, user.uid, user.displayName || user.username || 'Người dùng ẩn danh');
 
         if (postId) {
@@ -422,6 +473,7 @@ const CreatePost = () => {
                 className="community-select"
               >
                 <option value="">Không chọn cộng đồng</option>
+                <option value="feedback">🐛 r/feedback (Bugs, Ideas, Questions)</option>
                 {subreddits.map((sub) => (
                   <option key={sub.id} value={sub.name}>
                     r/{sub.name}
@@ -604,40 +656,94 @@ const CreatePost = () => {
             />
           </div>
 
-          {/* Tags */}
-          <div className="form-group">
-            <div className="tags-header">
-              <h3>Tags</h3>
-              <span className="tags-info">Tối đa 5 tags</span>
-            </div>
-            <div className="tags-input-container">
-              <input
-                type="text"
-                value={tagInput}
-                onChange={(e) => setTagInput(e.target.value)}
-                onKeyDown={handleAddTag}
-                placeholder="Nhập tag và nhấn Enter"
-                className="tags-input"
-                maxLength={20}
-              />
-            </div>
-            {tags.length > 0 && (
-              <div className="tags-list">
-                {tags.map((tag, index) => (
-                  <span key={index} className="tag">
-                    #{tag}
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveTag(tag)}
-                      className="tag-remove"
-                    >
-                      ×
-                    </button>
-                  </span>
-                ))}
+          {/* Tags or Feedback Category */}
+          {isFeedbackSubreddit ? (
+            <>
+              {/* Feedback Category Selection */}
+              <div className="form-group">
+                <div className="tags-header">
+                  <h3>Category*</h3>
+                  <span className="tags-info">Choose feedback type</span>
+                </div>
+                <select
+                  value={feedbackCategory}
+                  onChange={(e) => setFeedbackCategory(e.target.value as 'bugs' | 'ideas' | 'questions')}
+                  className="community-select"
+                  style={{ width: '100%', padding: '12px', fontSize: '14px' }}
+                >
+                  <option value="bugs">🐛 Bugs - Report issues</option>
+                  <option value="ideas">💡 Ideas - Suggest features</option>
+                  <option value="questions">❓ Questions - Ask anything</option>
+                </select>
               </div>
-            )}
-          </div>
+
+              {/* Anonymous Type Selection */}
+              <div className="form-group">
+                <div className="tags-header">
+                  <h3>Privacy</h3>
+                  <span className="tags-info">Choose visibility</span>
+                </div>
+                <select
+                  value={anonymousType}
+                  onChange={(e) => setAnonymousType(e.target.value as 'none' | 'hide_author' | 'private')}
+                  className="community-select"
+                  style={{ width: '100%', padding: '12px', fontSize: '14px' }}
+                >
+                  <option value="none">👤 Public - Show my username</option>
+                  <option value="hide_author">🎭 Anonymous - Hide my username (public post)</option>
+                  <option value="private">🔒 Private - Only visible to developers</option>
+                </select>
+                {anonymousType === 'private' && (
+                  <div style={{
+                    marginTop: '8px',
+                    padding: '12px',
+                    background: '#fff3cd',
+                    border: '1px solid #ffeaa7',
+                    borderRadius: '4px',
+                    fontSize: '13px',
+                    color: '#856404'
+                  }}>
+                    🔒 This feedback will only be visible to developers and moderators.
+                  </div>
+                )}
+              </div>
+            </>
+          ) : (
+            /* Regular Tags */
+            <div className="form-group">
+              <div className="tags-header">
+                <h3>Tags</h3>
+                <span className="tags-info">Tối đa 5 tags</span>
+              </div>
+              <div className="tags-input-container">
+                <input
+                  type="text"
+                  value={tagInput}
+                  onChange={(e) => setTagInput(e.target.value)}
+                  onKeyDown={handleAddTag}
+                  placeholder="Nhập tag và nhấn Enter"
+                  className="tags-input"
+                  maxLength={20}
+                />
+              </div>
+              {tags.length > 0 && (
+                <div className="tags-list">
+                  {tags.map((tag, index) => (
+                    <span key={index} className="tag">
+                      #{tag}
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveTag(tag)}
+                        className="tag-remove"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Error Message */}
           {error && (

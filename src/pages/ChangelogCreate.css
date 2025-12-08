@@ -1,0 +1,337 @@
+/* Changelog Create Page */
+.changelog-create-page {
+    min-height: calc(100vh - var(--header-height));
+    background-color: var(--color-canvas-light);
+    padding: var(--space-xxl) var(--space-lg);
+}
+
+.changelog-create-container {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.changelog-create-header {
+    margin-bottom: var(--space-xxl);
+    text-align: center;
+}
+
+.changelog-create-header h1 {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--color-neutral-content);
+    margin: 0 0 var(--space-sm);
+}
+
+.changelog-create-header p {
+    font-size: var(--font-size-base);
+    color: var(--color-neutral-content-weak);
+    margin: 0;
+}
+
+/* Password Verification Card */
+.password-verification-card {
+    background-color: var(--color-card-background);
+    border: 1px solid var(--color-neutral-border-weak);
+    border-radius: var(--radius-medium);
+    padding: var(--space-xxl);
+    box-shadow: var(--shadow-medium);
+    text-align: center;
+}
+
+.password-verification-card h2 {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--color-neutral-content);
+    margin: 0 0 var(--space-md);
+}
+
+.password-verification-card p {
+    font-size: var(--font-size-base);
+    color: var(--color-neutral-content-weak);
+    margin: 0 0 var(--space-xl);
+}
+
+.password-input {
+    width: 100%;
+    padding: var(--space-md);
+    border: 1px solid var(--color-neutral-border);
+    border-radius: var(--radius-small);
+    font-size: var(--font-size-base);
+    background-color: var(--color-neutral-background-weak);
+    color: var(--color-neutral-content);
+    transition: all 0.2s ease;
+}
+
+.password-input:focus {
+    outline: none;
+    border-color: var(--color-reddit-blue);
+    box-shadow: 0 0 0 2px rgba(0, 121, 211, 0.1);
+}
+
+/* Form */
+.changelog-create-form {
+    background-color: var(--color-card-background);
+    border: 1px solid var(--color-neutral-border-weak);
+    border-radius: var(--radius-medium);
+    padding: var(--space-xl);
+    box-shadow: var(--shadow-small);
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-lg);
+    margin-bottom: var(--space-lg);
+}
+
+.form-group {
+    margin-bottom: var(--space-lg);
+}
+
+.form-group label {
+    display: block;
+    font-size: var(--font-size-small);
+    font-weight: 600;
+    color: var(--color-neutral-content);
+    margin-bottom: var(--space-sm);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.form-group input,
+.form-group textarea,
+.form-group select {
+    width: 100%;
+    padding: var(--space-md);
+    border: 1px solid var(--color-neutral-border);
+    border-radius: var(--radius-small);
+    font-size: var(--font-size-base);
+    background-color: var(--color-neutral-background-weak);
+    color: var(--color-neutral-content);
+    font-family: var(--font-family);
+    transition: all 0.2s ease;
+}
+
+.form-group input:focus,
+.form-group textarea:focus,
+.form-group select:focus {
+    outline: none;
+    border-color: var(--color-reddit-blue);
+    box-shadow: 0 0 0 2px rgba(0, 121, 211, 0.1);
+}
+
+/* Changes Section */
+.changes-section {
+    margin-bottom: var(--space-xl);
+}
+
+.changes-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--space-lg);
+}
+
+.changes-header h3 {
+    font-size: var(--font-size-large);
+    font-weight: 600;
+    color: var(--color-neutral-content);
+    margin: 0;
+}
+
+.add-change-button {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-xs);
+    padding: var(--space-sm) var(--space-md);
+    background-color: var(--color-reddit-blue);
+    color: white;
+    border: none;
+    border-radius: var(--radius-small);
+    font-size: var(--font-size-small);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.add-change-button:hover {
+    background-color: var(--color-reddit-blue-hover);
+    transform: translateY(-1px);
+}
+
+.add-change-button svg {
+    flex-shrink: 0;
+}
+
+/* Change Item */
+.change-item {
+    background-color: var(--color-neutral-background-weak);
+    border: 1px solid var(--color-neutral-border-weak);
+    border-radius: var(--radius-small);
+    padding: var(--space-md);
+    margin-bottom: var(--space-md);
+}
+
+.change-item-header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+    margin-bottom: var(--space-md);
+}
+
+.change-type-select {
+    flex: 1;
+    padding: var(--space-sm) var(--space-md);
+    border: 1px solid var(--color-neutral-border);
+    border-radius: var(--radius-small);
+    font-size: var(--font-size-base);
+    font-weight: 600;
+    background-color: var(--color-card-background);
+    color: var(--color-neutral-content);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.change-type-select:focus {
+    outline: none;
+    border-color: var(--color-reddit-blue);
+}
+
+.remove-change-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    background-color: transparent;
+    color: var(--color-neutral-content-weak);
+    border: none;
+    border-radius: var(--radius-small);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.remove-change-button:hover {
+    background-color: rgba(255, 69, 0, 0.1);
+    color: var(--color-reddit-orange);
+}
+
+.change-description-input {
+    width: 100%;
+    padding: var(--space-md);
+    border: 1px solid var(--color-neutral-border);
+    border-radius: var(--radius-small);
+    font-size: var(--font-size-base);
+    background-color: var(--color-card-background);
+    color: var(--color-neutral-content);
+    font-family: var(--font-family);
+    resize: vertical;
+    transition: all 0.2s ease;
+}
+
+.change-description-input:focus {
+    outline: none;
+    border-color: var(--color-reddit-blue);
+    box-shadow: 0 0 0 2px rgba(0, 121, 211, 0.1);
+}
+
+/* Error Message */
+.error-message {
+    padding: var(--space-md);
+    background-color: rgba(255, 69, 0, 0.1);
+    border: 1px solid var(--color-reddit-orange);
+    border-radius: var(--radius-small);
+    color: var(--color-reddit-orange);
+    font-size: var(--font-size-small);
+    margin-bottom: var(--space-lg);
+}
+
+/* Form Actions */
+.form-actions,
+.button-group {
+    display: flex;
+    gap: var(--space-md);
+    justify-content: flex-end;
+}
+
+.submit-button {
+    padding: var(--space-md) var(--space-xl);
+    background-color: var(--color-reddit-orange);
+    color: white;
+    border: none;
+    border-radius: var(--radius-full);
+    font-size: var(--font-size-base);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.submit-button:hover:not(:disabled) {
+    background-color: var(--color-reddit-orange-hover);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-small);
+}
+
+.submit-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.cancel-button {
+    padding: var(--space-md) var(--space-xl);
+    background-color: transparent;
+    color: var(--color-neutral-content);
+    border: 1px solid var(--color-neutral-border);
+    border-radius: var(--radius-full);
+    font-size: var(--font-size-base);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.cancel-button:hover:not(:disabled) {
+    background-color: var(--color-neutral-background-weak);
+    border-color: var(--color-neutral-border-strong);
+}
+
+.cancel-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .changelog-create-page {
+        padding: var(--space-lg) var(--space-md);
+    }
+
+    .changelog-create-form {
+        padding: var(--space-lg);
+    }
+
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+
+    .changes-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--space-md);
+    }
+
+    .add-change-button {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .form-actions,
+    .button-group {
+        flex-direction: column-reverse;
+    }
+
+    .submit-button,
+    .cancel-button {
+        width: 100%;
+    }
+}

@@ -10,7 +10,9 @@ import {
     deleteDoc,
     getDocs,
     getDoc,
-    serverTimestamp
+    setDoc,
+    serverTimestamp,
+    increment
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 
@@ -23,36 +25,44 @@ export interface Message {
     toUserId: string;
     toUsername: string;
     toDisplayName: string;
-    subject: string;
     body: string;
     isRead: boolean;
-    isStarred: boolean;
-    isArchived: boolean;
-    isTrashed: boolean;
-    isDraft: boolean;
-    folder?: string;
-    labels?: string[];
+    conversationId: string;
     createdAt: Date;
-    updatedAt: Date;
-    // Reply thread support
-    threadId?: string; // ID of the original message if this is a reply
-    replyToId?: string; // Direct parent message ID
-    replies?: Message[]; // Child replies (for client-side use only, not stored)
 }
 
-export interface ReplyToken {
+export interface Conversation {
     id: string;
-    token: string;
-    messageId: string;
-    authorizedUserId: string; // Only this user can access the reply link
-    expiresAt: Date;
-    used: boolean;
-    createdAt: Date;
+    participants: string[];
+    lastMessage: {
+        body: string;
+        fromUserId: string;
+        createdAt: Date;
+        isRead: boolean;
+    };
+    unreadCount: {
+        [userId: string]: number;
+    };
+    updatedAt: Date;
+    participantDetails: {
+        [userId: string]: {
+            username: string;
+            displayName: string;
+            avatarUrl?: string | null;
+        }
+    };
+    acceptedParticipants: string[]; // List of users who have accepted the chat
 }
 
 const MESSAGES_COLLECTION = 'messages';
+const CONVERSATIONS_COLLECTION = 'conversations';
 
-// Send a new message
+// Helper to get consistent conversation ID
+export const getConversationId = (userId1: string, userId2: string) => {
+    return [userId1, userId2].sort().join('_');
+};
+
+// Send a new message (and update conversation)
 export const sendMessage = async (
     fromUserId: string,
     fromUsername: string,
@@ -61,10 +71,13 @@ export const sendMessage = async (
     toUserId: string,
     toUsername: string,
     toDisplayName: string,
-    subject: string,
+    toAvatarUrl: string | undefined,
     body: string
 ): Promise<string> => {
     try {
+        const conversationId = getConversationId(fromUserId, toUserId);
+        
+        // 1. Add message
         const messageData = {
             fromUserId,
             fromUsername,
@@ -73,531 +86,269 @@ export const sendMessage = async (
             toUserId,
             toUsername,
             toDisplayName,
-            subject,
             body,
             isRead: false,
-            isStarred: false,
-            isArchived: false,
-            isTrashed: false,
-            isDraft: false,
-            folder: null,
-            labels: [],
+            conversationId,
             createdAt: serverTimestamp(),
-            updatedAt: serverTimestamp()
         };
 
-        const docRef = await addDoc(collection(db, MESSAGES_COLLECTION), messageData);
-        return docRef.id;
+        const messageRef = await addDoc(collection(db, MESSAGES_COLLECTION), messageData);
+
+        // 2. Update or Create Conversation
+        const conversationRef = doc(db, CONVERSATIONS_COLLECTION, conversationId);
+        const conversationSnap = await getDoc(conversationRef);
+
+        const participantDetails = {
+            [fromUserId]: {
+                username: fromUsername,
+                displayName: fromDisplayName,
+                avatarUrl: fromAvatarUrl || null
+            },
+            [toUserId]: {
+                username: toUsername,
+                displayName: toDisplayName,
+                avatarUrl: toAvatarUrl || null
+            }
+        };
+
+        if (!conversationSnap.exists()) {
+            // Create new conversation
+            await setDoc(conversationRef, {
+                participants: [fromUserId, toUserId],
+                lastMessage: {
+                    body,
+                    fromUserId,
+                    createdAt: serverTimestamp(),
+                    isRead: false
+                },
+                unreadCount: {
+                    [fromUserId]: 0,
+                    [toUserId]: 1
+                },
+                updatedAt: serverTimestamp(),
+                participantDetails,
+                acceptedParticipants: [fromUserId] // Sender implicitly accepts
+            });
+        } else {
+            // Update existing conversation
+            // We need to preserve existing participant details if we don't have them
+            const existingData = conversationSnap.data() as Conversation;
+            
+            // Merge participant details carefully
+            const updatedParticipantDetails = { ...existingData.participantDetails };
+            
+            // Update sender
+            updatedParticipantDetails[fromUserId] = participantDetails[fromUserId];
+            
+            // Update receiver ONLY if we have new info (e.g. avatar is not null) OR if it's missing
+            if (participantDetails[toUserId].avatarUrl || !updatedParticipantDetails[toUserId]) {
+                 updatedParticipantDetails[toUserId] = {
+                     ...updatedParticipantDetails[toUserId],
+                     ...participantDetails[toUserId]
+                 };
+            }
+
+            await updateDoc(conversationRef, {
+                lastMessage: {
+                    body,
+                    fromUserId,
+                    createdAt: serverTimestamp(),
+                    isRead: false
+                },
+                [`unreadCount.${toUserId}`]: increment(1),
+                updatedAt: serverTimestamp(),
+                participantDetails: updatedParticipantDetails
+                // We don't change acceptedParticipants here, unless we want to re-open a blocked chat?
+                // For now, assume status persists.
+            });
+        }
+
+        return messageRef.id;
+
     } catch (error) {
         console.error('Error sending message:', error);
         throw error;
     }
 };
 
-// Get inbox messages for a user (exclude replies - they're shown nested)
-export const getInboxMessages = async (userId: string): Promise<Message[]> => {
+// Accept conversation
+export const acceptConversation = async (conversationId: string, userId: string): Promise<void> => {
     try {
-        const q = query(
-            collection(db, MESSAGES_COLLECTION),
-            where('toUserId', '==', userId),
-            where('isTrashed', '==', false),
-            where('isArchived', '==', false),
-            orderBy('createdAt', 'desc')
-        );
-
-        const querySnapshot = await getDocs(q);
-        // Filter out replies (messages with replyToId) - they'll be shown nested under parent
-        const allMessages = querySnapshot.docs
-            .map(doc => ({
-                id: doc.id,
-                ...doc.data(),
-                createdAt: doc.data().createdAt?.toDate() || new Date(),
-                updatedAt: doc.data().updatedAt?.toDate() || new Date()
-            } as Message));
-
-        return allMessages.filter(msg => !msg.replyToId);
-    } catch (error) {
-        console.error('Error getting inbox messages:', error);
-        throw error;
-    }
-};
-
-// Get sent messages for a user (exclude replies)
-export const getSentMessages = async (userId: string): Promise<Message[]> => {
-    try {
-        const q = query(
-            collection(db, MESSAGES_COLLECTION),
-            where('fromUserId', '==', userId),
-            where('isTrashed', '==', false),
-            where('isDraft', '==', false),
-            orderBy('createdAt', 'desc')
-        );
-
-        const querySnapshot = await getDocs(q);
-        const allMessages = querySnapshot.docs
-            .map(doc => ({
-                id: doc.id,
-                ...doc.data(),
-                createdAt: doc.data().createdAt?.toDate() || new Date(),
-                updatedAt: doc.data().updatedAt?.toDate() || new Date()
-            } as Message));
-
-        return allMessages.filter(msg => !msg.replyToId);
-    } catch (error) {
-        console.error('Error getting sent messages:', error);
-        throw error;
-    }
-};
-
-// Get starred messages
-export const getStarredMessages = async (userId: string): Promise<Message[]> => {
-    try {
-        // Get received starred messages
-        const qReceived = query(
-            collection(db, MESSAGES_COLLECTION),
-            where('toUserId', '==', userId),
-            where('isStarred', '==', true),
-            where('isTrashed', '==', false),
-            orderBy('createdAt', 'desc')
-        );
-
-        // Get sent starred messages
-        const qSent = query(
-            collection(db, MESSAGES_COLLECTION),
-            where('fromUserId', '==', userId),
-            where('isStarred', '==', true),
-            where('isTrashed', '==', false),
-            orderBy('createdAt', 'desc')
-        );
-
-        const [receivedSnapshot, sentSnapshot] = await Promise.all([
-            getDocs(qReceived),
-            getDocs(qSent)
-        ]);
-
-        const allMessages = [
-            ...receivedSnapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data(),
-                createdAt: doc.data().createdAt?.toDate() || new Date(),
-                updatedAt: doc.data().updatedAt?.toDate() || new Date()
-            } as Message)),
-            ...sentSnapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data(),
-                createdAt: doc.data().createdAt?.toDate() || new Date(),
-                updatedAt: doc.data().updatedAt?.toDate() || new Date()
-            } as Message))
-        ];
-
-        // Filter out replies and sort by createdAt desc
-        const messages = allMessages.filter(msg => !msg.replyToId);
-        return messages.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-    } catch (error) {
-        console.error('Error getting starred messages:', error);
-        throw error;
-    }
-};
-
-// Get trashed messages
-export const getTrashedMessages = async (userId: string): Promise<Message[]> => {
-    try {
-        // Get received trashed messages
-        const qReceived = query(
-            collection(db, MESSAGES_COLLECTION),
-            where('toUserId', '==', userId),
-            where('isTrashed', '==', true),
-            orderBy('createdAt', 'desc')
-        );
-
-        // Get sent trashed messages
-        const qSent = query(
-            collection(db, MESSAGES_COLLECTION),
-            where('fromUserId', '==', userId),
-            where('isTrashed', '==', true),
-            orderBy('createdAt', 'desc')
-        );
-
-        const [receivedSnapshot, sentSnapshot] = await Promise.all([
-            getDocs(qReceived),
-            getDocs(qSent)
-        ]);
-
-        const allMessages = [
-            ...receivedSnapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data(),
-                createdAt: doc.data().createdAt?.toDate() || new Date(),
-                updatedAt: doc.data().updatedAt?.toDate() || new Date()
-            } as Message)),
-            ...sentSnapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data(),
-                createdAt: doc.data().createdAt?.toDate() || new Date(),
-                updatedAt: doc.data().updatedAt?.toDate() || new Date()
-            } as Message))
-        ];
-
-        // Filter out replies and sort by createdAt desc
-        const messages = allMessages.filter(msg => !msg.replyToId);
-        return messages.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-    } catch (error) {
-        console.error('Error getting trashed messages:', error);
-        throw error;
-    }
-};
-
-// Get a single message
-export const getMessage = async (messageId: string): Promise<Message | null> => {
-    try {
-        const docRef = doc(db, MESSAGES_COLLECTION, messageId);
-        const docSnap = await getDoc(docRef);
-
-        if (docSnap.exists()) {
-            return {
-                id: docSnap.id,
-                ...docSnap.data(),
-                createdAt: docSnap.data().createdAt?.toDate() || new Date(),
-                updatedAt: docSnap.data().updatedAt?.toDate() || new Date()
-            } as Message;
+        const conversationRef = doc(db, CONVERSATIONS_COLLECTION, conversationId);
+        const conversationSnap = await getDoc(conversationRef);
+        
+        if (conversationSnap.exists()) {
+            const data = conversationSnap.data() as Conversation;
+            const acceptedParticipants = data.acceptedParticipants || [];
+            
+            if (!acceptedParticipants.includes(userId)) {
+                await updateDoc(conversationRef, {
+                    acceptedParticipants: [...acceptedParticipants, userId]
+                });
+            }
         }
-        return null;
     } catch (error) {
-        console.error('Error getting message:', error);
+        console.error('Error accepting conversation:', error);
         throw error;
     }
 };
 
-// Mark message as read
-export const markAsRead = async (messageId: string): Promise<void> => {
-    try {
-        const messageRef = doc(db, MESSAGES_COLLECTION, messageId);
-        await updateDoc(messageRef, {
-            isRead: true,
-            updatedAt: serverTimestamp()
-        });
-    } catch (error) {
-        console.error('Error marking message as read:', error);
-        throw error;
-    }
-};
-
-// Mark message as unread
-export const markAsUnread = async (messageId: string): Promise<void> => {
-    try {
-        const messageRef = doc(db, MESSAGES_COLLECTION, messageId);
-        await updateDoc(messageRef, {
-            isRead: false,
-            updatedAt: serverTimestamp()
-        });
-    } catch (error) {
-        console.error('Error marking message as unread:', error);
-        throw error;
-    }
-};
-
-// Toggle star
-export const toggleStar = async (messageId: string, isStarred: boolean): Promise<void> => {
-    try {
-        const messageRef = doc(db, MESSAGES_COLLECTION, messageId);
-        await updateDoc(messageRef, {
-            isStarred: !isStarred,
-            updatedAt: serverTimestamp()
-        });
-    } catch (error) {
-        console.error('Error toggling star:', error);
-        throw error;
-    }
-};
-
-// Move to trash
-export const moveToTrash = async (messageId: string): Promise<void> => {
-    try {
-        const messageRef = doc(db, MESSAGES_COLLECTION, messageId);
-        await updateDoc(messageRef, {
-            isTrashed: true,
-            updatedAt: serverTimestamp()
-        });
-    } catch (error) {
-        console.error('Error moving message to trash:', error);
-        throw error;
-    }
-};
-
-// Archive message
-export const archiveMessage = async (messageId: string): Promise<void> => {
-    try {
-        const messageRef = doc(db, MESSAGES_COLLECTION, messageId);
-        await updateDoc(messageRef, {
-            isArchived: true,
-            updatedAt: serverTimestamp()
-        });
-    } catch (error) {
-        console.error('Error archiving message:', error);
-        throw error;
-    }
-};
-
-// Delete message permanently
-export const deleteMessage = async (messageId: string): Promise<void> => {
-    try {
-        const messageRef = doc(db, MESSAGES_COLLECTION, messageId);
-        await deleteDoc(messageRef);
-    } catch (error) {
-        console.error('Error deleting message:', error);
-        throw error;
-    }
-};
-
-// Get unread count
-export const getUnreadCount = async (userId: string): Promise<number> => {
+// Get conversations for a user
+export const getUserConversations = async (userId: string): Promise<Conversation[]> => {
     try {
         const q = query(
-            collection(db, MESSAGES_COLLECTION),
-            where('toUserId', '==', userId),
-            where('isRead', '==', false),
-            where('isTrashed', '==', false)
+            collection(db, CONVERSATIONS_COLLECTION),
+            where('participants', 'array-contains', userId),
+            orderBy('updatedAt', 'desc')
         );
 
         const querySnapshot = await getDocs(q);
-        return querySnapshot.size;
+        return querySnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+            updatedAt: doc.data().updatedAt?.toDate() || new Date(),
+            lastMessage: {
+                ...doc.data().lastMessage,
+                createdAt: doc.data().lastMessage?.createdAt?.toDate() || new Date()
+            }
+        } as Conversation));
     } catch (error) {
-        console.error('Error getting unread count:', error);
-        return 0;
+        console.error('Error getting conversations:', error);
+        throw error;
     }
 };
 
-// Subscribe to inbox messages (real-time)
-export const subscribeToInboxMessages = (
+// Subscribe to conversations (real-time)
+export const subscribeToConversations = (
     userId: string,
+    callback: (conversations: Conversation[]) => void
+): (() => void) => {
+    const q = query(
+        collection(db, CONVERSATIONS_COLLECTION),
+        where('participants', 'array-contains', userId),
+        orderBy('updatedAt', 'desc')
+    );
+
+    return onSnapshot(q, (querySnapshot) => {
+        const conversations = querySnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+            updatedAt: doc.data().updatedAt?.toDate() || new Date(),
+            lastMessage: {
+                ...doc.data().lastMessage,
+                createdAt: doc.data().lastMessage?.createdAt?.toDate() || new Date()
+            }
+        } as Conversation));
+        callback(conversations);
+    });
+};
+
+// Get messages for a conversation
+export const getConversationMessages = async (conversationId: string): Promise<Message[]> => {
+    try {
+        const q = query(
+            collection(db, MESSAGES_COLLECTION),
+            where('conversationId', '==', conversationId),
+            orderBy('createdAt', 'asc')
+        );
+
+        const querySnapshot = await getDocs(q);
+        return querySnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+            createdAt: doc.data().createdAt?.toDate() || new Date()
+        } as Message));
+    } catch (error) {
+        console.error('Error getting conversation messages:', error);
+        throw error;
+    }
+};
+
+// Subscribe to conversation messages (real-time)
+export const subscribeToConversation = (
+    conversationId: string,
     callback: (messages: Message[]) => void
 ): (() => void) => {
     const q = query(
         collection(db, MESSAGES_COLLECTION),
-        where('toUserId', '==', userId),
-        where('isTrashed', '==', false),
-        where('isArchived', '==', false),
-        orderBy('createdAt', 'desc')
+        where('conversationId', '==', conversationId),
+        orderBy('createdAt', 'asc')
     );
 
     return onSnapshot(q, (querySnapshot) => {
         const messages = querySnapshot.docs.map(doc => ({
             id: doc.id,
             ...doc.data(),
-            createdAt: doc.data().createdAt?.toDate() || new Date(),
-            updatedAt: doc.data().updatedAt?.toDate() || new Date()
-        })) as Message[];
+            createdAt: doc.data().createdAt?.toDate() || new Date()
+        } as Message));
         callback(messages);
     });
 };
 
-// Subscribe to unread count (real-time)
-export const subscribeToUnreadCount = (
-    userId: string,
-    callback: (count: number) => void
-): (() => void) => {
-    const q = query(
-        collection(db, MESSAGES_COLLECTION),
-        where('toUserId', '==', userId),
-        where('isRead', '==', false),
-        where('isTrashed', '==', false)
-    );
-
-    return onSnapshot(q, (querySnapshot) => {
-        callback(querySnapshot.size);
-    });
-};
-
-// Reply token functions
-const REPLY_TOKENS_COLLECTION = 'replyTokens';
-
-// Generate a unique reply token
-export const generateReplyToken = () => {
-    return Math.random().toString(36).substring(2) + Date.now().toString(36);
-};
-
-// Create a reply token for a message
-export const createReplyToken = async (
-    messageId: string,
-    authorizedUserId: string
-): Promise<string> => {
-    // First, invalidate all existing active tokens for this message and user (single token slot)
-    const existingTokensQuery = query(
-        collection(db, REPLY_TOKENS_COLLECTION),
-        where('messageId', '==', messageId),
-        where('authorizedUserId', '==', authorizedUserId),
-        where('used', '==', false)
-    );
-
-    const existingTokensSnapshot = await getDocs(existingTokensQuery);
-    const invalidatePromises = existingTokensSnapshot.docs.map(doc =>
-        updateDoc(doc.ref, { used: true })
-    );
-    await Promise.all(invalidatePromises);
-
-    // Now create the new token
-    const token = generateReplyToken();
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 7); // Token expires in 7 days
-
-    await addDoc(collection(db, REPLY_TOKENS_COLLECTION), {
-        token,
-        messageId,
-        authorizedUserId,
-        expiresAt,
-        used: false,
-        createdAt: serverTimestamp()
-    });
-
-    return token;
-};
-
-// Validate and get reply token
-export const validateReplyToken = async (
-    token: string,
-    userId: string
-): Promise<{ valid: boolean; messageId?: string }> => {
+// Mark message as read
+export const markAsRead = async (messageId: string): Promise<void> => {
     try {
-        const q = query(
-            collection(db, REPLY_TOKENS_COLLECTION),
-            where('token', '==', token),
-            where('authorizedUserId', '==', userId)
-        );
+        const messageRef = doc(db, MESSAGES_COLLECTION, messageId);
+        const messageSnap = await getDoc(messageRef);
+        
+        if (messageSnap.exists() && !messageSnap.data().isRead) {
+            const data = messageSnap.data();
+            await updateDoc(messageRef, { isRead: true });
 
-        const snapshot = await getDocs(q);
-
-        if (snapshot.empty) {
-            return { valid: false };
-        }
-
-        const tokenData = snapshot.docs[0].data();
-        const expiresAt = tokenData.expiresAt?.toDate();
-
-        // Check if token is expired or used
-        if (tokenData.used || (expiresAt && expiresAt < new Date())) {
-            return { valid: false };
-        }
-
-        return { valid: true, messageId: tokenData.messageId };
-    } catch (error) {
-        console.error('Error validating reply token:', error);
-        return { valid: false };
-    }
-};
-
-// Mark token as used
-export const markTokenAsUsed = async (token: string): Promise<void> => {
-    try {
-        const q = query(
-            collection(db, REPLY_TOKENS_COLLECTION),
-            where('token', '==', token)
-        );
-
-        const snapshot = await getDocs(q);
-
-        if (!snapshot.empty) {
-            const tokenDoc = snapshot.docs[0];
-            await updateDoc(doc(db, REPLY_TOKENS_COLLECTION, tokenDoc.id), {
-                used: true
+            // Decrement unread count in conversation
+            const conversationRef = doc(db, CONVERSATIONS_COLLECTION, data.conversationId);
+            await updateDoc(conversationRef, {
+                [`unreadCount.${data.toUserId}`]: increment(-1)
             });
         }
     } catch (error) {
-        console.error('Error marking token as used:', error);
+        console.error('Error marking message as read:', error);
         throw error;
     }
 };
 
-// Send a reply to a message
-export const sendReply = async (
-    messageId: string,
-    fromUserId: string,
-    fromUsername: string,
-    fromDisplayName: string,
-    fromAvatarUrl: string | undefined,
-    toUserId: string,
-    toUsername: string,
-    toDisplayName: string,
-    body: string,
-    token?: string
-): Promise<void> => {
+// Delete message
+export const deleteMessage = async (messageId: string): Promise<void> => {
     try {
-        // Get the original message to get thread info
-        const originalMessage = await getMessage(messageId);
-        if (!originalMessage) {
-            throw new Error('Original message not found');
-        }
+        await deleteDoc(doc(db, MESSAGES_COLLECTION, messageId));
+    } catch (error) {
+        console.error('Error deleting message:', error);
+        throw error;
+    }
+};
 
-        // Create the reply
-        const threadId = originalMessage.threadId || messageId;
-        await addDoc(collection(db, MESSAGES_COLLECTION), {
-            fromUserId,
-            fromUsername,
-            fromDisplayName,
-            fromAvatarUrl: fromAvatarUrl || null,
-            toUserId,
-            toUsername,
-            toDisplayName,
-            subject: originalMessage.subject, // Keep same subject
-            body,
-            isRead: false,
-            isStarred: false,
-            isArchived: false,
-            isTrashed: false,
-            isDraft: false,
-            threadId, // Link to thread
-            replyToId: messageId, // Direct parent
-            createdAt: serverTimestamp(),
-            updatedAt: serverTimestamp()
+// Delete conversation
+export const deleteConversation = async (conversationId: string): Promise<void> => {
+    try {
+        // Delete the conversation document
+        await deleteDoc(doc(db, CONVERSATIONS_COLLECTION, conversationId));
+        
+        // Note: We should also delete messages, but for now we'll leave them orphaned 
+        // or handle via a cloud function trigger.
+    } catch (error) {
+        console.error('Error deleting conversation:', error);
+        throw error;
+    }
+};
+
+// Get total unread count for user
+export const getUnreadCount = async (userId: string): Promise<number> => {
+    try {
+        // We can sum up unread counts from conversations
+        const q = query(
+            collection(db, CONVERSATIONS_COLLECTION),
+            where('participants', 'array-contains', userId)
+        );
+        
+        const snapshot = await getDocs(q);
+        let total = 0;
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            total += data.unreadCount?.[userId] || 0;
         });
-
-        // Mark token as used if provided
-        if (token) {
-            await markTokenAsUsed(token);
-        }
+        return total;
     } catch (error) {
-        console.error('Error sending reply:', error);
-        throw error;
-    }
-};
-
-// Get all messages in a thread
-export const getThreadMessages = async (threadId: string): Promise<Message[]> => {
-    try {
-        const q = query(
-            collection(db, MESSAGES_COLLECTION),
-            where('threadId', '==', threadId),
-            orderBy('createdAt', 'asc')
-        );
-
-        const snapshot = await getDocs(q);
-        const messages = snapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data(),
-            createdAt: doc.data().createdAt?.toDate() || new Date(),
-            updatedAt: doc.data().updatedAt?.toDate() || new Date()
-        })) as Message[];
-
-        return messages;
-    } catch (error) {
-        console.error('Error getting thread messages:', error);
-        return [];
-    }
-};
-
-// Get reply count for a message
-export const getReplyCount = async (messageId: string): Promise<number> => {
-    try {
-        const threadId = messageId; // The original message is the threadId
-        const q = query(
-            collection(db, MESSAGES_COLLECTION),
-            where('threadId', '==', threadId)
-        );
-
-        const snapshot = await getDocs(q);
-        // Exclude the original message itself
-        return snapshot.docs.filter(doc => doc.id !== messageId).length;
-    } catch (error) {
-        console.error('Error getting reply count:', error);
+        console.error('Error getting unread count:', error);
         return 0;
     }
 };

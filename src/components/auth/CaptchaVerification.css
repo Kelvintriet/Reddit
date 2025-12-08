@@ -197,9 +197,12 @@
 }
 
 @keyframes cvPulseFast {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: translate(-50%, -50%) scale(1);
   }
+
   50% {
     transform: translate(-50%, -50%) scale(1.15);
   }
@@ -473,6 +476,8 @@
 @media (prefers-color-scheme: dark) {
   .cv-modal {
     background: #1a1a1a;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    border: 1px solid #333;
   }
 
   .cv-close {
@@ -493,41 +498,53 @@
     color: #888;
   }
 
+  .cv-dot-area {
+    background: #222;
+    border-color: #333;
+  }
+
+  .cv-dot {
+    background: #444;
+    border-color: #444;
+  }
+
+  .cv-dot.active {
+    background: #fff;
+    border-color: #fff;
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
+  }
+
+  .cv-dot.done {
+    background: #4caf50;
+    border-color: #4caf50;
+    opacity: 0.6;
+  }
+
   .cv-error {
     background: #2a1a1a;
     border-color: #5c2828;
+    color: #ff8a80;
   }
 
-  .cv-stat {
-    background: #252525;
+  .cv-success {
+    background: #1b2e1b;
+    border-color: #2e7d32;
+    color: #81c784;
   }
 
-  .cv-stat-value {
+  .cv-check {
+    background: #2e7d32;
     color: #fff;
   }
 
-  .cv-bar-container {
+  .cv-refresh {
+    background: #252525;
+    color: #888;
+  }
+
+  .cv-refresh:hover {
     background: #333;
-  }
-
-  .cv-bar {
-    background: #fff;
-  }
-
-  .cv-hold-btn {
-    border-color: #fff;
     color: #fff;
-    background: transparent;
-  }
-
-  .cv-hold-btn:hover:not(:disabled) {
-    background: #252525;
-  }
-
-  .cv-hold-btn:active:not(:disabled),
-  .cv-hold-btn.holding {
-    background: #fff;
-    color: #1a1a1a;
   }
 
   .cv-ip {
@@ -535,8 +552,36 @@
     color: #555;
   }
 
+  .cv-uid {
+    color: #444;
+  }
+
+  .cv-flagged {
+    background: #2a1a00;
+    color: #ffb74d;
+  }
+
+  .cv-timer {
+    color: #ef5350;
+  }
+
+  .cv-verifying {
+    background: rgba(26, 26, 26, 0.9);
+    color: #aaa;
+  }
+
+  /* Gate Dark Mode */
   .cv-gate {
     background: #0a0a0a;
+  }
+
+  .cv-gate-box {
+    background: #1a1a1a;
+    border: 1px solid #333;
+  }
+
+  .cv-gate-title {
+    color: #fff;
   }
 
   .cv-gate-text {
@@ -550,7 +595,11 @@
   }
 
   .cv-gate-btn:hover {
-    background: #f0f0f0;
-    border-color: #f0f0f0;
+    background: #e0e0e0;
+    border-color: #e0e0e0;
+  }
+
+  .cv-gate-dots {
+    color: #444;
   }
 }
