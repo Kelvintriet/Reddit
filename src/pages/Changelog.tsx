@@ -10,20 +10,16 @@ const Changelog: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [isAuthorized, setIsAuthorized] = useState(false);
-    const [checkingAuth, setCheckingAuth] = useState(true);
     const { user } = useAuthStore();
 
     // Check authorization
     useEffect(() => {
         const checkAuth = async () => {
             if (user) {
-                setCheckingAuth(true);
                 const authorized = await isAuthorizedChangelogUser(user);
                 setIsAuthorized(authorized);
-                setCheckingAuth(false);
             } else {
                 setIsAuthorized(false);
-                setCheckingAuth(false);
             }
         };
 
