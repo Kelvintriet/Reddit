@@ -22,7 +22,7 @@ export class FileCleanupWebSocket {
    */
   connect(): Promise<void> {
     return new Promise((resolve, reject) => {
-      const backendUrl = (import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000').replace('localhost', '127.0.0.1');
+      const backendUrl = (import.meta.env.VITE_BACKEND_URL || 'https://server.reddit.koolname.asia').replace('localhost', '127.0.0.1');
       const wsUrl = backendUrl.replace('http://', 'ws://').replace('https://', 'wss://') + '/ws/file-cleanup';
 
       console.log('🔗 Connecting to WebSocket:', wsUrl);

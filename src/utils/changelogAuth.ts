@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { auth } from '../lib/firebase';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const API_URL = import.meta.env.VITE_BACKEND_URL || 'https://server.reddit.koolname.asia';
 
 // Storage key for password session
 const PASSWORD_SESSION_KEY = 'changelog_password_session';

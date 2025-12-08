@@ -10,7 +10,7 @@
  * @returns Secure proxy URL
  */
 export const getSecureAttachmentUrl = (fileId: string, postId?: string | null): string => {
-  const backendUrl = (import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000').replace('localhost', '127.0.0.1');
+  const backendUrl = (import.meta.env.VITE_BACKEND_URL || 'https://server.reddit.koolname.asia').replace('localhost', '127.0.0.1');
   const baseUrl = `${backendUrl}/api/attachments/${fileId}`;
 
   if (postId) {
