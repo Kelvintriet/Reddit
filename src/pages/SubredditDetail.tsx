@@ -4,6 +4,8 @@ import { useAuthStore, useSubredditsStore, usePostsStore } from '../store';
 import { generateSettingsToken } from '../services/settingsTokenService';
 import PostCard from '../components/post/PostCard';
 import PostSkeleton from '../components/post/PostSkeleton';
+import { useLanguageStore } from '../store/useLanguageStore';
+import { translations } from '../constants/translations';
 import './SubredditDetail.css';
 
 const SubredditDetail: React.FC = () => {
@@ -14,6 +16,8 @@ const SubredditDetail: React.FC = () => {
   const { posts, fetchPosts, isLoading: postsLoading, error: postsError, setSortBy } = usePostsStore();
   const [activeSort, setActiveSort] = useState<'best' | 'hot' | 'new' | 'top' | 'rising'>('best');
   const [isJoined, setIsJoined] = useState(false);
+  const { language } = useLanguageStore();
+  const t = (key: keyof typeof translations.vi) => translations[language][key];
 
   // Generate secure token for settings access
   const handleSettingsClick = async () => {
@@ -79,7 +83,7 @@ const SubredditDetail: React.FC = () => {
   };
 
   const formatDate = (date: any) => {
-    if (!date) return 'Không xác định';
+    if (!date) return t('unknown');
     
     let dateObj: Date;
     
@@ -95,10 +99,10 @@ const SubredditDetail: React.FC = () => {
     
     // Check if date is valid
     if (isNaN(dateObj.getTime())) {
-      return 'Không xác định';
+      return t('unknown');
     }
     
-    return dateObj.toLocaleDateString('vi-VN', {
+    return dateObj.toLocaleDateString(language === 'vi' ? 'vi-VN' : 'en-US', {
       year: 'numeric',
       month: 'long',
       day: 'numeric'
@@ -130,10 +134,10 @@ const SubredditDetail: React.FC = () => {
     return (
       <div className="subreddit-detail-container">
         <div className="subreddit-not-found">
-          <h1>Không tìm thấy cộng đồng</h1>
-          <p>Cộng đồng r/{subredditName} không tồn tại hoặc đã bị xóa.</p>
+          <h1>{t('communityNotFound')}</h1>
+          <p>{t('communityNotFoundDesc')}</p>
           <Link to="/subexplore" className="explore-communities-btn">
-            Khám phá các cộng đồng khác
+            {t('exploreOtherCommunities')}
           </Link>
         </div>
       </div>
@@ -175,12 +179,12 @@ const SubredditDetail: React.FC = () => {
               {user && currentSubreddit.createdBy === user.uid ? (
                 <div className="owner-section">
                   <button className="owner-badge">
-                    Chủ sở hữu
+                    {t('owner')}
                   </button>
                   <button
                     onClick={handleSettingsClick}
                     className="settings-button"
-                    title="Cài đặt cộng đồng"
+                    title={t('manageCommunity')}
                   >
                     ⚙️
                   </button>
@@ -191,7 +195,7 @@ const SubredditDetail: React.FC = () => {
                   className={`join-button ${isJoined ? 'joined' : ''}`}
                   disabled={!user}
                 >
-                  {isJoined ? 'Đã tham gia' : 'Tham gia'}
+                  {isJoined ? t('joined') : t('join')}
                 </button>
               )}
               
@@ -203,7 +207,7 @@ const SubredditDetail: React.FC = () => {
                   <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
                     <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
                   </svg>
-                  Tạo bài viết
+                  {t('createPost')}
                 </Link>
               )}
             </div>
@@ -213,15 +217,15 @@ const SubredditDetail: React.FC = () => {
           <div className="subreddit-stats">
             <div className="stat-item">
               <div className="stat-number">{currentSubreddit.memberCount?.toLocaleString() || 0}</div>
-              <div className="stat-label">Thành viên</div>
+              <div className="stat-label">{t('membersCount')}</div>
             </div>
             <div className="stat-item">
               <div className="stat-number">{getPostsCount()}</div>
-              <div className="stat-label">Bài viết</div>
+              <div className="stat-label">{t('posts')}</div>
             </div>
             <div className="stat-item">
               <div className="stat-number">{formatDate(currentSubreddit.createdAt)}</div>
-              <div className="stat-label">Được tạo</div>
+              <div className="stat-label">{t('created')}</div>
             </div>
           </div>
         </div>
@@ -245,11 +249,11 @@ const SubredditDetail: React.FC = () => {
                   {sort === 'top' && <path fillRule="evenodd" d="M3.293 9.707a1 1 0 010-1.414l6-6a1 1 0 011.414 0l6 6a1 1 0 01-1.414 1.414L11 5.414V17a1 1 0 11-2 0V5.414L4.707 9.707a1 1 0 01-1.414 0z" clipRule="evenodd" />}
                   {sort === 'rising' && <path fillRule="evenodd" d="M12 7a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0V8.414l-4.293 4.293a1 1 0 01-1.414 0L8 10.414l-4.293 4.293a1 1 0 01-1.414-1.414l5-5a1 1 0 011.414 0L11 10.586 14.586 7H12z" clipRule="evenodd" />}
                 </svg>
-                {sort === 'best' && 'Hay nhất'}
-                {sort === 'hot' && 'Nổi bật'}
-                {sort === 'new' && 'Mới nhất'}
-                {sort === 'top' && 'Hàng đầu'}
-                {sort === 'rising' && 'Đang lên'}
+                {sort === 'best' && t('sortBest')}
+                {sort === 'hot' && t('sortHot')}
+                {sort === 'new' && t('sortNew')}
+                {sort === 'top' && t('sortTop')}
+                {sort === 'rising' && t('sortRising')}
               </button>
             ))}
           </div>
@@ -259,7 +263,7 @@ const SubredditDetail: React.FC = () => {
             <div className="error-message">
               <p>{postsError}</p>
               <button onClick={() => fetchPosts(subredditName)} className="retry-button">
-                Thử lại
+                {t('retry')}
               </button>
             </div>
           ) : postsLoading ? (
@@ -271,11 +275,11 @@ const SubredditDetail: React.FC = () => {
           ) : posts.length === 0 ? (
             <div className="empty-posts">
               <div className="empty-icon">📝</div>
-              <h3>Chưa có bài viết nào</h3>
-              <p>Hãy là người đầu tiên đăng bài trong cộng đồng này!</p>
+              <h3>{t('noPosts')}</h3>
+              <p>{t('beFirstToPost')}</p>
               {user && (
                 <Link to={`/r/${currentSubreddit.name}/submit`} className="create-first-post-btn">
-                  Tạo bài viết đầu tiên
+                  {t('createFirstPost')}
                 </Link>
               )}
             </div>
@@ -315,24 +319,24 @@ const SubredditDetail: React.FC = () => {
         {/* Sidebar */}
         <div className="subreddit-sidebar">
           <div className="sidebar-card">
-            <h3>Thông tin về r/{currentSubreddit.name}</h3>
+            <h3>{t('aboutCommunity')}</h3>
             <div className="sidebar-info">
               <p>{currentSubreddit.description}</p>
               
               <div className="sidebar-stats">
                 <div className="sidebar-stat">
                   <strong>{currentSubreddit.memberCount?.toLocaleString() || 0}</strong>
-                  <span>Thành viên</span>
+                  <span>{t('membersCount')}</span>
                 </div>
                 <div className="sidebar-stat">
                   <strong>{getPostsCount()}</strong>
-                  <span>Bài viết</span>
+                  <span>{t('posts')}</span>
                 </div>
               </div>
 
               <div className="sidebar-meta">
                 <div className="meta-item">
-                  <span className="meta-label">Được tạo:</span>
+                  <span className="meta-label">{t('created')}:</span>
                   <span className="meta-value">{formatDate(currentSubreddit.createdAt)}</span>
                 </div>
               </div>
@@ -340,7 +344,7 @@ const SubredditDetail: React.FC = () => {
               {/* Rules */}
               {currentSubreddit.rules && currentSubreddit.rules.length > 0 && (
                 <div className="sidebar-rules">
-                  <h4>Quy tắc cộng đồng</h4>
+                  <h4>{t('communityRules')}</h4>
                   <ol>
                     {currentSubreddit.rules.map((rule, index) => (
                       <li key={index}>{rule}</li>
@@ -352,7 +356,7 @@ const SubredditDetail: React.FC = () => {
               {/* Moderators */}
               {currentSubreddit.moderatorIds && currentSubreddit.moderatorIds.length > 0 && (
                 <div className="sidebar-moderators">
-                  <h4>Người điều hành</h4>
+                  <h4>{t('moderators')}</h4>
                   <ul>
                     {currentSubreddit.moderatorIds.map((modId, index) => {
                       const modName = currentSubreddit.moderatorNames?.[index] || `user_${modId.substring(0, 8)}`

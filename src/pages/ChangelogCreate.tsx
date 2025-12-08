@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store';
+import { useLanguageStore } from '../store/useLanguageStore';
 import { createChangelog, type ChangelogChange } from '../collections/changelogs';
 import {
     isAuthorizedChangelogUser,
@@ -12,6 +13,7 @@ import './ChangelogCreate.css';
 
 const ChangelogCreate: React.FC = () => {
     const { user, isInitialized } = useAuthStore();
+    const { t } = useLanguageStore();
     const navigate = useNavigate();
     const [isPasswordVerified, setIsPasswordVerified] = useState(false);
     const [password, setPassword] = useState('');
@@ -63,7 +65,7 @@ const ChangelogCreate: React.FC = () => {
 
                 if (!authorized) {
                     console.log('❌ User not authorized, redirecting to /changelog');
-                    setAuthError('You are not authorized to create changelogs. Please contact an administrator.');
+                    setAuthError(t('notAuthorized'));
                     // Don't redirect immediately, show error for 3 seconds
                     setTimeout(() => {
                         navigate('/changelog');
@@ -80,14 +82,14 @@ const ChangelogCreate: React.FC = () => {
                 }
             } catch (error) {
                 console.error('❌ Error checking authorization:', error);
-                setAuthError('Failed to check authorization. Please try again.');
+                setAuthError(t('authCheckFailed'));
             } finally {
                 setCheckingAuth(false);
             }
         };
 
         checkAuthAndSession();
-    }, [user, isInitialized, navigate]);
+    }, [user, isInitialized, navigate, t]);
 
     const handlePasswordSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -101,7 +103,7 @@ const ChangelogCreate: React.FC = () => {
                 savePasswordSession(user.uid, result.expiresIn);
             }
         } else {
-            setPasswordError(result.error || 'Incorrect password. Please try again.');
+            setPasswordError(result.error || t('incorrectPassword'));
         }
     };
 
@@ -128,18 +130,18 @@ const ChangelogCreate: React.FC = () => {
 
         // Validation
         if (!version.trim()) {
-            setError('Version is required');
+            setError(t('versionRequired'));
             return;
         }
 
         if (!date) {
-            setError('Date is required');
+            setError(t('dateRequired'));
             return;
         }
 
         const validChanges = changes.filter(c => c.description.trim());
         if (validChanges.length === 0) {
-            setError('At least one change description is required');
+            setError(t('changeRequired'));
             return;
         }
 
@@ -159,7 +161,7 @@ const ChangelogCreate: React.FC = () => {
             navigate('/changelog');
         } catch (err) {
             console.error('Error creating changelog:', err);
-            setError('Failed to create changelog. Please try again.');
+            setError(t('createChangelogFailed'));
             setSubmitting(false);
         }
     };
@@ -175,7 +177,7 @@ const ChangelogCreate: React.FC = () => {
                                 {authError}
                             </div>
                         ) : (
-                            'Loading...'
+                            t('loading')
                         )}
                     </div>
                 </div>
@@ -194,15 +196,15 @@ const ChangelogCreate: React.FC = () => {
             <div className="changelog-create-page">
                 <div className="changelog-create-container">
                     <div className="password-verification-card">
-                        <h2>Password Required</h2>
-                        <p>Please enter the password to access changelog creation.</p>
+                        <h2>{t('passwordRequired')}</h2>
+                        <p>{t('enterPasswordDesc')}</p>
                         <form onSubmit={handlePasswordSubmit}>
                             <div className="form-group">
                                 <input
                                     type="password"
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
-                                    placeholder="Enter password"
+                                    placeholder={t('enterPassword')}
                                     className="password-input"
                                     autoFocus
                                 />
@@ -212,14 +214,14 @@ const ChangelogCreate: React.FC = () => {
                             )}
                             <div className="button-group">
                                 <button type="submit" className="submit-button">
-                                    Verify
+                                    {t('verify')}
                                 </button>
                                 <button
                                     type="button"
                                     onClick={() => navigate('/changelog')}
                                     className="cancel-button"
                                 >
-                                    Cancel
+                                    {t('cancel')}
                                 </button>
                             </div>
                         </form>
@@ -234,14 +236,14 @@ const ChangelogCreate: React.FC = () => {
         <div className="changelog-create-page">
             <div className="changelog-create-container">
                 <div className="changelog-create-header">
-                    <h1>Create New Changelog</h1>
-                    <p>Add a new version entry to the changelog</p>
+                    <h1>{t('createChangelog')}</h1>
+                    <p>{t('addNewVersion')}</p>
                 </div>
 
                 <form onSubmit={handleSubmit} className="changelog-create-form">
                     <div className="form-row">
                         <div className="form-group">
-                            <label htmlFor="version">Version *</label>
+                            <label htmlFor="version">{t('version')} *</label>
                             <input
                                 type="text"
                                 id="version"
@@ -253,7 +255,7 @@ const ChangelogCreate: React.FC = () => {
                         </div>
 
                         <div className="form-group">
-                            <label htmlFor="date">Date *</label>
+                            <label htmlFor="date">{t('date')} *</label>
                             <input
                                 type="date"
                                 id="date"
@@ -266,7 +268,7 @@ const ChangelogCreate: React.FC = () => {
 
                     <div className="changes-section">
                         <div className="changes-header">
-                            <h3>Changes</h3>
+                            <h3>{t('changes')}</h3>
                             <button
                                 type="button"
                                 onClick={handleAddChange}
@@ -275,7 +277,7 @@ const ChangelogCreate: React.FC = () => {
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                                     <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
                                 </svg>
-                                Add Change
+                                {t('addChange')}
                             </button>
                         </div>
 
@@ -287,10 +289,10 @@ const ChangelogCreate: React.FC = () => {
                                         onChange={(e) => handleChangeUpdate(index, 'type', e.target.value)}
                                         className="change-type-select"
                                     >
-                                        <option value="feature">New Feature</option>
-                                        <option value="improvement">Improvement</option>
-                                        <option value="bugfix">Bug Fix</option>
-                                        <option value="breaking">Breaking Change</option>
+                                        <option value="feature">{t('newFeature')}</option>
+                                        <option value="improvement">{t('improvement')}</option>
+                                        <option value="bugfix">{t('bugFix')}</option>
+                                        <option value="breaking">{t('breakingChange')}</option>
                                     </select>
                                     {changes.length > 1 && (
                                         <button
@@ -308,7 +310,7 @@ const ChangelogCreate: React.FC = () => {
                                 <textarea
                                     value={change.description}
                                     onChange={(e) => handleChangeUpdate(index, 'description', e.target.value)}
-                                    placeholder="Describe the change..."
+                                    placeholder={t('describeChange')}
                                     rows={3}
                                     className="change-description-input"
                                 />
@@ -326,7 +328,7 @@ const ChangelogCreate: React.FC = () => {
                             disabled={submitting}
                             className="submit-button"
                         >
-                            {submitting ? 'Creating...' : 'Create Changelog'}
+                            {submitting ? t('creating') : t('createChangelogBtn')}
                         </button>
                         <button
                             type="button"
@@ -334,7 +336,7 @@ const ChangelogCreate: React.FC = () => {
                             className="cancel-button"
                             disabled={submitting}
                         >
-                            Cancel
+                            {t('cancel')}
                         </button>
                     </div>
                 </form>

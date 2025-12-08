@@ -3,12 +3,16 @@ import { useParams, Link } from 'react-router-dom';
 import { useAuthStore, usePostsStore } from '../store';
 import PostCard from '../components/post/PostCard';
 import PostSkeleton from '../components/post/PostSkeleton';
+import { useLanguageStore } from '../store/useLanguageStore';
+import { translations } from '../constants/translations';
 
 const Home = () => {
   const { subreddit } = useParams<{ subreddit?: string }>();
   const { user } = useAuthStore();
   const { posts, fetchPosts, isLoading, error, setSortBy, voteOnPost, cleanupRealtimeListener } = usePostsStore();
   const [activeSort, setActiveSort] = useState<'best' | 'hot' | 'new' | 'top' | 'rising'>('best');
+  const { language } = useLanguageStore();
+  const t = (key: keyof typeof translations.vi) => translations[language][key];
 
   useEffect(() => {
     const sortMapping: Record<string, 'hot' | 'new' | 'top'> = {
@@ -70,11 +74,11 @@ const Home = () => {
               {sort === 'top' && <path fillRule="evenodd" d="M3.293 9.707a1 1 0 010-1.414l6-6a1 1 0 011.414 0l6 6a1 1 0 01-1.414 1.414L11 5.414V17a1 1 0 11-2 0V5.414L4.707 9.707a1 1 0 01-1.414 0z" clipRule="evenodd" />}
               {sort === 'rising' && <path fillRule="evenodd" d="M12 7a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0V8.414l-4.293 4.293a1 1 0 01-1.414 0L8 10.414l-4.293 4.293a1 1 0 01-1.414-1.414l5-5a1 1 0 011.414 0L11 10.586 14.586 7H12z" clipRule="evenodd" />}
             </svg>
-            {sort === 'best' && 'Hay nhất'}
-            {sort === 'hot' && 'Nổi bật'}
-            {sort === 'new' && 'Mới nhất'}
-            {sort === 'top' && 'Hàng đầu'}
-            {sort === 'rising' && 'Đang lên'}
+            {sort === 'best' && t('sortBest')}
+            {sort === 'hot' && t('sortHot')}
+            {sort === 'new' && t('sortNew')}
+            {sort === 'top' && t('sortTop')}
+            {sort === 'rising' && t('sortRising')}
           </button>
         ))}
       </div>
@@ -91,8 +95,8 @@ const Home = () => {
         ) : error ? (
           /* Error State */
           <div className="error-message">
-            <p>Đã xảy ra lỗi khi tải bài viết: {error}</p>
-            <button onClick={() => fetchPosts(subreddit)}>Thử lại</button>
+            <p>{t('errorLoadingPosts').replace('{error}', error)}</p>
+            <button onClick={() => fetchPosts(subreddit)}>{t('retry')}</button>
           </div>
         ) : (
           <>
@@ -108,14 +112,14 @@ const Home = () => {
                     <polyline points="10,9 9,9 8,9" />
                   </svg>
                 </div>
-                <h3>Chưa có bài viết nào</h3>
-                <p>Hãy là người đầu tiên tạo bài viết cho cộng đồng này!</p>
+                <h3>{t('noPostsYet')}</h3>
+                <p>{t('beFirstToPost')}</p>
                 <div className="empty-state-actions">
                   <Link to="/submit" className="reddit-create-btn">
-                    Tạo bài viết
+                    {t('createPost')}
                   </Link>
                   <Link to="/subexplore" className="btn-outlined">
-                    Khám phá cộng đồng
+                    {t('exploreCommunities')}
                   </Link>
                 </div>
               </div>

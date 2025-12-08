@@ -1305,3 +1305,13 @@
   outline: 2px solid var(--accent-secondary);
   outline-offset: 2px;
 }
+/* Fix for sorting dropdown visibility */
+.sort-select option {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+[data-theme='dark'] .sort-select option {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+}

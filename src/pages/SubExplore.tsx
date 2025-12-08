@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useSubredditsStore, useAuthStore } from '../store'
+import { useLanguageStore } from '../store/useLanguageStore'
 import './SubExplore.css'
 
 const SubExplore = () => {
   const [activeTab, setActiveTab] = useState<'popular' | 'new' | 'trending'>('popular')
   const { subreddits, fetchSubreddits, isLoading, error } = useSubredditsStore()
   const { user } = useAuthStore()
+  const { t } = useLanguageStore()
 
   useEffect(() => {
     fetchSubreddits()
@@ -69,9 +71,9 @@ const SubExplore = () => {
   return (
     <div className="subexplore-container">
       <div className="subexplore-header">
-        <h1 className="subexplore-title">Khám phá cộng đồng</h1>
+        <h1 className="subexplore-title">{t('exploreTitle')}</h1>
         <p className="subexplore-description">
-          Tìm kiếm và tham gia các cộng đồng phù hợp với sở thích của bạn
+          {t('exploreDesc')}
         </p>
       </div>
 
@@ -80,32 +82,32 @@ const SubExplore = () => {
           className={`subexplore-tab ${activeTab === 'popular' ? 'active' : ''}`}
           onClick={() => setActiveTab('popular')}
         >
-          Phổ biến
+          {t('popular')}
         </button>
         <button
           className={`subexplore-tab ${activeTab === 'new' ? 'active' : ''}`}
           onClick={() => setActiveTab('new')}
         >
-          Mới nhất
+          {t('newest')}
         </button>
         <button
           className={`subexplore-tab ${activeTab === 'trending' ? 'active' : ''}`}
           onClick={() => setActiveTab('trending')}
         >
-          Xu hướng
+          {t('trending')}
         </button>
       </div>
 
       {isLoading ? (
         <div className="subexplore-loading">
           <div className="subexplore-loading-spinner"></div>
-          <p>Đang tải danh sách cộng đồng...</p>
+          <p>{t('loadingCommunities')}</p>
         </div>
       ) : error ? (
         <div className="subexplore-error">
           <p>{error}</p>
           <button onClick={() => fetchSubreddits()} className="subexplore-retry-button">
-            Thử lại
+            {t('retry')}
           </button>
         </div>
       ) : (
@@ -147,30 +149,30 @@ const SubExplore = () => {
                       r/{subreddit.name}
                     </Link>
                     <span className="subreddit-members">
-                      {subreddit.memberCount || 0} thành viên
+                      {subreddit.memberCount || 0} {t('members')}
                     </span>
                   </div>
                   {isOwner ? (
                     <div className="subreddit-owner-badge">
-                      Chủ sở hữu
+                      {t('owner')}
                     </div>
                   ) : (
                     <button
                       onClick={() => handleJoinSubreddit(subreddit.name, isJoined)}
                       className={`subreddit-join-button ${isJoined ? 'joined' : ''}`}
                     >
-                      {isJoined ? 'Đã tham gia' : 'Tham gia'}
+                      {isJoined ? t('joined') : t('join')}
                     </button>
                   )}
                 </div>
 
                 <div className="subreddit-description">
-                  {subreddit.description || 'Không có mô tả'}
+                  {subreddit.description || t('noDescription')}
                 </div>
 
                 <div className="subreddit-footer">
                   <span className="subreddit-created">
-                    Tạo ngày: {formatDate(subreddit.createdAt)}
+                    {t('createdDate')}: {formatDate(subreddit.createdAt)}
                   </span>
                 </div>
               </div>
@@ -179,9 +181,9 @@ const SubExplore = () => {
 
           {filteredSubreddits.length === 0 && (
             <div className="no-subreddits">
-              <p>Không tìm thấy cộng đồng nào</p>
+              <p>{t('noCommunitiesFound')}</p>
               <Link to="/create-community" className="create-community-link">
-                Tạo cộng đồng mới
+                {t('createCommunity')}
               </Link>
             </div>
           )}
@@ -190,10 +192,10 @@ const SubExplore = () => {
 
       <div className="subexplore-create-banner">
         <div className="create-banner-content">
-          <h2>Không tìm thấy cộng đồng phù hợp?</h2>
-          <p>Hãy tạo cộng đồng mới và mời mọi người tham gia!</p>
+          <h2>{t('createBannerTitle')}</h2>
+          <p>{t('createBannerDesc')}</p>
           <Link to="/create-community" className="create-community-button">
-            Tạo cộng đồng
+            {t('createCommunityBtn')}
           </Link>
         </div>
       </div>

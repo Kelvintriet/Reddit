@@ -2,9 +2,10 @@ import { useEffect, useState, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAuthStore } from '../store';
 import { useMessagesStore } from '../store/useMessagesStore';
+import { useLanguageStore } from '../store/useLanguageStore';
 import { Mail, Send, Search, MoreVertical, Plus, ShieldAlert, CheckCircle, Trash2, XCircle } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
-import { vi } from 'date-fns/locale';
+import { vi, enUS } from 'date-fns/locale';
 import { searchUsersByPartialName, getUserProfile } from '../collections/users';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
@@ -12,6 +13,7 @@ import './Inbox.css';
 
 const Inbox = () => {
     const { user, isInitialized } = useAuthStore();
+    const { t, language } = useLanguageStore();
     const location = useLocation();
     const {
         conversations,
@@ -310,10 +312,10 @@ const Inbox = () => {
                     <button 
                         className="inbox-compose-btn" 
                         onClick={() => setShowNewChat(!showNewChat)}
-                        title="Compose New Message"
+                        title={t('composeNewMessage')}
                     >
                         <Plus size={18} />
-                        <span>Compose</span>
+                        <span>{t('compose')}</span>
                     </button>
                 </div>
 
@@ -387,7 +389,7 @@ const Inbox = () => {
                                         <span className="inbox-message-sender">{otherUser?.displayName || 'Unknown User'}</span>
                                         <span className="inbox-message-time">
                                             {conversation.lastMessage?.createdAt && 
-                                                formatDistanceToNow(conversation.lastMessage.createdAt, { addSuffix: false, locale: vi })}
+                                                formatDistanceToNow(conversation.lastMessage.createdAt, { addSuffix: false, locale: language === 'vi' ? vi : enUS })}
                                         </span>
                                     </div>
                                     <div className="inbox-message-preview">
@@ -502,7 +504,7 @@ const Inbox = () => {
                                         <div className={`chat-bubble ${isMe ? 'me' : 'other'}`}>
                                             {msg.body}
                                             <div className="chat-time">
-                                                {formatDistanceToNow(msg.createdAt, { addSuffix: true, locale: vi })}
+                                                {formatDistanceToNow(msg.createdAt, { addSuffix: true, locale: language === 'vi' ? vi : enUS })}
                                             </div>
                                         </div>
                                     </div>
@@ -544,7 +546,7 @@ const Inbox = () => {
                             onClick={() => setShowNewChat(true)}
                         >
                             <Plus size={20} />
-                            Compose New Message
+                            {t('composeNewMessage')}
                         </button>
                     </div>
                 )}

@@ -3,7 +3,9 @@ import { useAuthStore } from '../store'
 import { getDeletedPosts, restorePost, permanentlyDeletePost, cleanupOldDeletedPosts } from '../collections/posts'
 import type { Post } from '../types'
 import { formatDistanceToNow } from 'date-fns'
-import { vi } from 'date-fns/locale'
+import { vi, enUS } from 'date-fns/locale'
+import { useLanguageStore } from '../store/useLanguageStore'
+import { translations } from '../constants/translations'
 
 const RecentlyDeleted = () => {
   const { user } = useAuthStore()
@@ -16,6 +18,8 @@ const RecentlyDeleted = () => {
     action: 'restore' | 'permanent_delete';
     postTitle: string;
   } | null>(null)
+  const { language } = useLanguageStore()
+  const t = (key: keyof typeof translations.vi) => translations[language][key]
 
   useEffect(() => {
     if (user) {
@@ -33,7 +37,7 @@ const RecentlyDeleted = () => {
       setDeletedPosts(posts)
     } catch (err) {
       console.error('Error fetching deleted posts:', err)
-      setError(err instanceof Error ? err.message : 'Đã xảy ra lỗi khi tải danh sách bài viết đã xóa')
+      setError(err instanceof Error ? err.message : t('error'))
     } finally {
       setIsLoading(false)
     }
@@ -51,7 +55,7 @@ const RecentlyDeleted = () => {
       setShowConfirmDialog(null)
     } catch (err) {
       console.error('Error restoring post:', err)
-      setError(err instanceof Error ? err.message : 'Đã xảy ra lỗi khi khôi phục bài viết')
+      setError(err instanceof Error ? err.message : t('error'))
     } finally {
       setProcessingPostId(null)
     }
@@ -67,7 +71,7 @@ const RecentlyDeleted = () => {
       setShowConfirmDialog(null)
     } catch (err) {
       console.error('Error permanently deleting post:', err)
-      setError(err instanceof Error ? err.message : 'Đã xảy ra lỗi khi xóa vĩnh viễn bài viết')
+      setError(err instanceof Error ? err.message : t('error'))
     } finally {
       setProcessingPostId(null)
     }
@@ -77,11 +81,11 @@ const RecentlyDeleted = () => {
     try {
       setIsLoading(true)
       const deletedCount = await cleanupOldDeletedPosts()
-      alert(`Đã xóa vĩnh viễn ${deletedCount} bài viết cũ`)
+      alert(t('cleanupSuccess').replace('{count}', deletedCount.toString()))
       await fetchDeletedPosts()
     } catch (err) {
       console.error('Error cleaning up old posts:', err)
-      setError(err instanceof Error ? err.message : 'Đã xảy ra lỗi khi dọn dẹp bài viết cũ')
+      setError(err instanceof Error ? err.message : t('cleanupError'))
     } finally {
       setIsLoading(false)
     }
@@ -101,10 +105,10 @@ const RecentlyDeleted = () => {
     
     // Check if date is valid
     if (isNaN(dateObj.getTime())) {
-      return 'không xác định'
+      return t('unknown')
     }
     
-    return formatDistanceToNow(dateObj, { addSuffix: true, locale: vi })
+    return formatDistanceToNow(dateObj, { addSuffix: true, locale: language === 'vi' ? vi : enUS })
   }
 
   const getDaysUntilAutoDelete = (deletedAt: any) => {
@@ -133,7 +137,7 @@ const RecentlyDeleted = () => {
   if (!user) {
     return (
       <div className="container">
-        <p>Bạn cần đăng nhập để xem trang này.</p>
+        <p>{t('loginRequired')}</p>
       </div>
     )
   }
@@ -141,8 +145,8 @@ const RecentlyDeleted = () => {
   return (
     <div className="recently-deleted-page">
       <div className="page-header">
-        <h1>Bài viết đã xóa gần đây</h1>
-        <p>Các bài viết sẽ được xóa vĩnh viễn sau 15 ngày. Bạn có thể khôi phục hoặc xóa vĩnh viễn trước thời hạn đó.</p>
+        <h1>{t('recentlyDeletedPosts')}</h1>
+        <p>{t('recentlyDeletedDesc')}</p>
         
         <div className="header-actions">
           <button 
@@ -150,7 +154,7 @@ const RecentlyDeleted = () => {
             className="cleanup-btn"
             disabled={isLoading}
           >
-            Xóa tất cả bài viết cũ (&gt;15 ngày)
+            {t('cleanupOldPosts')}
           </button>
         </div>
       </div>
@@ -170,7 +174,7 @@ const RecentlyDeleted = () => {
       {isLoading ? (
         <div className="loading-container">
           <div className="loading-spinner"></div>
-          <p>Đang tải...</p>
+          <p>{t('loading')}</p>
         </div>
       ) : deletedPosts.length === 0 ? (
         <div className="empty-state">
@@ -181,8 +185,8 @@ const RecentlyDeleted = () => {
               <line x1="14" y1="11" x2="14" y2="17"/>
             </svg>
           </div>
-          <h3>Không có bài viết nào đã xóa</h3>
-          <p>Các bài viết bạn xóa sẽ xuất hiện ở đây và có thể được khôi phục trong vòng 15 ngày.</p>
+          <h3>{t('noDeletedPosts')}</h3>
+          <p>{t('noDeletedPostsDesc')}</p>
         </div>
       ) : (
         <div className="deleted-posts-list">
@@ -198,20 +202,20 @@ const RecentlyDeleted = () => {
                 <p className="post-preview">
                   {displayContent && displayContent.length > 200 
                     ? displayContent.substring(0, 200) + '...' 
-                    : displayContent || 'Không có nội dung'
+                    : displayContent || t('noContent')
                   }
                 </p>
                 
                 <div className="post-meta">
                   <span className="deleted-time">
-                    Đã xóa {formatTimeAgo(post.deletedAt)}
+                    {t('deletedTime')} {formatTimeAgo(post.deletedAt)}
                   </span>
                   <span className="auto-delete-warning">
-                    Tự động xóa vĩnh viễn sau {getDaysUntilAutoDelete(post.deletedAt)} ngày
+                    {t('autoDeleteWarning').replace('{days}', getDaysUntilAutoDelete(post.deletedAt).toString())}
                   </span>
                   {post.deleteReason && post.deleteReason !== 'No reason provided' && (
                     <span className="delete-reason">
-                      Lý do: {post.deleteReason}
+                      {t('deleteReason')}: {post.deleteReason}
                     </span>
                   )}
                 </div>
@@ -243,7 +247,7 @@ const RecentlyDeleted = () => {
                         <path d="M3 12a9 9 0 009-9 9.75 9.75 0 00-6.74 2.74L3 8"/>
                         <path d="M3 3v5h5"/>
                       </svg>
-                      Khôi phục
+                      {t('restore')}
                     </>
                   )}
                 </button>
@@ -260,7 +264,7 @@ const RecentlyDeleted = () => {
                   {processingPostId === post.id ? (
                     <div className="loading-spinner-small"></div>
                   ) : (
-                    'Xóa vĩnh viễn'
+                    t('deletePermanently')
                   )}
                 </button>
               </div>
@@ -275,14 +279,14 @@ const RecentlyDeleted = () => {
           <div className="confirm-dialog">
             <h3>
               {showConfirmDialog.action === 'restore' 
-                ? 'Xác nhận khôi phục bài viết' 
-                : 'Xác nhận xóa vĩnh viễn'
+                ? t('confirmRestoreTitle')
+                : t('confirmDeleteTitle')
               }
             </h3>
             <p>
               {showConfirmDialog.action === 'restore'
-                ? `Bạn có chắc chắn muốn khôi phục bài viết "${showConfirmDialog.postTitle}"? Bài viết sẽ được tạo lại như một bài viết mới (không có upvotes, downvotes và comments). Bài viết cũ sẽ vẫn hiển thị [deleted].`
-                : `Bạn có chắc chắn muốn xóa vĩnh viễn bài viết "${showConfirmDialog.postTitle}"? Hành động này không thể hoàn tác.`
+                ? t('confirmRestoreDesc').replace('{title}', showConfirmDialog.postTitle)
+                : t('confirmDeleteDesc').replace('{title}', showConfirmDialog.postTitle)
               }
             </p>
             
@@ -291,7 +295,7 @@ const RecentlyDeleted = () => {
                 onClick={() => setShowConfirmDialog(null)}
                 className="cancel-btn"
               >
-                Hủy
+                {t('cancel')}
               </button>
               <button
                 onClick={() => {
@@ -307,7 +311,7 @@ const RecentlyDeleted = () => {
                 {processingPostId === showConfirmDialog.postId ? (
                   <div className="loading-spinner-small"></div>
                 ) : (
-                  showConfirmDialog.action === 'restore' ? 'Khôi phục' : 'Xóa vĩnh viễn'
+                  showConfirmDialog.action === 'restore' ? t('restore') : t('deletePermanently')
                 )}
               </button>
             </div>

@@ -97,6 +97,7 @@ export interface User {
     region: string;
     city: string;
   };
+  language?: 'vi' | 'en';
   updatedAt?: Date;
 }
 

@@ -25,6 +25,7 @@ interface User {
     region: string;
     city: string;
   };
+  language?: 'vi' | 'en';
 }
 
 interface AuthState {
@@ -101,7 +102,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         customUID: profile?.customUID,
         region: profile?.region,
         regionCode: profile?.regionCode,
-        onboardingCompleted: profile?.onboardingCompleted || false
+        onboardingCompleted: profile?.onboardingCompleted || false,
+        language: profile?.language || 'vi'
       };
 
       set({ 
@@ -155,7 +157,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         customUID: profile?.customUID,
         region: profile?.region,
         regionCode: profile?.regionCode,
-        onboardingCompleted: profile?.onboardingCompleted || false
+        onboardingCompleted: profile?.onboardingCompleted || false,
+        language: profile?.language || 'vi'
       };
 
       set({ 
@@ -207,7 +210,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         customUID: profile?.customUID,
         region: profile?.region,
         regionCode: profile?.regionCode,
-        onboardingCompleted: profile?.onboardingCompleted || false
+        onboardingCompleted: profile?.onboardingCompleted || false,
+        language: profile?.language || 'vi'
       };
 
       set({ 
@@ -280,7 +284,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             customUID: profile?.customUID,
             region: profile?.region,
             regionCode: profile?.regionCode,
-            onboardingCompleted: profile?.onboardingCompleted || false
+            onboardingCompleted: profile?.onboardingCompleted || false,
+            language: profile?.language || 'vi'
           };
           
           set({ user: userData });

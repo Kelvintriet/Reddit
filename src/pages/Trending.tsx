@@ -2,12 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { useAuthStore, usePostsStore } from '../store';
 import PostCard from '../components/post/PostCard';
 import PostSkeleton from '../components/post/PostSkeleton';
+import { useLanguageStore } from '../store/useLanguageStore';
+import { translations } from '../constants/translations';
 import './SpecialSubreddits.css';
 
 const Trending: React.FC = () => {
   const { user } = useAuthStore();
   const { posts, fetchSpecialSubreddit, isLoading, error, voteOnPost } = usePostsStore();
   const [activeSort] = useState<'best' | 'hot' | 'new' | 'top' | 'rising'>('best');
+  const { language } = useLanguageStore();
+  const t = (key: keyof typeof translations.vi) => translations[language][key];
 
   useEffect(() => {
     fetchSpecialSubreddit('trending');
@@ -45,17 +49,17 @@ const Trending: React.FC = () => {
           </div>
           <div className="trending-text">
             <h1>r/trending</h1>
-            <p>Những bài viết đang thịnh hành trên Reddit</p>
+            <p>{t('trendingDesc')}</p>
           </div>
         </div>
         <div className="trending-stats">
           <div className="stat-item">
             <div className="stat-number">{posts.length}</div>
-            <div className="stat-label">Bài viết thịnh hành</div>
+            <div className="stat-label">{t('trendingPosts')}</div>
           </div>
           <div className="stat-item">
-            <div className="stat-number">Hàng ngày</div>
-            <div className="stat-label">Cập nhật</div>
+            <div className="stat-number">{t('daily')}</div>
+            <div className="stat-label">{t('updates')}</div>
           </div>
         </div>
       </div>
@@ -65,7 +69,7 @@ const Trending: React.FC = () => {
         <div className="error-message">
           <p>{error}</p>
           <button onClick={() => fetchSpecialSubreddit('trending')} className="retry-button">
-            Thử lại
+            {t('retry')}
           </button>
         </div>
       ) : isLoading ? (
@@ -77,8 +81,8 @@ const Trending: React.FC = () => {
       ) : posts.length === 0 ? (
         <div className="empty-posts">
           <div className="empty-icon">📈</div>
-          <h3>Chưa có bài viết thịnh hành</h3>
-          <p>Những bài viết có tỷ lệ upvote cao nhất sẽ xuất hiện ở đây!</p>
+          <h3>{t('noTrendingPosts')}</h3>
+          <p>{t('noTrendingPostsDesc')}</p>
         </div>
       ) : (
         <div className="posts-list">
@@ -116,19 +120,18 @@ const Trending: React.FC = () => {
 
       {/* Info Sidebar */}
       <div className="trending-info-box">
-        <h3>Về r/trending</h3>
+        <h3>{t('aboutTrending')}</h3>
         <p>
-          r/trending hiển thị những bài viết có tỷ lệ upvote/downvote tốt nhất và đang thu hút sự chú ý.
-          Chỉ có tối đa 150 bài viết được chọn hàng tháng, cập nhật hàng ngày.
+          {t('aboutTrendingDesc')}
         </p>
         <div className="info-stats">
           <div className="info-stat">
             <strong>150</strong>
-            <span>Bài viết tối đa</span>
+            <span>{t('maxPosts')}</span>
           </div>
           <div className="info-stat">
-            <strong>Hàng ngày</strong>
-            <span>Tần suất cập nhật</span>
+            <strong>{t('daily')}</strong>
+            <span>{t('updateFreq')}</span>
           </div>
         </div>
       </div>

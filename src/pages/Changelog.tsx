@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuthStore } from '../store';
+import { useLanguageStore } from '../store/useLanguageStore';
 import { getChangelogs, type Changelog as ChangelogType } from '../collections/changelogs';
 import { isAuthorizedChangelogUser } from '../utils/changelogAuth';
 import '../pages/Changelog.css';
@@ -11,6 +12,7 @@ const Changelog: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
     const [isAuthorized, setIsAuthorized] = useState(false);
     const { user } = useAuthStore();
+    const { t } = useLanguageStore();
 
     // Check authorization
     useEffect(() => {
@@ -35,7 +37,7 @@ const Changelog: React.FC = () => {
                 setError(null);
             } catch (err) {
                 console.error('Error fetching changelogs:', err);
-                setError('Failed to load changelogs. Please try again later.');
+                setError(t('error'));
             } finally {
                 setLoading(false);
             }
@@ -78,13 +80,13 @@ const Changelog: React.FC = () => {
     const getChangeTypeLabel = (type: string) => {
         switch (type) {
             case 'feature':
-                return 'New Feature';
+                return t('newFeature');
             case 'improvement':
-                return 'Improvement';
+                return t('improvement');
             case 'bugfix':
-                return 'Bug Fix';
+                return t('bugFix');
             case 'breaking':
-                return 'Breaking Change';
+                return t('breakingChange');
             default:
                 return type;
         }
@@ -95,10 +97,10 @@ const Changelog: React.FC = () => {
             <div className="changelog-page">
                 <div className="changelog-container">
                     <div className="changelog-header">
-                        <h1 className="changelog-title">Changelog</h1>
+                        <h1 className="changelog-title">{t('changelogTitle')}</h1>
                     </div>
                     <div style={{ textAlign: 'center', padding: '40px', color: 'var(--color-neutral-content-weak)' }}>
-                        Loading changelogs...
+                        {t('loadingChangelogs')}
                     </div>
                 </div>
             </div>
@@ -110,7 +112,7 @@ const Changelog: React.FC = () => {
             <div className="changelog-page">
                 <div className="changelog-container">
                     <div className="changelog-header">
-                        <h1 className="changelog-title">Changelog</h1>
+                        <h1 className="changelog-title">{t('changelogTitle')}</h1>
                     </div>
                     <div style={{ textAlign: 'center', padding: '40px', color: 'var(--color-reddit-orange)' }}>
                         {error}
@@ -124,23 +126,23 @@ const Changelog: React.FC = () => {
         <div className="changelog-page">
             <div className="changelog-container">
                 <div className="changelog-header">
-                    <h1 className="changelog-title">Changelog</h1>
+                    <h1 className="changelog-title">{t('changelogTitle')}</h1>
                     <p className="changelog-subtitle">
-                        Track all updates, new features, and improvements to the platform
+                        {t('changelogSubtitle')}
                     </p>
                     {isAuthorized && (
                         <Link to="/changelog/create" className="changelog-create-button">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                                 <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
                             </svg>
-                            Create New Changelog
+                            {t('createChangelog')}
                         </Link>
                     )}
                 </div>
 
                 {changelogs.length === 0 ? (
                     <div style={{ textAlign: 'center', padding: '40px', color: 'var(--color-neutral-content-weak)' }}>
-                        No changelogs available yet.
+                        {t('noChangelogs')}
                     </div>
                 ) : (
                     <div className="changelog-timeline">
@@ -184,8 +186,8 @@ const Changelog: React.FC = () => {
 
                 <div className="changelog-footer">
                     <p>
-                        Have feedback or suggestions? Let us know in{' '}
-                        <a href="/r/feedback" className="changelog-link">r/feedback</a>
+                        {t('feedbackPrompt')}{' '}
+                        <a href="/r/feedback" className="changelog-link">{t('feedbackTitle')}</a>
                     </p>
                 </div>
             </div>

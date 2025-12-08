@@ -5,6 +5,8 @@ import { db } from '../lib/firebase'
 import PostCard from '../components/post/PostCard'
 import PostSkeleton from '../components/post/PostSkeleton'
 import type { Post, User } from '../types'
+import { useLanguageStore } from '../store/useLanguageStore'
+import { translations } from '../constants/translations'
 
 interface SearchResult {
   posts: Post[]
@@ -17,6 +19,8 @@ interface SearchResult {
 const Search = () => {
   const [searchParams] = useSearchParams()
   const searchQuery = searchParams.get('q') || ''
+  const { language } = useLanguageStore()
+  const t = (key: keyof typeof translations.vi) => translations[language][key]
 
   // Determine default tab based on search query
   const getDefaultTab = (query: string) => {
@@ -223,7 +227,7 @@ const Search = () => {
       setResults(prev => ({
         ...prev,
         loading: false,
-        error: 'Có lỗi xảy ra khi tìm kiếm. Vui lòng thử lại.'
+        error: t('searchError')
       }))
     }
   }
@@ -232,14 +236,14 @@ const Search = () => {
     return (
       <div className="container search-container">
         <div className="search-empty">
-          <h2>Tìm kiếm trên Reddit</h2>
-          <p>Nhập từ khóa vào thanh tìm kiếm để bắt đầu</p>
+          <h2>{t('searchPlaceholder')}</h2>
+          <p>{t('searchPrompt')}</p>
           <div className="search-tips">
-            <h4>Mẹo tìm kiếm:</h4>
+            <h4>{t('searchTips')}</h4>
             <ul>
-              <li>Gõ <strong>@tên_người_dùng</strong> để tìm người dùng cụ thể</li>
-              <li>Gõ <strong>XXX-YYY-ZZZ</strong> để tìm theo ID người dùng</li>
-              <li>Gõ từ khóa thông thường để tìm bài viết, cộng đồng và người dùng</li>
+              <li>{t('searchTipUser')}</li>
+              <li>{t('searchTipID')}</li>
+              <li>{t('searchTipGeneral')}</li>
             </ul>
           </div>
         </div>
@@ -251,11 +255,15 @@ const Search = () => {
     <div className="container search-container">
       {/* Search Header */}
       <div className="search-header">
-        <h1>Kết quả tìm kiếm cho "{searchQuery}"</h1>
+        <h1>{t('resultsFor')} "{searchQuery}"</h1>
         <div className="search-stats">
           {!results.loading && (
             <p>
-              Tìm thấy {results.posts.length} bài viết, {results.communities.length} cộng đồng và {results.users.length} người dùng
+              {t('foundResults')
+                .replace('{posts}', results.posts.length.toString())
+                .replace('{communities}', results.communities.length.toString())
+                .replace('{users}', results.users.length.toString())
+              }
             </p>
           )}
         </div>
@@ -270,7 +278,7 @@ const Search = () => {
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
             <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
           </svg>
-          Người dùng ({results.users.length})
+          {t('usersTitle')} ({results.users.length})
         </button>
         <button
           className={`search-tab ${activeTab === 'posts' ? 'active' : ''}`}
@@ -279,7 +287,7 @@ const Search = () => {
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
             <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z" />
           </svg>
-          Bài viết ({results.posts.length})
+          {t('posts')} ({results.posts.length})
         </button>
         <button
           className={`search-tab ${activeTab === 'communities' ? 'active' : ''}`}
@@ -288,7 +296,7 @@ const Search = () => {
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
             <path d="M16 4c0-1.11.89-2 2-2s2 .89 2 2-.89 2-2 2-2-.89-2-2zM4 18v-4h3v4H4zm9-12c-2.69 0-5.77 1.28-6 2h4v10H7v-1.5H5.5V18H7v1H4V10.15C2.84 9.63 2 8.4 2 7c0-1.66 1.34-3 3-3s3 1.34 3 3c0 1.06-.57 1.98-1.42 2.48L8 8h3.5V6H13v12h-2V6z" />
           </svg>
-          Cộng đồng ({results.communities.length})
+          {t('communitiesTitle')} ({results.communities.length})
         </button>
         <button
           className={`search-tab ${activeTab === 'comments' ? 'active' : ''}`}
@@ -297,7 +305,7 @@ const Search = () => {
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
             <path d="M20 2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h4l4 4 4-4h4c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z" />
           </svg>
-          Bình luận (0)
+          {t('comments')} (0)
         </button>
       </div>
 
@@ -319,8 +327,8 @@ const Search = () => {
               <div className="search-users">
                 {results.users.length === 0 ? (
                   <div className="search-no-results">
-                    <h3>Không tìm thấy người dùng nào</h3>
-                    <p>Thử tìm kiếm với từ khóa khác hoặc sử dụng format @tên_người_dùng</p>
+                    <h3>{t('noUsersFound')}</h3>
+                    <p>{t('noUsersFoundDesc')}</p>
                   </div>
                 ) : (
                   <div className="users-list">
@@ -373,8 +381,8 @@ const Search = () => {
               <div className="search-posts">
                 {results.posts.length === 0 ? (
                   <div className="search-no-results">
-                    <h3>Không tìm thấy bài viết nào</h3>
-                    <p>Thử tìm kiếm với từ khóa khác</p>
+                    <h3>{t('noPostsFound')}</h3>
+                    <p>{t('tryDifferentKeywords')}</p>
                   </div>
                 ) : (
                   <div className="posts-list">
@@ -414,8 +422,8 @@ const Search = () => {
               <div className="search-communities">
                 {results.communities.length === 0 ? (
                   <div className="search-no-results">
-                    <h3>Không tìm thấy cộng đồng nào</h3>
-                    <p>Thử tìm kiếm với từ khóa khác</p>
+                    <h3>{t('noCommunitiesFound')}</h3>
+                    <p>{t('tryDifferentKeywords')}</p>
                   </div>
                 ) : (
                   <div className="communities-list">
@@ -436,7 +444,7 @@ const Search = () => {
                           </Link>
                           <p className="community-description">{community.description}</p>
                           <div className="community-meta">
-                            {community.memberCount || 0} thành viên
+                            {community.memberCount || 0} {t('members')}
                           </div>
                         </div>
                       </div>
@@ -449,8 +457,8 @@ const Search = () => {
             {activeTab === 'comments' && (
               <div className="search-comments">
                 <div className="search-no-results">
-                  <h3>Tìm kiếm bình luận</h3>
-                  <p>Tính năng này sẽ được thêm vào trong tương lai</p>
+                  <h3>{t('searchComments')}</h3>
+                  <p>{t('featureComingSoon')}</p>
                 </div>
               </div>
             )}

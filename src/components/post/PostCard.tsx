@@ -2,9 +2,10 @@ import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { MessageCircle, Share2, Bookmark, Download, Play, AlertTriangle, Edit3 } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
-import { vi } from 'date-fns/locale'
+import { vi, enUS } from 'date-fns/locale'
 import { useAuthStore } from '../../store/authStore'
 import { usePostsStore } from '../../store/usePostsStore'
+import { useLanguageStore } from '../../store/useLanguageStore'
 import { isImageFile, isVideoFile, isDangerousFile, getFileIcon } from '../../services/appwrite/storage'
 import { softDeletePost } from '../../collections/posts'
 import { generateEditToken } from '../../services/editTokenService'
@@ -49,6 +50,7 @@ interface PostCardProps {
 const PostCard: React.FC<PostCardProps> = ({ post, onVote, userVote }) => {
   const { user } = useAuthStore()
   const { removePostFromState } = usePostsStore()
+  const { t, language } = useLanguageStore()
   const navigate = useNavigate()
   const [imageViewerOpen, setImageViewerOpen] = useState(false)
   const [selectedImageIndex, setSelectedImageIndex] = useState(0)
@@ -94,7 +96,7 @@ const PostCard: React.FC<PostCardProps> = ({ post, onVote, userVote }) => {
       navigate(`/edit-post/${post.id}/${token}`)
     } catch (error) {
       console.error('Error generating edit token:', error)
-      alert('Không thể tạo liên kết chỉnh sửa. Vui lòng thử lại.')
+      alert(t('editLinkFailed'))
     }
   }
 
@@ -104,15 +106,15 @@ const PostCard: React.FC<PostCardProps> = ({ post, onVote, userVote }) => {
       return
     }
 
-    if (window.confirm('Bạn có chắc chắn muốn xóa bài viết này không?')) {
+    if (window.confirm(t('confirmDeletePost'))) {
       try {
         await softDeletePost(post.id, user.uid)
         // Remove post from state instead of refreshing the page
         removePostFromState(post.id)
-        alert('Bài viết đã được xóa.')
+        alert(t('postDeleted'))
       } catch (error) {
         console.error('Error deleting post:', error)
-        alert('Xóa bài viết thất bại.')
+        alert(t('deletePostFailed'))
       }
     }
   }
@@ -197,10 +199,10 @@ const PostCard: React.FC<PostCardProps> = ({ post, onVote, userVote }) => {
             <button
               className="download-btn"
               onClick={() => handleDownload(attachment.downloadUrl, attachment.name)}
-              title="Tải xuống"
+              title={t('download')}
             >
               <Download className="w-4 h-4" />
-              Tải xuống
+              {t('download')}
             </button>
           </div>
         </div>
@@ -246,7 +248,7 @@ const PostCard: React.FC<PostCardProps> = ({ post, onVote, userVote }) => {
                       <polygon points="23 7 16 12 23 17 23 7"/>
                       <rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
                     </svg>
-                    Không thể tải video
+                    {t('videoLoadError')}
                   </p>
                   <p style="margin: 8px 0 0 0; font-size: 12px; color: #6c757d;">
                     ${attachment.name}
@@ -260,10 +262,10 @@ const PostCard: React.FC<PostCardProps> = ({ post, onVote, userVote }) => {
             <button
               className="download-btn"
               onClick={() => handleDownload(attachment.downloadUrl, attachment.name)}
-              title="Tải xuống"
+              title={t('download')}
             >
               <Download className="w-4 h-4" />
-              Tải xuống
+              {t('download')}
             </button>
           </div>
         </div>
@@ -281,7 +283,7 @@ const PostCard: React.FC<PostCardProps> = ({ post, onVote, userVote }) => {
               {isDangerousFile(attachment.type, attachment.name) && (
                 <div className="file-warning">
                   <AlertTriangle className="w-4 h-4" />
-                  <span>File có thể nguy hiểm</span>
+                  <span>{t('fileDangerous')}</span>
                 </div>
               )}
             </div>
@@ -289,10 +291,10 @@ const PostCard: React.FC<PostCardProps> = ({ post, onVote, userVote }) => {
           <button
             className="download-btn"
             onClick={() => handleDownload(attachment.downloadUrl, attachment.name)}
-            title="Tải xuống"
+            title={t('download')}
           >
             <Download className="w-4 h-4" />
-            Tải xuống
+            {t('download')}
           </button>
         </div>
       )
@@ -314,7 +316,7 @@ const PostCard: React.FC<PostCardProps> = ({ post, onVote, userVote }) => {
           className={`vote-button upvote ${userVote === 'up' ? 'active' : ''} ${post.isDeleted ? 'disabled' : ''}`}
           onClick={() => handleVote('up')}
           disabled={post.isDeleted}
-          title={post.isDeleted ? 'Cannot vote on deleted post' : 'Upvote'}
+          title={post.isDeleted ? t('cannotVoteDeleted') : t('upvote')}
         >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
             <path d="M7 14l5-5 5 5" />
@@ -327,7 +329,7 @@ const PostCard: React.FC<PostCardProps> = ({ post, onVote, userVote }) => {
           className={`vote-button downvote ${userVote === 'down' ? 'active' : ''} ${post.isDeleted ? 'disabled' : ''}`}
           onClick={() => handleVote('down')}
           disabled={post.isDeleted}
-          title={post.isDeleted ? 'Cannot vote on deleted post' : 'Downvote'}
+          title={post.isDeleted ? t('cannotVoteDeleted') : t('downvote')}
         >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
             <path d="M17 10l-5 5-5-5" />
@@ -344,7 +346,7 @@ const PostCard: React.FC<PostCardProps> = ({ post, onVote, userVote }) => {
                 <span className="post-meta-separator">•</span>
               </>
             )}
-            <span>Đăng bởi</span>
+            <span>{t('postedBy')}</span>
             {post.isDeleted || post.author.displayName === '[deleted]' ? (
               <span className="deleted-text">[deleted]</span>
             ) : (
@@ -366,12 +368,12 @@ const PostCard: React.FC<PostCardProps> = ({ post, onVote, userVote }) => {
                 
                 // Check if date is valid
                 if (isNaN(date.getTime())) {
-                  return 'Không xác định';
+                  return t('unknownDate');
                 }
                 
-                return formatDistanceToNow(date, { addSuffix: true, locale: vi });
+                return formatDistanceToNow(date, { addSuffix: true, locale: language === 'vi' ? vi : enUS });
               } catch (error) {
-                return 'Không xác định';
+                return t('unknownDate');
               }
             })()}</span>
           </div>
@@ -415,10 +417,10 @@ const PostCard: React.FC<PostCardProps> = ({ post, onVote, userVote }) => {
                   <button
                     className="download-btn"
                     onClick={() => handleDownload(imageUrl, `image-${index + 1}.jpg`)}
-                    title="Tải xuống"
+                    title={t('download')}
                   >
                     <Download className="w-4 h-4" />
-                    Tải xuống
+                    {t('download')}
                   </button>
                 </div>
               </div>
@@ -445,24 +447,24 @@ const PostCard: React.FC<PostCardProps> = ({ post, onVote, userVote }) => {
         <div className="post-actions">
           <Link to={`/post/${post.id}`} className="post-action">
             <MessageCircle />
-            <span>{post.commentCount} bình luận</span>
+            <span>{post.commentCount} {t('comments').toLowerCase()}</span>
           </Link>
           <button className="post-action">
             <Share2 />
-            <span>Chia sẻ</span>
+            <span>{t('share')}</span>
           </button>
           <button className="post-action">
             <Bookmark />
-            <span>Lưu</span>
+            <span>{t('savePost')}</span>
           </button>
           {user && user.uid === post.author.uid && (
             <>
               <button className="post-action" onClick={handleEditPost}>
                 <Edit3 className="w-4 h-4" />
-                <span>Sửa</span>
+                <span>{t('edit')}</span>
               </button>
               <button className="post-action" onClick={handleDeletePost}>
-                <span>Xóa</span>
+                <span>{t('delete')}</span>
               </button>
             </>
           )}

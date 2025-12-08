@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuthStore } from '../store';
+import { useLanguageStore } from '../store/useLanguageStore';
 import { collection, query, where, orderBy, getDocs } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import './Feedback.css';
@@ -22,13 +23,6 @@ interface FeedbackPost {
     status?: FeedbackStatus;
 }
 
-const STATUS_LABELS: Record<FeedbackStatus, string> = {
-    waiting: 'Waiting',
-    working: 'Working',
-    rejected: 'Rejected',
-    done: 'Done'
-};
-
 const STATUS_COLORS: Record<FeedbackStatus, string> = {
     waiting: '#ffa500',
     working: '#0079d3',
@@ -38,6 +32,7 @@ const STATUS_COLORS: Record<FeedbackStatus, string> = {
 
 const Feedback: React.FC = () => {
     const { user } = useAuthStore();
+    const { t } = useLanguageStore();
     const [activeTab, setActiveTab] = useState<FeedbackCategory>('ideas');
     const [posts, setPosts] = useState<FeedbackPost[]>([]);
     const [loading, setLoading] = useState(true);
@@ -91,9 +86,19 @@ const Feedback: React.FC = () => {
 
     const getCategoryLabel = (category: FeedbackCategory) => {
         switch (category) {
-            case 'bugs': return 'Bugs';
-            case 'ideas': return 'Ideas';
-            case 'questions': return 'Questions';
+            case 'bugs': return t('bugs');
+            case 'ideas': return t('ideas');
+            case 'questions': return t('questions');
+        }
+    };
+
+    const getStatusLabel = (status: FeedbackStatus) => {
+        switch (status) {
+            case 'waiting': return t('statusWaiting');
+            case 'working': return t('statusWorking');
+            case 'rejected': return t('statusRejected');
+            case 'done': return t('statusDone');
+            default: return status;
         }
     };
 
@@ -109,13 +114,13 @@ const Feedback: React.FC = () => {
         <div className="feedback-page">
             <div className="feedback-container">
                 <div className="feedback-header">
-                    <h1>r/feedback</h1>
-                    <p>Share your bugs, ideas, and questions with us!</p>
+                    <h1>{t('feedbackTitle')}</h1>
+                    <p>{t('feedbackDesc')}</p>
                     <Link to="/submit?subreddit=feedback" className="create-feedback-button">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                             <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
                         </svg>
-                        Create Feedback
+                        {t('createFeedback')}
                     </Link>
                 </div>
 
@@ -134,12 +139,12 @@ const Feedback: React.FC = () => {
 
                 <div className="feedback-content">
                     {loading ? (
-                        <div className="feedback-loading">Loading...</div>
+                        <div className="feedback-loading">{t('loading')}</div>
                     ) : posts.length === 0 ? (
                         <div className="feedback-empty">
                             <span className="empty-icon">{getCategoryIcon(activeTab)}</span>
-                            <h3>No {getCategoryLabel(activeTab).toLowerCase()} yet</h3>
-                            <p>Be the first to share your feedback!</p>
+                            <h3>{t('noFeedbackYet').replace('{type}', getCategoryLabel(activeTab).toLowerCase())}</h3>
+                            <p>{t('beFirstFeedback')}</p>
                         </div>
                     ) : (
                         <div className="feedback-posts">
@@ -167,7 +172,7 @@ const Feedback: React.FC = () => {
                                                     </span>
                                                 )}
                                                 <span className="post-date">
-                                                    {post.createdAt?.toDate?.()?.toLocaleDateString() || 'Just now'}
+                                                    {post.createdAt?.toDate?.()?.toLocaleDateString() || t('justNow')}
                                                 </span>
                                             </div>
                                             <div className="post-content-preview">
@@ -178,7 +183,7 @@ const Feedback: React.FC = () => {
 
                                         <div className="post-right">
                                             <div className="post-status" style={{ backgroundColor: STATUS_COLORS[status] }}>
-                                                {STATUS_LABELS[status]}
+                                                {getStatusLabel(status)}
                                             </div>
                                             {topReactions.length > 0 && (
                                                 <div className="post-reactions-preview">

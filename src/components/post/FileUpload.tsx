@@ -1,6 +1,8 @@
 import React, { useState, useRef, useCallback } from 'react'
 import { uploadFile, uploadMultipleFiles, deleteFile, ALL_SUPPORTED_TYPES, MAX_FILE_SIZE, formatFileSize, isImageFile, isVideoFile, isDangerousFile, getFileIcon } from '../../services/appwrite/storage'
 import type { UploadedFile } from '../../services/appwrite/storage'
+import { useLanguageStore } from '../../store/useLanguageStore'
+import { translations } from '../../constants/translations'
 
 interface FileUploadProps {
   onFilesUploaded: (files: UploadedFile[]) => void
@@ -23,6 +25,9 @@ const FileUpload: React.FC<FileUploadProps> = ({
   disabled = false,
   userId
 }) => {
+  const { language } = useLanguageStore()
+  const t = (key: keyof typeof translations.vi) => translations[language][key]
+
   const [isDragging, setIsDragging] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -309,7 +314,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
           {isUploading ? (
             <div className="upload-loading">
               <div className="loading-spinner"></div>
-              <p>Đang upload...</p>
+              <p>{t('uploading')}</p>
             </div>
           ) : (
             <>
@@ -319,12 +324,12 @@ const FileUpload: React.FC<FileUploadProps> = ({
                 <line x1="12" y1="15" x2="12" y2="3"/>
               </svg>
               <p className="upload-text">
-                {isDragging ? 'Thả file vào đây' : 'Kéo thả file hoặc click để chọn'}
+                {isDragging ? t('dragDropFile') : t('dragDropFile')}
               </p>
               <p className="upload-subtext">
-                Hỗ trợ: Ảnh, Video, PDF, Office, Archive • 
-                Tối đa {formatFileSize(MAX_FILE_SIZE)} • 
-                {maxFiles - uploadedFiles.length} file còn lại
+                {t('supportImageVideo')} • 
+                {t('maxFileSize')} • 
+                {t('filesRemaining').replace('{count}', (maxFiles - uploadedFiles.length).toString())}
               </p>
             </>
           )}
@@ -346,7 +351,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
       {/* Uploaded Files List */}
       {uploadedFiles.length > 0 && (
         <div className="uploaded-files">
-          <h4>File đã upload ({uploadedFiles.length}/{maxFiles})</h4>
+          <h4>{t('uploadedFiles')} ({uploadedFiles.length}/{maxFiles})</h4>
           <div className="files-grid">
             {uploadedFiles.map((file) => (
               <div key={file.id} className={`file-item ${deletingFiles.has(file.id) ? 'deleting' : ''}`}>
@@ -369,7 +374,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
                     console.log('🖱️ Delete button clicked for file:', file.id)
                     handleRemoveFile(file)
                   }}
-                  title="Xóa file"
+                  title={t('removeFile')}
                   disabled={deletingFiles.has(file.id)}
                 >
                   {deletingFiles.has(file.id) ? (

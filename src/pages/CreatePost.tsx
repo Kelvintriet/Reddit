@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useAuthStore, usePostsStore, useSubredditsStore } from '../store'
+import { useLanguageStore } from '../store/useLanguageStore'
 import { getPost, editPost } from '../collections/posts'
 import { validateEditToken, expireTokenAfterEdit } from '../services/editTokenService'
 import FileUpload from '../components/post/FileUpload'
@@ -18,6 +19,7 @@ const CreatePost = () => {
   const { user, isInitialized } = useAuthStore()
   const { createPost, isLoading } = usePostsStore()
   const { subreddits, fetchSubreddits } = useSubredditsStore()
+  const { t } = useLanguageStore()
 
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
@@ -221,17 +223,17 @@ const CreatePost = () => {
     e.preventDefault()
 
     if (!user) {
-      setError('Bạn cần đăng nhập để tạo bài viết')
+      setError(t('errorLogin'))
       return
     }
 
     if (!title.trim()) {
-      setError('Vui lòng nhập tiêu đề')
+      setError(t('errorTitle'))
       return
     }
 
     if (!content.trim() && uploadedFiles.length === 0) {
-      setError('Vui lòng nhập nội dung hoặc upload media')
+      setError(t('errorContent'))
       return
     }
 
@@ -376,7 +378,7 @@ const CreatePost = () => {
   if (!isInitialized) {
     return (
       <div className="container">
-        <p>Đang tải...</p>
+        <p>{t('loading')}</p>
       </div>
     )
   }
@@ -384,7 +386,7 @@ const CreatePost = () => {
   if (!user) {
     return (
       <div className="container">
-        <p>Đang chuyển hướng...</p>
+        <p>{t('redirecting')}</p>
       </div>
     )
   }
@@ -413,7 +415,7 @@ const CreatePost = () => {
   return (
     <div className="create-post-page">
       <div className="create-post-header">
-        <h1>{isEditMode ? 'Chỉnh sửa bài viết' : 'Tạo bài viết'}</h1>
+        <h1>{isEditMode ? t('editPost') : t('createPost')}</h1>
 
         {/* Token expiry warning */}
         {isEditMode && tokenExpired && (
@@ -472,7 +474,7 @@ const CreatePost = () => {
                 onChange={(e) => setSelectedSubreddit(e.target.value)}
                 className="community-select"
               >
-                <option value="">Không chọn cộng đồng</option>
+                <option value="">{t('noCommunity')}</option>
                 <option value="feedback">🐛 r/feedback (Bugs, Ideas, Questions)</option>
                 {subreddits.map((sub) => (
                   <option key={sub.id} value={sub.name}>
@@ -487,7 +489,7 @@ const CreatePost = () => {
         {/* Post Type Tabs */}
         <div className="post-type-tabs">
           <div className="tab active">
-            📝 Post
+            📝 {t('post')}
           </div>
         </div>
 
@@ -499,7 +501,7 @@ const CreatePost = () => {
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Tiêu đề*"
+              placeholder={t('enterTitle')}
               className="title-input"
               maxLength={300}
               required
@@ -512,7 +514,7 @@ const CreatePost = () => {
           {/* Content Editor */}
           <div className="form-group">
             <div className="editor-header">
-              <h3>Nội dung</h3>
+              <h3>{t('content')}</h3>
               <button
                 type="button"
                 className={`editor-toggle ${isMarkdown ? 'active' : ''}`}
@@ -526,7 +528,7 @@ const CreatePost = () => {
                   cursor: 'pointer'
                 }}
               >
-                {isMarkdown ? 'Markdown' : 'Rich Text'}
+                {isMarkdown ? t('markdown') : t('richText')}
               </button>
             </div>
 
@@ -535,7 +537,7 @@ const CreatePost = () => {
                 <textarea
                   value={content}
                   onChange={(e) => setContent(e.target.value)}
-                  placeholder="Nhập nội dung (Markdown)..."
+                  placeholder={t('enterContentMarkdown')}
                   className="content-textarea"
                   rows={8}
                   style={{
@@ -550,7 +552,7 @@ const CreatePost = () => {
                   }}
                 />
                 <div className="markdown-preview" style={{ marginTop: '16px' }}>
-                  <h4>Preview:</h4>
+                  <h4>{t('preview')}:</h4>
                   <div className="markdown-content" style={{
                     border: '1px solid #ddd',
                     borderRadius: '4px',
@@ -633,7 +635,7 @@ const CreatePost = () => {
               <RichTextEditor
                 value={content}
                 onChange={setContent}
-                placeholder="Nhập nội dung bài viết..."
+                placeholder={t('enterContent')}
                 className="rich-editor"
               />
             )}
@@ -642,8 +644,8 @@ const CreatePost = () => {
           {/* Media Upload */}
           <div className="form-group">
             <div className="media-upload-header">
-              <h3>Media</h3>
-              <span className="media-info">Hỗ trợ ảnh và video</span>
+              <h3>{t('media')}</h3>
+              <span className="media-info">{t('mediaInfo')}</span>
             </div>
             <FileUpload
               onFilesUploaded={handleFilesUploaded}
@@ -712,8 +714,8 @@ const CreatePost = () => {
             /* Regular Tags */
             <div className="form-group">
               <div className="tags-header">
-                <h3>Tags</h3>
-                <span className="tags-info">Tối đa 5 tags</span>
+                <h3>{t('tags')}</h3>
+                <span className="tags-info">{t('maxTags')}</span>
               </div>
               <div className="tags-input-container">
                 <input
@@ -721,7 +723,7 @@ const CreatePost = () => {
                   value={tagInput}
                   onChange={(e) => setTagInput(e.target.value)}
                   onKeyDown={handleAddTag}
-                  placeholder="Nhập tag và nhấn Enter"
+                  placeholder={t('enterTags')}
                   className="tags-input"
                   maxLength={20}
                 />
@@ -760,7 +762,7 @@ const CreatePost = () => {
               onClick={() => navigate(-1)}
               className="cancel-btn"
             >
-              Hủy
+              {t('cancel')}
             </button>
             <button
               type="submit"
@@ -771,11 +773,11 @@ const CreatePost = () => {
               {isLoading ? (
                 <>
                   <div className="loading-spinner"></div>
-                  {isEditMode ? 'Đang cập nhật...' : 'Đang đăng...'}
+                  {isEditMode ? t('updating') : t('posting')}
                 </>
               ) : (
                 <>
-                  {isEditMode ? 'Cập nhật bài viết' : 'Đăng bài'}
+                  {isEditMode ? t('update') : t('post')}
                   {isEditMode && tokenExpired && (
                     <span style={{ marginLeft: '8px', fontSize: '14px' }}>🔒</span>
                   )}

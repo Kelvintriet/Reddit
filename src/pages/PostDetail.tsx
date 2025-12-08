@@ -7,6 +7,8 @@ import { processKarmaAction } from '../services/karmaService'
 import ImageViewer from '../components/post/ImageViewer'
 import PostContent from '../components/post/PostContent'
 import type { Comment } from '../collections/comments'
+import { useLanguageStore } from '../store/useLanguageStore'
+import { translations } from '../constants/translations'
 import './PostDetail.css'
 
 // Component Comment
@@ -29,6 +31,8 @@ const CommentComponent: React.FC<CommentProps> = ({ comment, depth = 0, maxDepth
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { user } = useAuthStore();
+  const { language } = useLanguageStore();
+  const t = (key: keyof typeof translations.vi) => translations[language][key];
 
   // Kiểm tra vote hiện tại của user
   useEffect(() => {
@@ -53,10 +57,10 @@ const CommentComponent: React.FC<CommentProps> = ({ comment, depth = 0, maxDepth
 
     // Check if date is valid
     if (isNaN(dateObj.getTime())) {
-      return 'Không xác định';
+      return t('unknownDate');
     }
 
-    return dateObj.toLocaleDateString('vi-VN', {
+    return dateObj.toLocaleDateString(language === 'vi' ? 'vi-VN' : 'en-US', {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
@@ -135,7 +139,7 @@ const CommentComponent: React.FC<CommentProps> = ({ comment, depth = 0, maxDepth
         content: replyContent.trim(),
         postId,
         authorId: user.uid,
-        authorUsername: user.displayName || user.username || 'Người dùng ẩn danh',
+        authorUsername: user.displayName || user.username || t('anonymousUser'),
         parentId: comment.id
       });
 
@@ -143,7 +147,7 @@ const CommentComponent: React.FC<CommentProps> = ({ comment, depth = 0, maxDepth
       setIsReplying(false);
       onReplyAdded(); // Reload comments
     } catch (error) {
-      alert('Không thể thêm bình luận. Vui lòng thử lại sau.');
+      alert(t('errorAddingComment'));
     } finally {
       setIsSubmitting(false);
     }
@@ -159,20 +163,20 @@ const CommentComponent: React.FC<CommentProps> = ({ comment, depth = 0, maxDepth
       setIsEditing(false);
       onReplyAdded(); // Reload comments
     } catch (error) {
-      alert('Không thể cập nhật bình luận.');
+      alert(t('errorUpdatingComment'));
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleDelete = async () => {
-    if (!user || !confirm('Bạn có chắc muốn xóa bình luận này?')) return;
+    if (!user || !confirm(t('confirmDeleteComment'))) return;
 
     try {
       await deleteComment(comment.id!, user.uid);
       onReplyAdded(); // Reload comments
     } catch (error) {
-      alert('Không thể xóa bình luận.');
+      alert(t('errorDeletingComment'));
     }
   };
 
@@ -228,13 +232,13 @@ const CommentComponent: React.FC<CommentProps> = ({ comment, depth = 0, maxDepth
             {comment.updatedAt && (
               <>
                 <span className="comment-dot">•</span>
-                <span className="comment-edited">(đã chỉnh sửa)</span>
+                <span className="comment-edited">{t('edited')}</span>
               </>
             )}
             {depth > 0 && (
               <>
                 <span className="comment-dot">•</span>
-                <span className="comment-depth">Cấp {depth}</span>
+                <span className="comment-depth">{t('level')} {depth}</span>
               </>
             )}
           </div>
@@ -259,14 +263,14 @@ const CommentComponent: React.FC<CommentProps> = ({ comment, depth = 0, maxDepth
                     }}
                     className="edit-cancel-button"
                   >
-                    Hủy
+                    {t('cancel')}
                   </button>
                   <button
                     type="submit"
                     disabled={!editContent.trim() || isSubmitting}
                     className="edit-submit-button"
                   >
-                    {isSubmitting ? 'Đang lưu...' : 'Lưu'}
+                    {isSubmitting ? t('saving') : t('save')}
                   </button>
                 </div>
               </form>
@@ -281,7 +285,7 @@ const CommentComponent: React.FC<CommentProps> = ({ comment, depth = 0, maxDepth
                 onClick={() => setIsReplying(!isReplying)}
                 className="comment-action-button"
               >
-                Trả lời
+                {t('reply')}
               </button>
             )}
 
@@ -291,28 +295,28 @@ const CommentComponent: React.FC<CommentProps> = ({ comment, depth = 0, maxDepth
                   onClick={() => setIsEditing(!isEditing)}
                   className="comment-action-button"
                 >
-                  Chỉnh sửa
+                  {t('edit')}
                 </button>
                 <button
                   onClick={handleDelete}
                   className="comment-action-button delete"
                 >
-                  Xóa
+                  {t('delete')}
                 </button>
               </>
             )}
 
             {comment.isDeleted && (
               <span className="comment-action-button" style={{ cursor: 'default', opacity: 0.6 }}>
-                Đã xóa
+                {t('deleted')}
               </span>
             )}
 
             <button className="comment-action-button">
-              Chia sẻ
+              {t('share')}
             </button>
             <button className="comment-action-button">
-              Báo cáo
+              {t('report')}
             </button>
           </div>
 
@@ -322,7 +326,7 @@ const CommentComponent: React.FC<CommentProps> = ({ comment, depth = 0, maxDepth
                 value={replyContent}
                 onChange={(e) => setReplyContent(e.target.value)}
                 className="reply-textarea"
-                placeholder={`Trả lời u/${comment.authorUsername}...`}
+                placeholder={`${t('reply')} u/${comment.authorUsername}...`}
                 rows={3}
               />
               <div className="reply-actions">
@@ -331,14 +335,14 @@ const CommentComponent: React.FC<CommentProps> = ({ comment, depth = 0, maxDepth
                   onClick={() => setIsReplying(false)}
                   className="reply-cancel-button"
                 >
-                  Hủy
+                  {t('cancel')}
                 </button>
                 <button
                   type="submit"
                   disabled={!replyContent.trim() || isSubmitting}
                   className="reply-submit-button"
                 >
-                  {isSubmitting ? 'Đang gửi...' : 'Trả lời'}
+                  {isSubmitting ? t('sending') : t('reply')}
                 </button>
               </div>
             </form>
@@ -360,14 +364,14 @@ const CommentComponent: React.FC<CommentProps> = ({ comment, depth = 0, maxDepth
                     <svg xmlns="http://www.w3.org/2000/svg" className="toggle-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                     </svg>
-                    Ẩn {comment.replies.length} trả lời
+                    {t('hideReplies').replace('{count}', comment.replies.length.toString())}
                   </>
                 ) : (
                   <>
                     <svg xmlns="http://www.w3.org/2000/svg" className="toggle-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                     </svg>
-                    Xem {comment.replies.length} trả lời
+                    {t('showReplies').replace('{count}', comment.replies.length.toString())}
                   </>
                 )}
               </button>
@@ -389,7 +393,7 @@ const CommentComponent: React.FC<CommentProps> = ({ comment, depth = 0, maxDepth
             </>
           ) : (
             <div className="max-depth-message">
-              <p>Đã đạt giới hạn độ sâu tối đa ({maxDepth} cấp). <Link to="#top">Xem tiếp tại đầu trang</Link></p>
+              <p>{t('maxDepthReached').replace('{depth}', maxDepth.toString())} <Link to="#top">{t('viewAtTop')}</Link></p>
             </div>
           )}
         </div>
@@ -403,6 +407,8 @@ const PostDetail = () => {
   const navigate = useNavigate()
   const location = useLocation()
   const { user } = useAuthStore()
+  const { language } = useLanguageStore()
+  const t = (key: keyof typeof translations.vi) => translations[language][key];
   const { currentPost: post, setCurrentPost, fetchPostById, voteOnPost } = usePostsStore()
   const { fetchSubredditByName } = useSubredditsStore()
   const [comments, setComments] = useState<Comment[]>([])
@@ -562,7 +568,7 @@ const PostDetail = () => {
   }, [postId, navigate, fetchPostById, post, setCurrentPost, fetchSubredditByName, user]);
 
   const formatDate = (date: any) => {
-    if (!date) return 'Không xác định';
+    if (!date) return t('unknownDate');
 
     let dateObj: Date;
 
@@ -577,10 +583,10 @@ const PostDetail = () => {
 
     // Check if date is valid
     if (isNaN(dateObj.getTime())) {
-      return 'Không xác định';
+      return t('unknownDate');
     }
 
-    return dateObj.toLocaleDateString('vi-VN', {
+    return dateObj.toLocaleDateString(language === 'vi' ? 'vi-VN' : 'en-US', {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
@@ -604,13 +610,13 @@ const PostDetail = () => {
         content: commentContent.trim(),
         postId: postId!,
         authorId: user.uid,
-        authorUsername: user.displayName || user.username || 'Người dùng ẩn danh'
+        authorUsername: user.displayName || user.username || t('anonymousUser')
       });
 
       setCommentContent('');
       await loadComments(); // Reload comments
     } catch (error) {
-      alert('Không thể thêm bình luận. Vui lòng thử lại sau.');
+      alert(t('errorAddingComment'));
     } finally {
       setIsSubmittingComment(false);
     }
@@ -620,7 +626,7 @@ const PostDetail = () => {
     return (
       <div className="post-detail-container">
         <div className="post-detail-skeleton">
-          <div className="skeleton-loading-message">Đang tải bài viết...</div>
+          <div className="skeleton-loading-message">{t('loadingPost')}</div>
           <div className="skeleton-title"></div>
           <div className="skeleton-meta"></div>
           <div className="skeleton-content">
@@ -638,11 +644,11 @@ const PostDetail = () => {
     return (
       <div className="post-detail-container">
         <div className="post-not-found">
-          <h2>Bài viết không tồn tại</h2>
-          <p>Bài viết này có thể đã bị xóa hoặc đường dẫn không chính xác.</p>
+          <h2>{t('postNotFound')}</h2>
+          <p>{t('postNotFoundDesc')}</p>
           <div className="post-not-found-actions">
-            <Link to="/" className="back-home-button">Về trang chủ</Link>
-            <Link to="/submit" className="create-post-button">Tạo bài viết mới</Link>
+            <Link to="/" className="back-home-button">{t('backToHome')}</Link>
+            <Link to="/submit" className="create-post-button">{t('createPost')}</Link>
           </div>
         </div>
       </div>
@@ -661,11 +667,11 @@ const PostDetail = () => {
               <line x1="9" y1="9" x2="15" y2="15" />
             </svg>
           </div>
-          <h2>This post has been taken down by uploader</h2>
-          <p>Bài viết này đã bị người đăng gỡ xuống và không còn khả dụng.</p>
+          <h2>{t('postDeleted')}</h2>
+          <p>{t('postDeletedDesc')}</p>
           <div className="post-not-found-actions">
-            <Link to="/" className="back-home-button">Về trang chủ</Link>
-            <Link to="/submit" className="create-post-button">Tạo bài viết mới</Link>
+            <Link to="/" className="back-home-button">{t('backToHome')}</Link>
+            <Link to="/submit" className="create-post-button">{t('createPost')}</Link>
           </div>
         </div>
       </div>
@@ -720,7 +726,7 @@ const PostDetail = () => {
                   <span className="post-dot">•</span>
                 </>
               )}
-              <span className="post-author-prefix">Đăng bởi</span>
+              <span className="post-author-prefix">{t('postedBy')}</span>
               {post.isDeleted || post.authorUsername === '[deleted]' ? (
                 <span className="deleted-text">[deleted]</span>
               ) : (
@@ -735,7 +741,7 @@ const PostDetail = () => {
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="view-icon">
                   <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z" />
                 </svg>
-                {viewCount} lượt xem
+                {viewCount} {t('views')}
               </span>
             </div>
 
@@ -761,7 +767,7 @@ const PostDetail = () => {
                       <div key={index} className="post-attachment">
                         <img
                           src={imageUrl}
-                          alt={`${post.title} - Ảnh ${index + 1}`}
+                          alt={`${post.title} - ${t('image')} ${index + 1}`}
                           className="post-image clickable-image"
                           loading="lazy"
                           onClick={() => handleImageClick(index)}
@@ -778,14 +784,14 @@ const PostDetail = () => {
                                 const downloadUrl = getFileDownloadUrl(fileId);
                                 window.open(downloadUrl, '_blank');
                               }}
-                              title="Tải xuống"
+                              title={t('download')}
                             >
                               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="16" height="16">
                                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                                 <polyline points="7,10 12,15 17,10" />
                                 <line x1="12" y1="15" x2="12" y2="3" />
                               </svg>
-                              Tải xuống
+                              {t('download')}
                             </button>
                           </div>
                         )}
@@ -802,21 +808,21 @@ const PostDetail = () => {
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="action-icon">
                   <path d="M20 2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h4v3c0 .6.4 1 1 1h.5c.2 0 .4-.1.6-.2L16 18h4c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14h-4.8l-5.2 3v-3H4V4h16v12z" />
                 </svg>
-                <span className="action-text">{comments.length} bình luận</span>
+                <span className="action-text">{comments.length} {t('comments')}</span>
               </div>
 
               <button className="post-action-button">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="action-icon">
                   <path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92c0-1.61-1.31-2.92-2.92-2.92zM18 4c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zM6 13c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm12 7.02c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1z" />
                 </svg>
-                <span className="action-text">Chia sẻ</span>
+                <span className="action-text">{t('share')}</span>
               </button>
 
               <button className="post-action-button">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="action-icon">
                   <path d="M17 3H7c-1.1 0-2 .9-2 2v16l7-3 7 3V5c0-1.1-.9-2-2-2zm0 15l-5-2.18L7 18V5h10v13z" />
                 </svg>
-                <span className="action-text">Lưu</span>
+                <span className="action-text">{t('save')}</span>
               </button>
             </div>
           </div>
@@ -825,14 +831,14 @@ const PostDetail = () => {
 
       {/* Comment Form */}
       <div className="comment-form-card">
-        <h3 className="comment-form-title">Viết bình luận</h3>
+        <h3 className="comment-form-title">{t('writeComment')}</h3>
         {user ? (
           <form onSubmit={handleCommentSubmit} className="comment-form">
             <textarea
               value={commentContent}
               onChange={(e) => setCommentContent(e.target.value)}
               className="comment-textarea"
-              placeholder="Chia sẻ suy nghĩ của bạn..."
+              placeholder={t('shareThoughts')}
               rows={4}
             />
             <div className="comment-form-actions">
@@ -841,18 +847,18 @@ const PostDetail = () => {
                 disabled={!commentContent.trim() || isSubmittingComment}
                 className="comment-submit-button"
               >
-                {isSubmittingComment ? 'Đang đăng...' : 'Đăng bình luận'}
+                {isSubmittingComment ? t('posting') : t('postComment')}
               </button>
             </div>
           </form>
         ) : (
           <div className="login-prompt">
-            <p>Bạn cần đăng nhập để bình luận</p>
+            <p>{t('loginToComment')}</p>
             <button
               onClick={() => navigate(`${location.pathname}#login`)}
               className="login-link"
             >
-              Đăng nhập ngay
+              {t('loginNow')}
             </button>
           </div>
         )}
@@ -861,22 +867,22 @@ const PostDetail = () => {
       {/* Comments */}
       <div className="comments-section">
         <div className="comments-header">
-          <h3 className="comments-title">{comments.length} Bình luận</h3>
+          <h3 className="comments-title">{comments.length} {t('comments')}</h3>
           <div className="comments-sort">
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as 'newest' | 'oldest' | 'top')}
               className="sort-select"
             >
-              <option value="top">Hàng đầu</option>
-              <option value="newest">Mới nhất</option>
-              <option value="oldest">Cũ nhất</option>
+              <option value="top">{t('sortTopComments')}</option>
+              <option value="newest">{t('sortNewestComments')}</option>
+              <option value="oldest">{t('sortOldestComments')}</option>
             </select>
           </div>
         </div>
 
         {isLoadingComments ? (
-          <div className="comments-loading">Đang tải bình luận...</div>
+          <div className="comments-loading">{t('loadingComments')}</div>
         ) : comments.length > 0 ? (
           <div className="comments-list">
             {comments.map((comment) => (
@@ -892,7 +898,7 @@ const PostDetail = () => {
           </div>
         ) : (
           <div className="no-comments">
-            <p>Chưa có bình luận nào. Hãy là người đầu tiên bình luận!</p>
+            <p>{t('noCommentsYet')}</p>
           </div>
         )}
       </div>

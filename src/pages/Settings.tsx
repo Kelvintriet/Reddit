@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../store'
+import { useLanguageStore } from '../store/useLanguageStore'
 import { updateUserProfile, getUserProfile, searchUsersByPartialName } from '../collections/users'
 import { getCountryFlag, getCurrentTimeForLocation, refreshLocationData, getRemainingRefreshCount, canRefreshLocation, getLocationWithAutoFetch } from '../services/location'
 import { uploadAvatar } from '../services/appwrite/storage'
@@ -8,6 +9,7 @@ import { uploadAvatar } from '../services/appwrite/storage'
 const Settings = () => {
   const navigate = useNavigate()
   const { user } = useAuthStore()
+  const { setLanguage, t } = useLanguageStore()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
@@ -21,6 +23,7 @@ const Settings = () => {
   const [hideComments, setHideComments] = useState(false)
   const [showLocation, setShowLocation] = useState(true)
   const [currentLocation, setCurrentLocation] = useState<any>(null)
+  const [selectedLanguage, setSelectedLanguage] = useState<'vi' | 'en'>('vi')
 
   // Inbox privacy settings
   const [allowMessageSearch, setAllowMessageSearch] = useState(true)
@@ -59,6 +62,8 @@ const Settings = () => {
           setAllowMessageSearch(userProfile.allowMessageSearch !== false)
           setAllowMessagesFrom(userProfile.allowMessagesFrom || 'everyone')
           setAllowedMessageUsers(userProfile.allowedMessageUsers || [])
+          setSelectedLanguage(userProfile.language || 'vi')
+          setLanguage(userProfile.language || 'vi')
         }
 
         // Load cached location (auto-fetch lần đầu nếu cần)
@@ -185,13 +190,15 @@ const Settings = () => {
         showLocation,
         allowMessageSearch,
         allowMessagesFrom,
-        allowedMessageUsers
+        allowedMessageUsers,
+        language: selectedLanguage
       })
 
-      setSuccess('Cài đặt đã được lưu thành công!')
+      setLanguage(selectedLanguage)
+      setSuccess(t('success'))
       setTimeout(() => setSuccess(''), 3000)
     } catch (error: any) {
-      setError(error.message || 'Có lỗi xảy ra khi lưu cài đặt')
+      setError(error.message || t('error'))
     } finally {
       setLoading(false)
     }
@@ -204,18 +211,42 @@ const Settings = () => {
   return (
     <div className="container settings-container">
       <div className="settings-header">
-        <h1>Cài đặt tài khoản</h1>
-        <p>Quản lý thông tin cá nhân và quyền riêng tư của bạn</p>
+        <h1>{t('accountSettings')}</h1>
+        <p>{t('manageInfo')}</p>
       </div>
 
       <form onSubmit={handleSave} className="settings-form">
+        {/* Language Settings */}
+        <div className="settings-section">
+          <h2>{t('language')}</h2>
+          <div className="form-group">
+            <label>{t('languageDesc')}</label>
+            <select
+              value={selectedLanguage}
+              onChange={(e) => setSelectedLanguage(e.target.value as 'vi' | 'en')}
+              style={{
+                padding: '8px',
+                borderRadius: '4px',
+                border: '1px solid var(--color-neutral-border)',
+                width: '100%',
+                maxWidth: '300px',
+                backgroundColor: 'var(--color-neutral-background)',
+                color: 'var(--color-neutral-content)'
+              }}
+            >
+              <option value="vi">{t('vietnamese')}</option>
+              <option value="en">{t('english')}</option>
+            </select>
+          </div>
+        </div>
+
         {/* Profile Information */}
         <div className="settings-section">
-          <h2>Thông tin cá nhân</h2>
+          <h2>{t('personalInfo')}</h2>
 
           {/* Avatar Upload */}
           <div className="form-group">
-            <label>Avatar</label>
+            <label>{t('avatar')}</label>
             <div className="avatar-upload-container" style={{
               display: 'flex',
               alignItems: 'center',
@@ -271,14 +302,14 @@ const Settings = () => {
                       fontWeight: '500'
                     }}
                   >
-                    {avatarUploading ? 'Đang upload...' : 'Chọn ảnh mới'}
+                    {avatarUploading ? t('uploading') : t('chooseNewImage')}
                   </label>
                 </div>
 
                 <div style={{ fontSize: '12px', color: 'var(--color-neutral-content-weak)' }}>
-                  <p>• Chỉ chấp nhận file ảnh (JPG, PNG, GIF, WebP)</p>
-                  <p>• Kích thước tối đa: 5MB</p>
-                  <p>• Khuyến nghị: Ảnh vuông 200x200px</p>
+                  <p>• {t('imageRequirements')}</p>
+                  <p>• {t('maxSize')}</p>
+                  <p>• {t('recommendation')}</p>
                 </div>
 
                 {avatarError && (
@@ -299,25 +330,25 @@ const Settings = () => {
           </div>
 
           <div className="form-group">
-            <label htmlFor="displayName">Tên hiển thị</label>
+            <label htmlFor="displayName">{t('displayName')}</label>
             <input
               type="text"
               id="displayName"
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
-              placeholder="Nhập tên hiển thị của bạn"
+              placeholder={t('enterDisplayName')}
               maxLength={50}
             />
-            <small>Tên này sẽ hiển thị trên bài viết và bình luận của bạn</small>
+            <small>{t('displayNameDesc')}</small>
           </div>
 
           <div className="form-group">
-            <label htmlFor="username">Tên người dùng</label>
+            <label htmlFor="username">{t('username')}</label>
             <input
               type="text"
               id="username"
               value={username}
-              placeholder="Tên người dùng không thể thay đổi"
+              placeholder={t('usernameDesc')}
               maxLength={20}
               readOnly
               disabled
@@ -327,16 +358,16 @@ const Settings = () => {
                 cursor: 'not-allowed'
               }}
             />
-            <small>Tên người dùng không thể thay đổi sau khi tạo tài khoản</small>
+            <small>{t('usernameDesc')}</small>
           </div>
 
           <div className="form-group">
-            <label htmlFor="bio">Giới thiệu bản thân</label>
+            <label htmlFor="bio">{t('bio')}</label>
             <textarea
               id="bio"
               value={bio}
               onChange={(e) => setBio(e.target.value)}
-              placeholder="Viết vài dòng về bản thân..."
+              placeholder={t('enterBio')}
               maxLength={200}
               rows={4}
             />
@@ -346,7 +377,7 @@ const Settings = () => {
 
         {/* Location Settings */}
         <div className="settings-section">
-          <h2>Vị trí</h2>
+          <h2>{t('location')}</h2>
 
           <div className="form-group checkbox-group">
             <label>
@@ -356,15 +387,15 @@ const Settings = () => {
                 onChange={(e) => setShowLocation(e.target.checked)}
               />
               <span className="checkmark"></span>
-              Hiển thị vị trí hiện tại
+              {t('showLocation')}
             </label>
-            <small>Vị trí của bạn sẽ hiển thị bên cạnh tên trong bài viết và bình luận</small>
+            <small>{t('locationDesc')}</small>
           </div>
 
           {currentLocation && (
             <div className="form-group">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                <label>Vị trí hiện tại</label>
+                <label>{t('currentLocation')}</label>
                 <button
                   type="button"
                   onClick={handleRefreshLocation}
@@ -383,9 +414,9 @@ const Settings = () => {
                   }}
                 >
                   {isRefreshing ? (
-                    <>⟳ Đang cập nhật...</>
+                    <>⟳ {t('refreshing')}</>
                   ) : (
-                    <>🔄 Refresh ({remainingRefresh}/15)</>
+                    <>🔄 {t('refresh')} ({remainingRefresh}/15)</>
                   )}
                 </button>
               </div>
@@ -468,14 +499,14 @@ const Settings = () => {
                   <span>{currentLocation.isp}</span>
                 </div>
               </div>
-              <small>Vị trí được xác định tự động dựa trên địa chỉ IP của bạn. Bạn có {remainingRefresh} lượt refresh còn lại hôm nay.</small>
+              <small>{t('locationAuto')} {t('refresh')} ({remainingRefresh}/15)</small>
             </div>
           )}
         </div>
 
         {/* Privacy Settings */}
         <div className="settings-section">
-          <h2>Quyền riêng tư</h2>
+          <h2>{t('privacy')}</h2>
 
           <div className="form-group checkbox-group">
             <label>
@@ -485,9 +516,9 @@ const Settings = () => {
                 onChange={(e) => setHideProfile(e.target.checked)}
               />
               <span className="checkmark"></span>
-              Ẩn hồ sơ cá nhân
+              {t('hideProfile')}
             </label>
-            <small>Người khác sẽ không thể xem trang hồ sơ của bạn</small>
+            <small>{t('hideProfileDesc')}</small>
           </div>
 
           <div className="form-group checkbox-group">
@@ -498,9 +529,9 @@ const Settings = () => {
                 onChange={(e) => setHidePosts(e.target.checked)}
               />
               <span className="checkmark"></span>
-              Ẩn bài viết
+              {t('hidePosts')}
             </label>
-            <small>Bài viết của bạn sẽ không hiển thị trong hồ sơ công khai</small>
+            <small>{t('hidePostsDesc')}</small>
           </div>
 
           <div className="form-group checkbox-group">
@@ -511,9 +542,9 @@ const Settings = () => {
                 onChange={(e) => setHideComments(e.target.checked)}
               />
               <span className="checkmark"></span>
-              Ẩn bình luận
+              {t('hideComments')}
             </label>
-            <small>Bình luận của bạn sẽ không hiển thị trong hồ sơ công khai</small>
+            <small>{t('hideCommentsDesc')}</small>
           </div>
 
           <div className="form-group checkbox-group">
@@ -524,61 +555,58 @@ const Settings = () => {
                 onChange={(e) => setAllowMessageSearch(e.target.checked)}
               />
               <span className="checkmark"></span>
-              Cho phép tìm kiếm trong hộp thư
+              {t('allowSearch')}
             </label>
-            <small>Người khác có thể tìm thấy bạn bằng tên một phần khi soạn tin nhắn</small>
+            <small>{t('allowSearchDesc')}</small>
           </div>
 
           <div className="form-group">
-            <label>Ai có thể gửi tin nhắn cho bạn</label>
-            <div className="radio-group" style={{ marginTop: '8px' }}>
-              <label style={{ display: 'flex', alignItems: 'center', marginBottom: '8px', cursor: 'pointer' }}>
+            <label>{t('whoCanMessage')}</label>
+            <div className="radio-group">
+              <label>
                 <input
                   type="radio"
                   name="allowMessagesFrom"
                   value="everyone"
                   checked={allowMessagesFrom === 'everyone'}
                   onChange={(e) => setAllowMessagesFrom(e.target.value as 'everyone' | 'specific' | 'nobody')}
-                  style={{ marginRight: '8px' }}
                 />
-                Tất cả mọi người
+                {t('everyone')}
               </label>
-              <label style={{ display: 'flex', alignItems: 'center', marginBottom: '8px', cursor: 'pointer' }}>
+              <label>
                 <input
                   type="radio"
                   name="allowMessagesFrom"
                   value="specific"
                   checked={allowMessagesFrom === 'specific'}
                   onChange={(e) => setAllowMessagesFrom(e.target.value as 'everyone' | 'specific' | 'nobody')}
-                  style={{ marginRight: '8px' }}
                 />
-                Chỉ người cụ thể
+                {t('specificPeople')}
               </label>
-              <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+              <label>
                 <input
                   type="radio"
                   name="allowMessagesFrom"
                   value="nobody"
                   checked={allowMessagesFrom === 'nobody'}
                   onChange={(e) => setAllowMessagesFrom(e.target.value as 'everyone' | 'specific' | 'nobody')}
-                  style={{ marginRight: '8px' }}
                 />
-                Không cho phép
+                {t('noOne')}
               </label>
             </div>
-            <small>Kiểm soát ai có thể gửi tin nhắn riêng cho bạn</small>
+            <small>{t('messageControl')}</small>
 
             {allowMessagesFrom === 'specific' && (
               <div style={{ marginTop: '16px', padding: '12px', backgroundColor: 'var(--color-neutral-background-weak)', borderRadius: '8px' }}>
                 <label style={{ display: 'block', marginBottom: '8px', fontWeight: 500 }}>
-                  Danh sách người dùng được phép (nhập @tên hoặc u/tên)
+                  {t('allowedUsersList')}
                 </label>
                 <div style={{ position: 'relative' }}>
                   <input
                     type="text"
                     value={userInputValue}
                     onChange={(e) => handleUserInputChange(e.target.value)}
-                    placeholder="Gõ @ hoặc u/ để tìm người dùng..."
+                    placeholder={t('searchUserPlaceholder')}
                     style={{
                       width: '100%',
                       padding: '8px',
@@ -664,7 +692,7 @@ const Settings = () => {
                   </div>
                 )}
                 <small style={{ display: 'block', marginTop: '8px', color: 'var(--color-neutral-content-weak)' }}>
-                  Chỉ những người dùng trong danh sách này có thể gửi tin nhắn cho bạn. Thay đổi sẽ được lưu tự động.
+                  {t('allowedUsersNote')}
                 </small>
               </div>
             )}
@@ -691,14 +719,14 @@ const Settings = () => {
             onClick={() => navigate(-1)}
             className="btn btn-secondary"
           >
-            Hủy
+            {t('cancel')}
           </button>
           <button
             type="submit"
             disabled={loading}
             className="btn btn-primary"
           >
-            {loading ? 'Đang lưu...' : 'Lưu thay đổi'}
+            {loading ? t('saving') : t('saveChanges')}
           </button>
         </div>
       </form>

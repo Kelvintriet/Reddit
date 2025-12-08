@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import { useLanguageStore } from '../store/useLanguageStore'
 // Temporary karma functions until karmaService is fixed
 const formatKarma = (karma: number): string => {
   if (karma >= 1000000) return `${(karma / 1000000).toFixed(1)}M`;
@@ -16,6 +17,7 @@ const Profile = () => {
   const { userId } = useParams<{ userId: string }>()
   const navigate = useNavigate()
   const { user } = useAuthStore()
+  const { t } = useLanguageStore()
   const { posts, fetchUserPosts, isLoading, error, voteOnPost } = usePostsStore()
   const [activeTab, setActiveTab] = useState('posts')
   const [profileUser, setProfileUser] = useState<any>(null)
@@ -173,8 +175,8 @@ const Profile = () => {
               <path d="M12 7c2.76 0 5 2.24 5 5 0 .65-.13 1.26-.36 1.83l2.92 2.92c1.51-1.26 2.7-2.89 3.43-4.75-1.73-4.39-6-7.5-11-7.5-1.4 0-2.74.25-3.98.7l2.16 2.16C10.74 7.13 11.35 7 12 7zM2 4.27l2.28 2.28.46.46C3.08 8.3 1.78 10.02 1 12c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l.42.42L19.73 22 21 20.73 3.27 3 2 4.27zM7.53 9.8l1.55 1.55c-.05.21-.08.43-.08.65 0 1.66 1.34 3 3 3 .22 0 .44-.03.65-.08l1.55 1.55c-.67.33-1.41.53-2.2.53-2.76 0-5-2.24-5-5 0-.79.2-1.53.53-2.2zm4.31-.78l3.15 3.15.02-.16c0-1.66-1.34-3-3-3l-.17.01z" />
             </svg>
           </div>
-          <h2>Hồ sơ này đã được ẩn</h2>
-          <p>Người dùng này đã chọn ẩn hồ sơ của họ khỏi công chúng.</p>
+          <h2>{t('profileHidden')}</h2>
+          <p>{t('profileHiddenDesc')}</p>
         </div>
       </div>
     );
@@ -232,7 +234,7 @@ const Profile = () => {
                     <span className="profile-separator"> • </span>
                   </>
                 )}
-                <span className="profile-joined">Thành viên từ {formatDate(profileUser?.createdAt || new Date())}</span>
+                <span className="profile-joined">{t('memberSince')} {formatDate(profileUser?.createdAt || new Date())}</span>
                 {currentLocation && (isOwnProfile ? user?.showLocation !== false : (profileUser as any)?.showLocation !== false) && (
                   <>
                     <span className="profile-separator"> • </span>
@@ -280,7 +282,7 @@ const Profile = () => {
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
                       <path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z" />
                     </svg>
-                    Chat
+                    {t('chat')}
                   </button>
                 </div>
               )}
@@ -296,20 +298,20 @@ const Profile = () => {
           className={`profile-tab ${activeTab === 'posts' ? 'active' : ''}`}
           onClick={() => setActiveTab('posts')}
         >
-          Bài viết
+          {t('posts')}
         </button>
         <button
           className={`profile-tab ${activeTab === 'comments' ? 'active' : ''}`}
           onClick={() => setActiveTab('comments')}
         >
-          Bình luận
+          {t('comments')}
         </button>
         {isOwnProfile && (
           <button
             className={`profile-tab ${activeTab === 'saved' ? 'active' : ''}`}
             onClick={() => setActiveTab('saved')}
           >
-            Đã lưu
+            {t('saved')}
           </button>
         )}
       </div>
@@ -325,8 +327,8 @@ const Profile = () => {
                     <path d="M12 7c2.76 0 5 2.24 5 5 0 .65-.13 1.26-.36 1.83l2.92 2.92c1.51-1.26 2.7-2.89 3.43-4.75-1.73-4.39-6-7.5-11-7.5-1.4 0-2.74.25-3.98.7l2.16 2.16C10.74 7.13 11.35 7 12 7zM2 4.27l2.28 2.28.46.46C3.08 8.3 1.78 10.02 1 12c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l.42.42L19.73 22 21 20.73 3.27 3 2 4.27zM7.53 9.8l1.55 1.55c-.05.21-.08.43-.08.65 0 1.66 1.34 3 3 3 .22 0 .44-.03.65-.08l1.55 1.55c-.67.33-1.41.53-2.2.53-2.76 0-5-2.24-5-5 0-.79.2-1.53.53-2.2zm4.31-.78l3.15 3.15.02-.16c0-1.66-1.34-3-3-3l-.17.01z" />
                   </svg>
                 </div>
-                <h3>Bài viết đã được ẩn</h3>
-                <p>Người dùng này đã chọn ẩn bài viết của họ khỏi hồ sơ công khai.</p>
+                <h3>{t('postsHidden')}</h3>
+                <p>{t('postsHiddenDesc')}</p>
               </div>
             ) : isLoading ? (
               <div className="posts-list">
@@ -340,11 +342,11 @@ const Profile = () => {
               </div>
             ) : posts.length === 0 ? (
               <div className="empty-state">
-                <h3>Chưa có bài viết nào</h3>
+                <h3>{t('noPosts')}</h3>
                 <p>
                   {isOwnProfile
-                    ? 'Bạn chưa đăng bài viết nào.'
-                    : 'Người dùng này chưa đăng bài viết nào.'}
+                    ? t('noPostsMe')
+                    : t('noPostsUser')}
                 </p>
                 {isOwnProfile && (
                   <div className="empty-state-actions">
@@ -352,7 +354,7 @@ const Profile = () => {
                       className="btn btn-primary"
                       onClick={() => navigate('/submit')}
                     >
-                      Tạo bài viết
+                      {t('createPost')}
                     </button>
                   </div>
                 )}
@@ -402,16 +404,16 @@ const Profile = () => {
                     <path d="M12 7c2.76 0 5 2.24 5 5 0 .65-.13 1.26-.36 1.83l2.92 2.92c1.51-1.26 2.7-2.89 3.43-4.75-1.73-4.39-6-7.5-11-7.5-1.4 0-2.74.25-3.98.7l2.16 2.16C10.74 7.13 11.35 7 12 7zM2 4.27l2.28 2.28.46.46C3.08 8.3 1.78 10.02 1 12c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l.42.42L19.73 22 21 20.73 3.27 3 2 4.27zM7.53 9.8l1.55 1.55c-.05.21-.08.43-.08.65 0 1.66 1.34 3 3 3 .22 0 .44-.03.65-.08l1.55 1.55c-.67.33-1.41.53-2.2.53-2.76 0-5-2.24-5-5 0-.79.2-1.53.53-2.2zm4.31-.78l3.15 3.15.02-.16c0-1.66-1.34-3-3-3l-.17.01z" />
                   </svg>
                 </div>
-                <h3>Bình luận đã được ẩn</h3>
-                <p>Người dùng này đã chọn ẩn bình luận của họ khỏi hồ sơ công khai.</p>
+                <h3>{t('commentsHidden')}</h3>
+                <p>{t('commentsHiddenDesc')}</p>
               </div>
             ) : (
               <div className="empty-state">
-                <h3>Chưa có bình luận nào</h3>
+                <h3>{t('noComments')}</h3>
                 <p>
                   {isOwnProfile
-                    ? 'Bạn chưa bình luận bài viết nào.'
-                    : 'Người dùng này chưa bình luận bài viết nào.'}
+                    ? t('noCommentsMe')
+                    : t('noCommentsUser')}
                 </p>
               </div>
             )}
@@ -420,9 +422,9 @@ const Profile = () => {
 
         {activeTab === 'saved' && isOwnProfile && (
           <div className="empty-state">
-            <h3>Chưa có bài viết đã lưu</h3>
+            <h3>{t('noSaved')}</h3>
             <p>
-              Bạn chưa lưu bài viết nào.
+              {t('noSavedMe')}
             </p>
           </div>
         )}

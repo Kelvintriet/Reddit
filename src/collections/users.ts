@@ -29,6 +29,7 @@ export interface User {
   allowMessageSearch?: boolean; // Allow others to find user by partial name in compose
   allowMessagesFrom?: 'everyone' | 'specific' | 'nobody'; // Who can send messages
   allowedMessageUsers?: string[]; // List of user IDs allowed to send messages (when allowMessagesFrom is 'specific')
+  language?: 'vi' | 'en';
 }
 
 // Tạo hoặc cập nhật profile người dùng
@@ -51,6 +52,7 @@ export const createUserProfile = async (user: FirebaseUser, additionalData?: any
         karma: 0,
         joinedSubreddits: [],
         savedPosts: [],
+        language: 'vi',
         ...additionalData
       };
 
