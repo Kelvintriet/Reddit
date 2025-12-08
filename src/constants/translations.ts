@@ -59,6 +59,7 @@ export const translations = {
     cancel: "Hủy",
     delete: "Xóa",
     edit: "Chỉnh sửa",
+    image: "Hình ảnh",
     
     // Inbox
     compose: "Soạn tin nhắn",
@@ -366,6 +367,8 @@ export const translations = {
     aboutTrendingDesc: "r/trending hiển thị những bài viết có tỷ lệ upvote/downvote tốt nhất và đang thu hút sự chú ý. Chỉ có tối đa 150 bài viết được chọn hàng tháng, cập nhật hàng ngày.",
     maxPosts: "Bài viết tối đa",
     updateFrequency: "Tần suất cập nhật",
+    updates: "Cập nhật",
+    updateFreq: "Tần suất cập nhật",
 
     // Popular
     popularTitle: "r/popular",
@@ -387,6 +390,7 @@ export const translations = {
     videoLoadError: "Không thể tải video",
     confirmDeletePost: "Bạn có chắc chắn muốn xóa bài viết này không?",
     postDeleted: "Bài viết đã được xóa.",
+    postDeletedDesc: "Bài viết này đã bị xóa.",
     deletePostFailed: "Xóa bài viết thất bại.",
     editLinkFailed: "Không thể tạo liên kết chỉnh sửa. Vui lòng thử lại.",
     cannotVoteDeleted: "Không thể bình chọn bài viết đã xóa",
@@ -501,6 +505,7 @@ export const translations = {
     cancel: "Cancel",
     delete: "Delete",
     edit: "Edit",
+    image: "Image",
     
     // Inbox
     compose: "Compose",
@@ -808,6 +813,8 @@ export const translations = {
     aboutTrendingDesc: "r/trending displays posts with the best upvote/downvote ratio and are gaining attention. Only max 150 posts are selected monthly, updated daily.",
     maxPosts: "Max Posts",
     updateFrequency: "Update Frequency",
+    updates: "Updates",
+    updateFreq: "Update Frequency",
 
     // Popular
     popularTitle: "r/popular",
@@ -829,6 +836,7 @@ export const translations = {
     videoLoadError: "Cannot load video",
     confirmDeletePost: "Are you sure you want to delete this post?",
     postDeleted: "Post has been deleted.",
+    postDeletedDesc: "This post has been deleted.",
     deletePostFailed: "Failed to delete post.",
     editLinkFailed: "Could not generate edit link. Please try again.",
     cannotVoteDeleted: "Cannot vote on deleted post",
