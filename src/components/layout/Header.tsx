@@ -100,21 +100,23 @@ const Header: React.FC = () => {
           {/* Logo với thiết kế mới */}
           <Link to="/home" className="reddit-logo">
             <svg width="28" height="28" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-              {/* Reddit head */}
-              <circle cx="16" cy="16" r="15" fill="#FF4500" />
-
-              {/* Eyes */}
-              <circle cx="11" cy="12" r="2.5" fill="white" />
-              <circle cx="21" cy="12" r="2.5" fill="white" />
-              <circle cx="11" cy="12" r="1.2" fill="#FF4500" />
-              <circle cx="21" cy="12" r="1.2" fill="#FF4500" />
-
-              {/* Mouth */}
-              <path d="M8 20c0 4.4 3.6 6 8 6s8-1.6 8-6" stroke="white" strokeWidth="2" fill="none" strokeLinecap="round" />
-
-              {/* Antenna */}
-              <circle cx="16" cy="4" r="1.5" fill="white" />
-              <line x1="16" y1="5.5" x2="16" y2="8" stroke="white" strokeWidth="1.5" />
+              {/* Background */}
+              <circle cx="16" cy="16" r="16" fill="#FF4500" />
+              
+              {/* The X is formed by crossing the Antenna with the Eye alignment */}
+              <path d="M8 8L24 24" stroke="white" strokeWidth="3" strokeLinecap="round" opacity="0.5"/>
+              <path d="M24 8L8 24" stroke="white" strokeWidth="3" strokeLinecap="round" opacity="0.5"/>
+              
+              {/* Snoo overlaying the X */}
+              <circle cx="16" cy="16" r="8" fill="#FF4500" stroke="white" strokeWidth="2"/>
+              
+              {/* Simple Face */}
+              <circle cx="13" cy="15" r="1.5" fill="white"/>
+              <circle cx="19" cy="15" r="1.5" fill="white"/>
+              <path d="M12 19C13 21 15 21 16 21C17 21 19 21 20 19" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
+              
+              {/* Floating Antenna ball aligned with top right of the X */}
+              <circle cx="26" cy="6" r="2.5" fill="white"/>
             </svg>
             <span>reddit</span>
           </Link>
