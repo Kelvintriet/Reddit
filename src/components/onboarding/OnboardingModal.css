@@ -30,6 +30,7 @@
     opacity: 0;
     transform: translateY(20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -153,19 +154,21 @@
 
 .input-wrapper {
   position: relative;
-  display: block;
+  display: flex;
+  align-items: center;
 }
 
 .input-prefix {
   position: absolute;
-  left: 16px;
+  left: 30px;
   top: 50%;
   transform: translateY(-50%);
   color: #FF4500;
-  font-weight: bold;
-  font-size: 1.1rem;
+  font-weight: 600;
+  font-size: 16px;
   z-index: 2;
   pointer-events: none;
+  line-height: 1;
 }
 
 .form-group input,
@@ -182,7 +185,7 @@
 }
 
 .input-wrapper input {
-  padding-left: 48px !important;
+  padding-left: 38px !important;
 }
 
 .form-group input:focus,
@@ -225,8 +228,15 @@
 }
 
 @keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.6; }
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.6;
+  }
 }
 
 /* UID Preview */
@@ -398,42 +408,42 @@
   .onboarding-backdrop {
     padding: 1rem;
   }
-  
+
   .onboarding-modal {
     max-width: none;
     width: 100%;
   }
-  
+
   .onboarding-content {
     padding: 1.5rem;
   }
-  
+
   .onboarding-actions {
     flex-direction: column;
     padding: 1.5rem;
   }
-  
+
   .onboarding-actions .btn {
     width: 100%;
   }
-  
+
   .step-icon {
     width: 60px;
     height: 60px;
   }
-  
+
   .onboarding-step h2 {
     font-size: 1.5rem;
   }
-  
+
   .uid-parts {
     font-size: 1rem;
     flex-wrap: wrap;
   }
-  
+
   .detail-item {
     flex-direction: column;
     align-items: flex-start;
     gap: 0.5rem;
   }
-} 
+}
