@@ -4,6 +4,7 @@ import { useAuthStore, useSubredditsStore } from '../store';
 import { validateSettingsToken } from '../services/settingsTokenService';
 import { useLanguageStore } from '../store/useLanguageStore';
 import { translations } from '../constants/translations';
+import { uploadFile } from '../services/appwrite/storage';
 import './SubredditSettings.css';
 
 const SubredditSettings: React.FC = () => {
@@ -25,6 +26,14 @@ const SubredditSettings: React.FC = () => {
   const [isPrivate, setIsPrivate] = useState(false);
   const [showDisbandConfirm, setShowDisbandConfirm] = useState(false);
   const [disbandConfirmText, setDisbandConfirmText] = useState('');
+
+  // Image upload states
+  const [bannerFile, setBannerFile] = useState<File | null>(null);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [bannerPreview, setBannerPreview] = useState<string>('');
+  const [avatarPreview, setAvatarPreview] = useState<string>('');
+  const [isUploadingBanner, setIsUploadingBanner] = useState(false);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
 
   useEffect(() => {
     const validateAccess = async () => {
@@ -115,6 +124,116 @@ const SubredditSettings: React.FC = () => {
     if (rules.length > 1) {
       const newRules = rules.filter((_, i) => i !== index);
       setRules(newRules);
+    }
+  };
+
+  const handleBannerChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && file.type.startsWith('image/')) {
+      setBannerFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setBannerPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && file.type.startsWith('image/')) {
+      setAvatarFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setAvatarPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleUploadBanner = async () => {
+    if (!bannerFile || !currentSubreddit || !user) return;
+
+    try {
+      setIsUploadingBanner(true);
+      const uploadedFile = await uploadFile(bannerFile, user.uid);
+
+      await updateSubreddit(currentSubreddit.id, {
+        bannerUrl: uploadedFile.url
+      });
+
+      alert('Banner updated successfully!');
+      setBannerFile(null);
+      setBannerPreview('');
+      await fetchSubredditByName(subredditName!);
+    } catch (error) {
+      console.error('Error uploading banner:', error);
+      alert('Failed to upload banner');
+    } finally {
+      setIsUploadingBanner(false);
+    }
+  };
+
+  const handleUploadAvatar = async () => {
+    if (!avatarFile || !currentSubreddit || !user) return;
+
+    try {
+      setIsUploadingAvatar(true);
+      const uploadedFile = await uploadFile(avatarFile, user.uid);
+
+      await updateSubreddit(currentSubreddit.id, {
+        avatarUrl: uploadedFile.url
+      });
+
+      alert('Avatar updated successfully!');
+      setAvatarFile(null);
+      setAvatarPreview('');
+      await fetchSubredditByName(subredditName!);
+    } catch (error) {
+      console.error('Error uploading avatar:', error);
+      alert('Failed to upload avatar');
+    } finally {
+      setIsUploadingAvatar(false);
+    }
+  };
+
+  const handleDeleteBanner = async () => {
+    if (!currentSubreddit || !user) return;
+
+    if (!confirm('Are you sure you want to remove the banner?')) return;
+
+    try {
+      await updateSubreddit(currentSubreddit.id, {
+        bannerUrl: ''
+      });
+
+      alert('Banner removed successfully!');
+      setBannerFile(null);
+      setBannerPreview('');
+      await fetchSubredditByName(subredditName!);
+    } catch (error) {
+      console.error('Error removing banner:', error);
+      alert('Failed to remove banner');
+    }
+  };
+
+  const handleDeleteAvatar = async () => {
+    if (!currentSubreddit || !user) return;
+
+    if (!confirm('Are you sure you want to remove the avatar?')) return;
+
+    try {
+      await updateSubreddit(currentSubreddit.id, {
+        avatarUrl: ''
+      });
+
+      alert('Avatar removed successfully!');
+      setAvatarFile(null);
+      setAvatarPreview('');
+      await fetchSubredditByName(subredditName!);
+    } catch (error) {
+      console.error('Error removing avatar:', error);
+      alert('Failed to remove avatar');
     }
   };
 
@@ -213,6 +332,90 @@ const SubredditSettings: React.FC = () => {
               <p className="help-text">
                 {t('privateCommunityDesc')}
               </p>
+            </div>
+
+            {/* Banner Upload */}
+            <div className="form-group">
+              <label>Community Banner</label>
+              <div className="image-upload-section">
+                {(bannerPreview || currentSubreddit.bannerUrl) && (
+                  <div className="image-preview banner-preview">
+                    <img src={bannerPreview || currentSubreddit.bannerUrl} alt="Banner preview" />
+                  </div>
+                )}
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleBannerChange}
+                  id="banner-upload"
+                  style={{ display: 'none' }}
+                />
+                <div className="upload-buttons">
+                  <label htmlFor="banner-upload" className="upload-label-button">
+                    Choose Banner Image
+                  </label>
+                  {bannerFile && (
+                    <button
+                      onClick={handleUploadBanner}
+                      disabled={isUploadingBanner}
+                      className="upload-button"
+                    >
+                      {isUploadingBanner ? 'Uploading...' : 'Upload Banner'}
+                    </button>
+                  )}
+                  {currentSubreddit.bannerUrl && !bannerFile && (
+                    <button
+                      onClick={handleDeleteBanner}
+                      className="delete-button"
+                    >
+                      Remove Banner
+                    </button>
+                  )}
+                </div>
+                <p className="help-text">Recommended size: 1920x384px</p>
+              </div>
+            </div>
+
+            {/* Avatar Upload */}
+            <div className="form-group">
+              <label>Community Avatar</label>
+              <div className="image-upload-section">
+                {(avatarPreview || currentSubreddit.avatarUrl) && (
+                  <div className="image-preview avatar-preview">
+                    <img src={avatarPreview || currentSubreddit.avatarUrl} alt="Avatar preview" />
+                  </div>
+                )}
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleAvatarChange}
+                  id="avatar-upload"
+                  style={{ display: 'none' }}
+                />
+                <div className="upload-buttons">
+                  <label htmlFor="avatar-upload" className="upload-label-button">
+                    Choose Avatar Image
+                  </label>
+                  {avatarFile && (
+                    <button
+                      onClick={handleUploadAvatar}
+                      disabled={isUploadingAvatar}
+                      className="upload-button"
+                    >
+                      {isUploadingAvatar ? 'Uploading...' : 'Upload Avatar'}
+                    </button>
+                  )}
+                  {currentSubreddit.avatarUrl && !avatarFile && (
+                    <button
+                      onClick={handleDeleteAvatar}
+                      className="delete-button"
+                    >
+                      Remove Avatar
+                    </button>
+                  )}
+                </div>
+                <p className="help-text">Recommended size: 256x256px (square)</p>
+              </div>
             </div>
 
             <button onClick={handleSaveGeneral} className="save-button">

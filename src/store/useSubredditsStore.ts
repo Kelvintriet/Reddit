@@ -24,6 +24,9 @@ export interface Subreddit extends SubredditType {
   moderatorNames?: string[]
   bannerImageUrl?: string
   iconImageUrl?: string
+  avatarUrl?: string
+  bannerUrl?: string
+  iconUrl?: string
 }
 
 interface SubredditsState {
@@ -98,7 +101,10 @@ export const useSubredditsStore = create<SubredditsState>((set, get) => ({
             moderatorIds: sub.moderators || [sub.createdBy],
             moderatorNames,
             bannerImageUrl: sub.bannerUrl,
-            iconImageUrl: sub.iconUrl
+            iconImageUrl: sub.iconUrl,
+            avatarUrl: sub.avatarUrl,
+            bannerUrl: sub.bannerUrl,
+            iconUrl: sub.iconUrl
           }
         })
       )
@@ -145,7 +151,10 @@ export const useSubredditsStore = create<SubredditsState>((set, get) => ({
           moderatorIds: subredditData.moderators || [subredditData.createdBy],
           moderatorNames,
           bannerImageUrl: subredditData.bannerUrl,
-          iconImageUrl: subredditData.iconUrl
+          iconImageUrl: subredditData.iconUrl,
+          avatarUrl: subredditData.avatarUrl,
+          bannerUrl: subredditData.bannerUrl,
+          iconUrl: subredditData.iconUrl
         }
 
         set({ currentSubreddit: subreddit, isLoading: false })

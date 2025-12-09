@@ -144,7 +144,7 @@
 .subreddit-main-info {
   display: flex;
   align-items: flex-start;
-  gap: 20px;
+  gap: 48px;
   margin-bottom: 20px;
 }
 

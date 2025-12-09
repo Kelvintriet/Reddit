@@ -161,8 +161,8 @@ const SubredditDetail: React.FC = () => {
         <div className="subreddit-info">
           <div className="subreddit-main-info">
             <div className="subreddit-icon">
-              {currentSubreddit.iconImageUrl ? (
-                <img src={currentSubreddit.iconImageUrl} alt={`r/${currentSubreddit.name}`} />
+              {(currentSubreddit.avatarUrl || currentSubreddit.iconUrl) ? (
+                <img src={currentSubreddit.avatarUrl || currentSubreddit.iconUrl} alt={`r/${currentSubreddit.name}`} />
               ) : (
                 <div className="subreddit-icon-placeholder">
                   r/

@@ -91,7 +91,8 @@ const JoinedCommunities: React.FC = () => {
                 <span style={{
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap'
+                  whiteSpace: 'nowrap',
+                  marginLeft: '12px'
                 }}>
                   {subreddit.name}
                 </span>
