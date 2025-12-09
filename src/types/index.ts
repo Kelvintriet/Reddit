@@ -26,13 +26,13 @@ export interface Post {
   votes?: { [userId: string]: 'up' | 'down' };
   type?: 'text' | 'link' | 'image';
   url?: string;
-  
+
   // Soft delete fields
   isDeleted?: boolean;
   deletedAt?: Date;
   deletedBy?: string;
   deleteReason?: string;
-  
+
   // Edit history
   isEdited?: boolean;
   editedAt?: Date;
@@ -42,7 +42,7 @@ export interface Post {
     previousTitle: string;
     editReason?: string;
   }>;
-  
+
   // Backup data for restoration
   originalData?: {
     upvotes: number;

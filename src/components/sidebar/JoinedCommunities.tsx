@@ -20,7 +20,7 @@ const JoinedCommunities: React.FC = () => {
   useEffect(() => {
     if (user && subreddits.length > 0) {
       // Filter subreddits that the user has joined
-      const joined = subreddits.filter(subreddit => 
+      const joined = subreddits.filter(subreddit =>
         subreddit.members?.includes(user.uid) || subreddit.createdBy === user.uid
       );
       setJoinedSubreddits(joined);
@@ -33,11 +33,11 @@ const JoinedCommunities: React.FC = () => {
 
   return (
     <div className="sidebar-section">
-      <div 
-        style={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'space-between', 
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
           marginBottom: 'var(--space-md)',
           cursor: 'pointer'
         }}
@@ -50,19 +50,19 @@ const JoinedCommunities: React.FC = () => {
           <ChevronDown size={16} style={{ color: 'var(--color-neutral-content-weak)' }} />
         )}
       </div>
-      
+
       {isExpanded && (
         <ul className="nav-list">
           {joinedSubreddits.slice(0, 10).map((subreddit) => (
             <li key={subreddit.id} className="nav-item">
-              <Link 
-                to={`/r/${subreddit.name}`} 
+              <Link
+                to={`/r/${subreddit.name}`}
                 className={`nav-link ${currentSubreddit === subreddit.name ? 'active' : ''}`}
               >
                 <div className="subreddit-icon-small">
-                  {subreddit.iconUrl ? (
+                  {(subreddit.avatarUrl || subreddit.iconUrl) ? (
                     <img
-                      src={subreddit.iconUrl}
+                      src={subreddit.avatarUrl || subreddit.iconUrl}
                       alt={subreddit.name}
                       style={{
                         width: '20px',
@@ -111,7 +111,7 @@ const JoinedCommunities: React.FC = () => {
               </Link>
             </li>
           ))}
-          
+
           {joinedSubreddits.length > 10 && (
             <li className="nav-item">
               <Link to="/subreddits" className="nav-link" style={{ fontSize: '12px', color: 'var(--color-neutral-content-weak)' }}>

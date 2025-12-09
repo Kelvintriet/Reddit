@@ -35,7 +35,7 @@ const SubredditDetail: React.FC = () => {
   useEffect(() => {
     if (subredditName) {
       fetchSubredditByName(subredditName);
-      
+
       const sortMapping: Record<string, 'hot' | 'new' | 'top'> = {
         'best': 'hot',
         'hot': 'hot',
@@ -43,7 +43,7 @@ const SubredditDetail: React.FC = () => {
         'top': 'top',
         'rising': 'hot'
       };
-      
+
       setSortBy(sortMapping[activeSort]);
       fetchPosts(subredditName);
     }
@@ -84,9 +84,9 @@ const SubredditDetail: React.FC = () => {
 
   const formatDate = (date: any) => {
     if (!date) return t('unknown');
-    
+
     let dateObj: Date;
-    
+
     // Firestore Timestamp
     if (date?.seconds) {
       dateObj = new Date(date.seconds * 1000);
@@ -96,12 +96,12 @@ const SubredditDetail: React.FC = () => {
       // Try to parse as string or number
       dateObj = new Date(date);
     }
-    
+
     // Check if date is valid
     if (isNaN(dateObj.getTime())) {
       return t('unknown');
     }
-    
+
     return dateObj.toLocaleDateString(language === 'vi' ? 'vi-VN' : 'en-US', {
       year: 'numeric',
       month: 'long',
@@ -169,7 +169,7 @@ const SubredditDetail: React.FC = () => {
                 </div>
               )}
             </div>
-            
+
             <div className="subreddit-text-info">
               <h1 className="subreddit-name">r/{currentSubreddit.name}</h1>
               <p className="subreddit-description">{currentSubreddit.description}</p>
@@ -198,9 +198,9 @@ const SubredditDetail: React.FC = () => {
                   {isJoined ? t('joined') : t('join')}
                 </button>
               )}
-              
+
               {user && (
-                <Link 
+                <Link
                   to={`/r/${currentSubreddit.name}/submit`}
                   className="create-post-btn"
                 >
@@ -322,7 +322,7 @@ const SubredditDetail: React.FC = () => {
             <h3>{t('aboutCommunity')}</h3>
             <div className="sidebar-info">
               <p>{currentSubreddit.description}</p>
-              
+
               <div className="sidebar-stats">
                 <div className="sidebar-stat">
                   <strong>{currentSubreddit.memberCount?.toLocaleString() || 0}</strong>
