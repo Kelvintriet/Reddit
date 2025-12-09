@@ -14,6 +14,7 @@ export interface Subreddit {
   rules?: string[];
   bannerUrl?: string;
   iconUrl?: string;
+  avatarUrl?: string;
   isPrivate?: boolean;
   moderators?: string[];
 }
