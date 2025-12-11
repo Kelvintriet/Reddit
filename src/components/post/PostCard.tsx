@@ -168,7 +168,7 @@ const PostCard: React.FC<PostCardProps> = ({ post, onVote, userVote }) => {
       }
     } catch (error) {
       console.error('Error saving post:', error)
-      alert(t('saveFailed') || 'Failed to save post')
+      alert('Failed to save post')
     } finally {
       setSaveLoading(false)
     }

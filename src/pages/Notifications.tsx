@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuthStore } from '../store';
+import { auth } from '../lib/firebase';
 import './Notifications.css';
 
 interface Notification {
@@ -42,7 +43,7 @@ const Notifications: React.FC = () => {
     const fetchNotifications = async () => {
         try {
             setLoading(true);
-            const token = await user?.getIdToken();
+            const token = await auth.currentUser?.getIdToken();
             const response = await fetch(
                 `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/notifications?unreadOnly=${filter === 'unread'}`,
                 {
@@ -68,7 +69,7 @@ const Notifications: React.FC = () => {
 
     const fetchUnreadCount = async () => {
         try {
-            const token = await user?.getIdToken();
+            const token = await auth.currentUser?.getIdToken();
             const response = await fetch(
                 `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/notifications/unread-count`,
                 {
@@ -89,7 +90,7 @@ const Notifications: React.FC = () => {
 
     const markAsRead = async (notificationId: string) => {
         try {
-            const token = await user?.getIdToken();
+            const token = await auth.currentUser?.getIdToken();
             await fetch(
                 `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/notifications/${notificationId}/read`,
                 {
@@ -111,7 +112,7 @@ const Notifications: React.FC = () => {
 
     const markAllAsRead = async () => {
         try {
-            const token = await user?.getIdToken();
+            const token = await auth.currentUser?.getIdToken();
             await fetch(
                 `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/notifications/read-all`,
                 {
@@ -131,7 +132,7 @@ const Notifications: React.FC = () => {
 
     const deleteNotification = async (notificationId: string) => {
         try {
-            const token = await user?.getIdToken();
+            const token = await auth.currentUser?.getIdToken();
             await fetch(
                 `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/notifications/${notificationId}`,
                 {

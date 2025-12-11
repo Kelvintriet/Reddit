@@ -8,7 +8,7 @@ export function useMessagingWebSocket() {
     const [isConnected, setIsConnected] = useState(false);
     const [typingUsers, setTypingUsers] = useState<Set<string>>(new Set());
     const { user } = useAuthStore();
-    const reconnectTimeoutRef = useRef<NodeJS.Timeout>();
+    const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
     useEffect(() => {
         if (!user) return;

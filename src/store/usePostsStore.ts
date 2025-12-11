@@ -126,8 +126,6 @@ export const usePostsStore = create<PostsState>()(
           // Filter and limit
           const filteredPosts = posts.filter(p => !p.isDeleted).slice(0, 50)
 
-          // Only update if we have posts OR if this is the initial load (no existing posts)
-          const currentPosts = get().posts
           const cacheKey = subreddit || 'home'
 
           // Only update if we have results OR if current posts are empty (initial load)

@@ -189,11 +189,7 @@ const CreatePost = () => {
     }
 
     fetchSubreddits()
-    console.log('🔄 Fetched subreddits, total:', subreddits.length)
-    subreddits.forEach(sub => {
-      console.log(`📦 Subreddit: ${sub.name}, iconUrl:`, sub.iconUrl)
-    })
-  }, [user, isInitialized, navigate, fetchSubreddits, subreddits])
+  }, [user, isInitialized, navigate, fetchSubreddits])
 
   useEffect(() => {
     if (subredditParam) {
@@ -508,16 +504,13 @@ const CreatePost = () => {
                       <span style={{ fontSize: '14px' }}>🐛</span>
                     ) : (() => {
                       const sub = subreddits.find(s => s.name === selectedSubreddit);
-                      console.log('🔍 Debug - Sub:', sub?.name, 'Has iconUrl:', !!sub?.iconUrl, 'Value:', sub?.iconUrl);
                       const hasValidIcon = sub?.iconUrl && sub.iconUrl.trim() !== '';
                       return hasValidIcon ? (
                         <img
                           src={sub.iconUrl}
                           alt={sub.name}
                           style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-                          onLoad={() => console.log('✅ Image loaded successfully:', sub.iconUrl)}
                           onError={(e) => {
-                            console.error('❌ Image failed to load:', sub.iconUrl);
                             const target = e.currentTarget;
                             target.style.display = 'none';
                             const parent = target.parentElement;
@@ -552,7 +545,7 @@ const CreatePost = () => {
                     // Delay to allow click on dropdown item
                     setTimeout(() => setShowSubredditDropdown(false), 200)
                   }}
-                  placeholder={t('searchCommunity') || 'Search community...'}
+                  placeholder="Search community..."
                   className="community-select"
                   style={{ flex: 1 }}
                 />
