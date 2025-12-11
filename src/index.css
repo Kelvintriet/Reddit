@@ -948,6 +948,14 @@ button:focus-visible {
   height: 16px;
 }
 
+.post-action.saved {
+  color: #FFD700;
+}
+
+.post-action.saved:hover {
+  color: #FFC700;
+}
+
 /* Empty State */
 .empty-state {
   text-align: center;

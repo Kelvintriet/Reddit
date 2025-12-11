@@ -37,6 +37,9 @@ const CreatePost = () => {
   const [_canViewContent, setCanViewContent] = useState(false)
   const [savedContent, setSavedContent] = useState({ title: '', content: '' })
   const wsRef = useRef<ReturnType<typeof getFileCleanupWebSocket> | null>(null)
+  const [subredditSearch, setSubredditSearch] = useState('')
+  const [showSubredditDropdown, setShowSubredditDropdown] = useState(false)
+  const subredditInputRef = useRef<HTMLInputElement>(null)
 
   // Feedback-specific states
   const [feedbackCategory, setFeedbackCategory] = useState<'bugs' | 'ideas' | 'questions'>('ideas')
@@ -84,6 +87,15 @@ const CreatePost = () => {
       navigate('/404', { replace: true })
     }
   }, [postId, token])
+
+  // Update URL when subreddit is selected (only for new posts, not edits)
+  useEffect(() => {
+    if (!isEditMode && selectedSubreddit && selectedSubreddit !== subredditParam) {
+      navigate(`/r/${selectedSubreddit}/submit`, { replace: true })
+    } else if (!isEditMode && !selectedSubreddit && subredditParam) {
+      navigate('/submit', { replace: true })
+    }
+  }, [selectedSubreddit, isEditMode, navigate, subredditParam])
 
   const validateTokenAndLoadPost = async () => {
     if (!postId || !token || !user) return
@@ -177,7 +189,11 @@ const CreatePost = () => {
     }
 
     fetchSubreddits()
-  }, [user, isInitialized, navigate, fetchSubreddits])
+    console.log('🔄 Fetched subreddits, total:', subreddits.length)
+    subreddits.forEach(sub => {
+      console.log(`📦 Subreddit: ${sub.name}, iconUrl:`, sub.iconUrl)
+    })
+  }, [user, isInitialized, navigate, fetchSubreddits, subreddits])
 
   useEffect(() => {
     if (subredditParam) {
@@ -313,7 +329,7 @@ const CreatePost = () => {
 
           // Save feedback to separate collection
           const { addDoc, collection, serverTimestamp } = await import('firebase/firestore');
-          const feedbackData = {
+          const feedbackData: any = {
             title,
             content,
             contentType: isMarkdown ? 'markdown' : 'html',
@@ -323,14 +339,20 @@ const CreatePost = () => {
             authorId: user.uid,
             authorUsername: isAnonymous ? '[deleted]' : (user.displayName || user.username || 'Người dùng ẩn danh'),
             tags: postTags,
-            imageUrls: imageUrls.length > 0 ? imageUrls : undefined,
-            attachments: attachments.length > 0 ? attachments : undefined,
             upvotes: 0,
             downvotes: 0,
             commentCount: 0,
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp()
           };
+
+          // Only add imageUrls and attachments if they exist
+          if (imageUrls.length > 0) {
+            feedbackData.imageUrls = imageUrls;
+          }
+          if (attachments.length > 0) {
+            feedbackData.attachments = attachments;
+          }
 
           // Save to feedbackPosts collection
           const feedbackRef = await addDoc(collection(db, 'feedbackPosts'), feedbackData);
@@ -468,30 +490,240 @@ const CreatePost = () => {
           </div>
           <div className="user-details">
             <span className="username">u/{user.displayName || user.username}</span>
-            <div className="community-selector">
-              <select
-                value={selectedSubreddit}
-                onChange={(e) => setSelectedSubreddit(e.target.value)}
-                className="community-select"
-              >
-                <option value="">{t('noCommunity')}</option>
-                <option value="feedback">🐛 r/feedback (Bugs, Ideas, Questions)</option>
-                {subreddits.map((sub) => (
-                  <option key={sub.id} value={sub.name}>
-                    r/{sub.name}
-                  </option>
-                ))}
-              </select>
+            <div className="community-selector" style={{ position: 'relative' }}>
+              <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                {selectedSubreddit && (
+                  <div style={{
+                    width: '24px',
+                    height: '24px',
+                    borderRadius: '50%',
+                    overflow: 'hidden',
+                    flexShrink: 0,
+                    background: '#FF4500',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}>
+                    {selectedSubreddit === 'feedback' ? (
+                      <span style={{ fontSize: '14px' }}>🐛</span>
+                    ) : (() => {
+                      const sub = subreddits.find(s => s.name === selectedSubreddit);
+                      console.log('🔍 Debug - Sub:', sub?.name, 'Has iconUrl:', !!sub?.iconUrl, 'Value:', sub?.iconUrl);
+                      const hasValidIcon = sub?.iconUrl && sub.iconUrl.trim() !== '';
+                      return hasValidIcon ? (
+                        <img
+                          src={sub.iconUrl}
+                          alt={sub.name}
+                          style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                          onLoad={() => console.log('✅ Image loaded successfully:', sub.iconUrl)}
+                          onError={(e) => {
+                            console.error('❌ Image failed to load:', sub.iconUrl);
+                            const target = e.currentTarget;
+                            target.style.display = 'none';
+                            const parent = target.parentElement;
+                            if (parent) {
+                              const span = document.createElement('span');
+                              span.style.fontSize = '12px';
+                              span.style.fontWeight = 'bold';
+                              span.style.color = 'white';
+                              span.textContent = selectedSubreddit[0].toUpperCase();
+                              parent.appendChild(span);
+                            }
+                          }}
+                        />
+                      ) : (
+                        <span style={{ fontSize: '12px', fontWeight: 'bold', color: 'white' }}>
+                          {selectedSubreddit[0].toUpperCase()}
+                        </span>
+                      );
+                    })()}
+                  </div>
+                )}
+                <input
+                  ref={subredditInputRef}
+                  type="text"
+                  value={subredditSearch || selectedSubreddit}
+                  onChange={(e) => {
+                    setSubredditSearch(e.target.value)
+                    setShowSubredditDropdown(true)
+                  }}
+                  onFocus={() => setShowSubredditDropdown(true)}
+                  onBlur={() => {
+                    // Delay to allow click on dropdown item
+                    setTimeout(() => setShowSubredditDropdown(false), 200)
+                  }}
+                  placeholder={t('searchCommunity') || 'Search community...'}
+                  className="community-select"
+                  style={{ flex: 1 }}
+                />
+              </div>
+
+              {showSubredditDropdown && (
+                <div className="subreddit-dropdown" style={{
+                  position: 'absolute',
+                  top: '100%',
+                  left: 0,
+                  right: 0,
+                  maxHeight: '300px',
+                  overflowY: 'auto',
+                  background: 'var(--color-card-background)',
+                  border: '1px solid var(--color-neutral-border)',
+                  borderRadius: '8px',
+                  marginTop: '4px',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                  zIndex: 1000
+                }}>
+                  <div
+                    onClick={() => {
+                      setSelectedSubreddit('')
+                      setSubredditSearch('')
+                      setShowSubredditDropdown(false)
+                    }}
+                    style={{
+                      padding: '12px 16px',
+                      cursor: 'pointer',
+                      borderBottom: '1px solid var(--color-neutral-border-weak)',
+                      transition: 'background 0.2s',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = 'var(--color-neutral-background-weak)'}
+                    onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                  >
+                    <div style={{
+                      width: '32px',
+                      height: '32px',
+                      borderRadius: '50%',
+                      background: '#808080',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0
+                    }}>
+                      <span style={{ fontSize: '16px' }}>👤</span>
+                    </div>
+                    {t('noCommunity')}
+                  </div>
+
+                  <div
+                    onClick={() => {
+                      setSelectedSubreddit('feedback')
+                      setSubredditSearch('')
+                      setShowSubredditDropdown(false)
+                    }}
+                    style={{
+                      padding: '12px 16px',
+                      cursor: 'pointer',
+                      borderBottom: '1px solid var(--color-neutral-border-weak)',
+                      transition: 'background 0.2s',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = 'var(--color-neutral-background-weak)'}
+                    onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                  >
+                    <div style={{
+                      width: '32px',
+                      height: '32px',
+                      borderRadius: '50%',
+                      background: '#FF4500',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0
+                    }}>
+                      <span style={{ fontSize: '18px' }}>🐛</span>
+                    </div>
+                    r/feedback (Bugs, Ideas, Questions)
+                  </div>
+
+                  {subreddits
+                    .filter(sub =>
+                      sub.name.toLowerCase().includes((subredditSearch || '').toLowerCase())
+                    )
+                    .map((sub) => (
+                      <div
+                        key={sub.id}
+                        onClick={() => {
+                          setSelectedSubreddit(sub.name)
+                          setSubredditSearch('')
+                          setShowSubredditDropdown(false)
+                        }}
+                        style={{
+                          padding: '12px 16px',
+                          cursor: 'pointer',
+                          borderBottom: '1px solid var(--color-neutral-border-weak)',
+                          transition: 'background 0.2s',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '12px'
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.background = 'var(--color-neutral-background-weak)'}
+                        onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                      >
+                        <div style={{
+                          width: '32px',
+                          height: '32px',
+                          borderRadius: '50%',
+                          overflow: 'hidden',
+                          background: '#FF4500',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          flexShrink: 0
+                        }}>
+                          {(() => {
+                            const hasValidIcon = sub.iconUrl && sub.iconUrl.trim() !== '';
+                            return hasValidIcon ? (
+                              <img
+                                src={sub.iconUrl}
+                                alt={sub.name}
+                                style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                                onError={(e) => {
+                                  const target = e.currentTarget;
+                                  target.style.display = 'none';
+                                  const parent = target.parentElement;
+                                  if (parent) {
+                                    const span = document.createElement('span');
+                                    span.style.fontSize = '16px';
+                                    span.style.fontWeight = 'bold';
+                                    span.style.color = 'white';
+                                    span.textContent = sub.name[0].toUpperCase();
+                                    parent.appendChild(span);
+                                  }
+                                }}
+                              />
+                            ) : (
+                              <span style={{ fontSize: '16px', fontWeight: 'bold', color: 'white' }}>
+                                {sub.name[0].toUpperCase()}
+                              </span>
+                            );
+                          })()}
+                        </div>
+                        r/{sub.name}
+                      </div>
+                    ))}
+
+                  {subreddits.filter(sub =>
+                    sub.name.toLowerCase().includes((subredditSearch || '').toLowerCase())
+                  ).length === 0 && subredditSearch && (
+                      <div style={{
+                        padding: '12px 16px',
+                        color: 'var(--color-neutral-content-weak)',
+                        textAlign: 'center'
+                      }}>
+                        No communities found
+                      </div>
+                    )}
+                </div>
+              )}
             </div>
           </div>
         </div>
 
-        {/* Post Type Tabs */}
-        <div className="post-type-tabs">
-          <div className="tab active">
-            📝 {t('post')}
-          </div>
-        </div>
+        {/* Post Form */}
 
         {/* Post Form */}
         <form onSubmit={handleSubmit} className="post-form">

@@ -12,7 +12,9 @@ import { proxyAttachment } from './routes/attachments.js';
 import { cleanupOrphanedFiles } from './routes/cleanup.js';
 import { getCaptchaChallenge, verifyCaptcha, getCaptchaStatus, getIPAddress, checkIPVerification } from './routes/captcha.js';
 import { checkChangelogAuth, verifyChangelogPassword, updateChangelogPassword } from './routes/changelog.js';
+import { getUserNotifications, markNotificationAsRead, markAllNotificationsAsRead, deleteNotification, getUnreadCount } from './routes/notifications.js';
 import { initializeFileCleanupWebSocket } from './websocket/fileCleanup.js';
+import { initializeMessagingWebSocket } from './websocket/messaging.js';
 
 const app = new Koa();
 const router = new Router();
@@ -108,6 +110,25 @@ router.post('/api/changelog/verify-password', checkCaptchaOptional, verifyAuth, 
 // Update changelog password (admin only)
 router.post('/api/changelog/update-password', checkCaptchaOptional, verifyAuth, updateChangelogPassword);
 
+// ============================================
+// Notification Routes (Require Auth)
+// ============================================
+
+// Get user notifications
+router.get('/api/notifications', checkCaptchaOptional, verifyAuth, getUserNotifications);
+
+// Get unread notification count
+router.get('/api/notifications/unread-count', checkCaptchaOptional, verifyAuth, getUnreadCount);
+
+// Mark notification as read
+router.put('/api/notifications/:notificationId/read', checkCaptchaOptional, verifyAuth, markNotificationAsRead);
+
+// Mark all notifications as read
+router.put('/api/notifications/read-all', checkCaptchaOptional, verifyAuth, markAllNotificationsAsRead);
+
+// Delete notification
+router.delete('/api/notifications/:notificationId', checkCaptchaOptional, verifyAuth, deleteNotification);
+
 // Secure attachment proxy route (requires CAPTCHA + Auth)
 // Format: /api/attachments/:fileId?postId=xxx
 router.get(
@@ -124,21 +145,39 @@ app.use(router.allowedMethods());
 
 const PORT = process.env.PORT || 5000;
 
-// Initialize WebSocket server BEFORE listening
+// Initialize WebSocket servers BEFORE listening
+let fileCleanupWss, messagingWss;
 try {
-  initializeFileCleanupWebSocket(server);
-  console.log('✅ WebSocket server initialized successfully');
+  fileCleanupWss = initializeFileCleanupWebSocket(server);
+  messagingWss = initializeMessagingWebSocket(server);
+  console.log('✅ WebSocket servers initialized successfully');
 } catch (error) {
-  console.error('❌ Failed to initialize WebSocket server:', error);
+  console.error('❌ Failed to initialize WebSocket servers:', error);
 }
 
+// Handle WebSocket upgrade requests
 server.on('upgrade', (request, socket, head) => {
-  console.log('🔌 WebSocket upgrade request:', request.url);
+  const pathname = new URL(request.url, `http://${request.headers.host}`).pathname;
+
+  if (pathname === '/ws/file-cleanup' && fileCleanupWss) {
+    fileCleanupWss.handleUpgrade(request, socket, head, (ws) => {
+      fileCleanupWss.emit('connection', ws, request);
+    });
+  } else if (pathname === '/ws/messaging' && messagingWss) {
+    messagingWss.handleUpgrade(request, socket, head, (ws) => {
+      messagingWss.emit('connection', ws, request);
+    });
+  } else {
+    socket.destroy();
+  }
 });
+
+
 
 server.listen(PORT, () => {
   console.log(`🚀 Secure attachment server running on port ${PORT}`);
   console.log(`🔌 WebSocket server available at ws://localhost:${PORT}/ws/file-cleanup`);
+  console.log(`💬 Messaging WebSocket available at ws://localhost:${PORT}/ws/messaging`);
   console.log(`📡 HTTP server listening on http://localhost:${PORT}`);
 });
 

@@ -182,7 +182,8 @@ const SubredditSettings: React.FC = () => {
       const uploadedFile = await uploadFile(avatarFile, user.uid);
 
       await updateSubreddit(currentSubreddit.id, {
-        avatarUrl: uploadedFile.url
+        iconUrl: uploadedFile.url,
+        avatarUrl: uploadedFile.url // Keep both for compatibility
       });
 
       alert('Avatar updated successfully!');
@@ -224,6 +225,7 @@ const SubredditSettings: React.FC = () => {
 
     try {
       await updateSubreddit(currentSubreddit.id, {
+        iconUrl: '',
         avatarUrl: ''
       });
 

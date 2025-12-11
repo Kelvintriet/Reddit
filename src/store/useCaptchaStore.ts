@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-const BACKEND_URL = (import.meta.env.VITE_BACKEND_URL || 'https://server.reddit.koolname.asia').replace('localhost', '127.0.0.1');
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'https://server.reddit.koolname.asia';
 
 // Device UID management - generates a new UID each session, stored in localStorage
 const DEVICE_UID_KEY = 'captcha_device_uid';

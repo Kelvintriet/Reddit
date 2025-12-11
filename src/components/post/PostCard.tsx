@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { MessageCircle, Share2, Bookmark, Download, Play, AlertTriangle, Edit3 } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
@@ -9,8 +9,10 @@ import { useLanguageStore } from '../../store/useLanguageStore'
 import { isImageFile, isVideoFile, isDangerousFile, getFileIcon } from '../../services/appwrite/storage'
 import { softDeletePost } from '../../collections/posts'
 import { generateEditToken } from '../../services/editTokenService'
+import { savePost, unsavePost, getUserProfile } from '../../collections/users'
 import ImageViewer from './ImageViewer'
 import PostContent from './PostContent'
+import ShareModal from '../ShareModal'
 
 interface PostCardProps {
   post: {
@@ -54,6 +56,25 @@ const PostCard: React.FC<PostCardProps> = ({ post, onVote, userVote }) => {
   const navigate = useNavigate()
   const [imageViewerOpen, setImageViewerOpen] = useState(false)
   const [selectedImageIndex, setSelectedImageIndex] = useState(0)
+  const [isSaved, setIsSaved] = useState(false)
+  const [saveLoading, setSaveLoading] = useState(false)
+  const [showShareModal, setShowShareModal] = useState(false)
+  const [shareUrl, setShareUrl] = useState('')
+
+  // Check if post is saved
+  useEffect(() => {
+    const checkSavedStatus = async () => {
+      if (user) {
+        try {
+          const userProfile = await getUserProfile(user.uid)
+          setIsSaved(userProfile?.savedPosts?.includes(post.id) || false)
+        } catch (error) {
+          console.error('Error checking saved status:', error)
+        }
+      }
+    }
+    checkSavedStatus()
+  }, [user, post.id])
 
   const handleVote = (voteType: 'up' | 'down') => {
     if (!user || post.isDeleted) {
@@ -116,6 +137,40 @@ const PostCard: React.FC<PostCardProps> = ({ post, onVote, userVote }) => {
         console.error('Error deleting post:', error)
         alert(t('deletePostFailed'))
       }
+    }
+  }
+
+  const handleShare = () => {
+    // Generate referral ID (simple random string)
+    const referralId = Math.random().toString(36).substring(2, 15)
+    const postPath = post.community
+      ? `/r/${post.community.name}/post/${post.id}`
+      : `/post/${post.id}`
+    const url = `${window.location.origin}${postPath}?share=${referralId}`
+    setShareUrl(url)
+    setShowShareModal(true)
+  }
+
+  const handleSavePost = async () => {
+    if (!user) {
+      alert(t('loginRequired') || 'Please login to save posts')
+      return
+    }
+
+    setSaveLoading(true)
+    try {
+      if (isSaved) {
+        await unsavePost(user.uid, post.id)
+        setIsSaved(false)
+      } else {
+        await savePost(user.uid, post.id)
+        setIsSaved(true)
+      }
+    } catch (error) {
+      console.error('Error saving post:', error)
+      alert(t('saveFailed') || 'Failed to save post')
+    } finally {
+      setSaveLoading(false)
     }
   }
 
@@ -365,12 +420,12 @@ const PostCard: React.FC<PostCardProps> = ({ post, onVote, userVote }) => {
                 } else {
                   return 'Không xác định';
                 }
-                
+
                 // Check if date is valid
                 if (isNaN(date.getTime())) {
                   return t('unknownDate');
                 }
-                
+
                 return formatDistanceToNow(date, { addSuffix: true, locale: language === 'vi' ? vi : enUS });
               } catch (error) {
                 return t('unknownDate');
@@ -380,7 +435,9 @@ const PostCard: React.FC<PostCardProps> = ({ post, onVote, userVote }) => {
         </div>
 
         <h3 className="post-title">
-          <Link to={`/post/${post.id}`}>{post.isDeleted ? '[deleted]' : post.title}</Link>
+          <Link to={post.community ? `/r/${post.community.name}/post/${post.id}` : `/post/${post.id}`}>
+            {post.isDeleted ? '[deleted]' : post.title}
+          </Link>
         </h3>
 
         {post.body && (
@@ -449,12 +506,17 @@ const PostCard: React.FC<PostCardProps> = ({ post, onVote, userVote }) => {
             <MessageCircle />
             <span>{post.commentCount} {t('comments').toLowerCase()}</span>
           </Link>
-          <button className="post-action">
+          <button className="post-action" onClick={handleShare}>
             <Share2 />
             <span>{t('share')}</span>
           </button>
-          <button className="post-action">
-            <Bookmark />
+          <button
+            className={`post-action ${isSaved ? 'saved' : ''}`}
+            onClick={handleSavePost}
+            disabled={saveLoading}
+            title={isSaved ? 'Unsave post' : 'Save post'}
+          >
+            <Bookmark fill={isSaved ? '#FFD700' : 'none'} stroke={isSaved ? '#FFD700' : 'currentColor'} />
             <span>{t('savePost')}</span>
           </button>
           {user && user.uid === post.author.uid && (
@@ -480,6 +542,14 @@ const PostCard: React.FC<PostCardProps> = ({ post, onVote, userVote }) => {
           postId={post.id}
           authorId={post.author.uid}
           subreddit={post.community?.name}
+        />
+      )}
+
+      {/* Share Modal */}
+      {showShareModal && (
+        <ShareModal
+          url={shareUrl}
+          onClose={() => setShowShareModal(false)}
         />
       )}
     </div>

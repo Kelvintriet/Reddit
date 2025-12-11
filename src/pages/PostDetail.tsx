@@ -4,8 +4,10 @@ import { useAuthStore, usePostsStore, useSubredditsStore } from '../store'
 import { getCommentTree, createComment, voteComment, deleteComment, updateComment } from '../collections/comments'
 import { getFileDownloadUrl } from '../services/appwrite/storage'
 import { processKarmaAction } from '../services/karmaService'
+import { savePost, unsavePost, getUserProfile } from '../collections/users'
 import ImageViewer from '../components/post/ImageViewer'
 import PostContent from '../components/post/PostContent'
+import ShareModal from '../components/ShareModal'
 import type { Comment } from '../collections/comments'
 import { useLanguageStore } from '../store/useLanguageStore'
 import { translations } from '../constants/translations'
@@ -18,9 +20,12 @@ interface CommentProps {
   maxDepth?: number;
   postId: string;
   onReplyAdded: () => void;
+  highlightedCommentId?: string | null;
+  postSubreddit?: string;
+  postAuthorId?: string;
 }
 
-const CommentComponent: React.FC<CommentProps> = ({ comment, depth = 0, maxDepth = 10, postId, onReplyAdded }) => {
+const CommentComponent: React.FC<CommentProps> = ({ comment, depth = 0, maxDepth = 10, postId, onReplyAdded, highlightedCommentId, postSubreddit, postAuthorId }) => {
   const [showReplies, setShowReplies] = useState(true);
   const [userVote, setUserVote] = useState<'up' | 'down' | null>(null);
   const [votes, setVotes] = useState(comment.upvotes - comment.downvotes);
@@ -29,6 +34,11 @@ const CommentComponent: React.FC<CommentProps> = ({ comment, depth = 0, maxDepth
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(comment.content);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(comment.isDeleted || false); // Collapse deleted comments by default
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [shareUrl, setShareUrl] = useState('');
+
+  const isHighlighted = highlightedCommentId === comment.id;
 
   const { user } = useAuthStore();
   const { language } = useLanguageStore();
@@ -180,11 +190,39 @@ const CommentComponent: React.FC<CommentProps> = ({ comment, depth = 0, maxDepth
     }
   };
 
-  const canReply = depth < maxDepth && user;
+  const handleShare = () => {
+    // Generate referral ID
+    const referralId = Math.random().toString(36).substring(2, 15);
+    const postPath = postSubreddit
+      ? `/r/${postSubreddit}/post/${postId}`
+      : `/post/${postId}`;
+    const url = `${window.location.origin}${postPath}?comment=${comment.id}&share=${referralId}`;
+    setShareUrl(url);
+    setShowShareModal(true);
+  };
+
+  const canReply = depth < maxDepth && user && !comment.isDeleted; // Prevent replies to deleted comments
   const isAuthor = user && comment.authorId === user.uid;
 
+  // If deleted and collapsed, show minimal view
+  if (comment.isDeleted && isCollapsed) {
+    return (
+      <div className="comment deleted-comment-collapsed" style={{ marginLeft: `${depth * 20}px` }}>
+        <button
+          className="show-deleted-comment-button"
+          onClick={() => setIsCollapsed(false)}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
+          </svg>
+          Show deleted comment thread
+        </button>
+      </div>
+    );
+  }
+
   return (
-    <div className="comment" style={{ marginLeft: `${depth * 20}px` }}>
+    <div className={`comment ${comment.isDeleted ? 'deleted-comment' : ''} ${isHighlighted ? 'highlighted-comment' : ''}`} style={{ marginLeft: `${depth * 20}px` }}>
       <div className="comment-container">
         {/* Vote sidebar */}
         <div className="comment-vote-sidebar">
@@ -242,6 +280,16 @@ const CommentComponent: React.FC<CommentProps> = ({ comment, depth = 0, maxDepth
               </>
             )}
           </div>
+
+          {comment.isDeleted && (
+            <button
+              className="collapse-deleted-button"
+              onClick={() => setIsCollapsed(true)}
+              title="Collapse deleted comment"
+            >
+              Collapse
+            </button>
+          )}
 
           <div className="comment-body">
             {comment.isDeleted ? (
@@ -312,7 +360,7 @@ const CommentComponent: React.FC<CommentProps> = ({ comment, depth = 0, maxDepth
               </span>
             )}
 
-            <button className="comment-action-button">
+            <button className="comment-action-button" onClick={handleShare}>
               {t('share')}
             </button>
             <button className="comment-action-button">
@@ -386,6 +434,9 @@ const CommentComponent: React.FC<CommentProps> = ({ comment, depth = 0, maxDepth
                       maxDepth={maxDepth}
                       postId={postId}
                       onReplyAdded={onReplyAdded}
+                      highlightedCommentId={highlightedCommentId}
+                      postSubreddit={postSubreddit}
+                      postAuthorId={postAuthorId}
                     />
                   ))}
                 </div>
@@ -398,12 +449,20 @@ const CommentComponent: React.FC<CommentProps> = ({ comment, depth = 0, maxDepth
           )}
         </div>
       )}
+
+      {/* Share Modal */}
+      {showShareModal && (
+        <ShareModal
+          url={shareUrl}
+          onClose={() => setShowShareModal(false)}
+        />
+      )}
     </div>
   );
 };
 
 const PostDetail = () => {
-  const { postId } = useParams<{ postId: string }>()
+  const { postId, subreddit, userId } = useParams<{ postId: string; subreddit?: string; userId?: string }>()
   const navigate = useNavigate()
   const location = useLocation()
   const { user } = useAuthStore()
@@ -422,6 +481,33 @@ const PostDetail = () => {
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'top'>('top')
   const [showImageViewer, setShowImageViewer] = useState(false)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
+  const [showShareModal, setShowShareModal] = useState(false)
+  const [shareUrl, setShareUrl] = useState('')
+  const [isSaved, setIsSaved] = useState(false)
+  const [saveLoading, setSaveLoading] = useState(false)
+  const [highlightedCommentId, setHighlightedCommentId] = useState<string | null>(null)
+
+  // Get highlighted comment from URL on mount
+  useEffect(() => {
+    const urlParams = new URLSearchParams(location.search);
+    const commentId = urlParams.get('comment');
+    if (commentId) {
+      setHighlightedCommentId(commentId);
+    }
+  }, [location.search]);
+
+  // Auto-scroll to highlighted comment
+  useEffect(() => {
+    if (highlightedCommentId && !isLoadingComments && comments.length > 0) {
+      // Wait a bit for rendering to complete
+      setTimeout(() => {
+        const element = document.querySelector(`.highlighted-comment`);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 500);
+    }
+  }, [highlightedCommentId, isLoadingComments, comments]);
 
   // Handle image click to open viewer
   const handleImageClick = (index: number) => {
@@ -455,7 +541,50 @@ const PostDetail = () => {
 
     setIsLoadingComments(true);
     try {
-      const commentTree = await getCommentTree(postId, sortBy);
+      let commentTree = await getCommentTree(postId, sortBy);
+
+      // Get highlighted comment ID from URL
+      const urlParams = new URLSearchParams(location.search);
+      const highlightedCommentId = urlParams.get('comment');
+
+      // Function to move highlighted comment to top of its level
+      const prioritizeComment = (comments: (Comment & { replies?: Comment[] })[], targetId: string): (Comment & { replies?: Comment[] })[] => {
+        const targetIndex = comments.findIndex(c => c.id === targetId);
+        if (targetIndex > 0) {
+          const [targetComment] = comments.splice(targetIndex, 1);
+          comments.unshift(targetComment);
+        }
+
+        // Recursively check replies
+        comments.forEach(comment => {
+          if (comment.replies && comment.replies.length > 0) {
+            comment.replies = prioritizeComment(comment.replies, targetId);
+          }
+        });
+
+        return comments;
+      };
+
+      // If there's a highlighted comment, move it to top of its level
+      if (highlightedCommentId) {
+        commentTree = prioritizeComment(commentTree, highlightedCommentId);
+      }
+
+      // Move deleted comments to bottom when sorting by 'top' (but after prioritizing highlighted)
+      if (sortBy === 'top' && commentTree.length > 0) {
+        commentTree = commentTree.sort((a, b) => {
+          // Keep highlighted comment at top
+          if (highlightedCommentId) {
+            if (a.id === highlightedCommentId) return -1;
+            if (b.id === highlightedCommentId) return 1;
+          }
+          // Deleted comments go to bottom
+          if (a.isDeleted && !b.isDeleted) return 1;
+          if (!a.isDeleted && b.isDeleted) return -1;
+          return 0; // Keep original order for non-deleted or both deleted
+        });
+      }
+
       setComments(commentTree);
     } catch (error) {
       // Removed console.error
@@ -506,6 +635,55 @@ const PostDetail = () => {
     }
   };
 
+  const handleShare = () => {
+    if (!postId || !post) return;
+    const referralId = Math.random().toString(36).substring(2, 15);
+    const postPath = post.subreddit
+      ? `/r/${post.subreddit}/post/${postId}`
+      : `/post/${postId}`;
+    const url = `${window.location.origin}${postPath}?share=${referralId}`;
+    setShareUrl(url);
+    setShowShareModal(true);
+  };
+
+  const handleSavePost = async () => {
+    if (!user || !postId) {
+      alert(t('loginRequired') || 'Please login to save posts');
+      return;
+    }
+
+    setSaveLoading(true);
+    try {
+      if (isSaved) {
+        await unsavePost(user.uid, postId);
+        setIsSaved(false);
+      } else {
+        await savePost(user.uid, postId);
+        setIsSaved(true);
+      }
+    } catch (error) {
+      console.error('Error saving post:', error);
+      alert('Failed to save post');
+    } finally {
+      setSaveLoading(false);
+    }
+  };
+
+  // Check if post is saved
+  useEffect(() => {
+    const checkSavedStatus = async () => {
+      if (user && postId) {
+        try {
+          const userProfile = await getUserProfile(user.uid);
+          setIsSaved(userProfile?.savedPosts?.includes(postId) || false);
+        } catch (error) {
+          console.error('Error checking saved status:', error);
+        }
+      }
+    };
+    checkSavedStatus();
+  }, [user, postId]);
+
   useEffect(() => {
     loadComments();
   }, [postId, sortBy]);
@@ -522,6 +700,20 @@ const PostDetail = () => {
 
         // Tìm bài viết trong store hoặc fetch từ API
         if (post && post.id === postId) {
+          // Validate subreddit/user if present in URL
+          if (subreddit && post.subreddit && post.subreddit !== subreddit) {
+             navigate(`/r/${post.subreddit}/post/${postId}`, { replace: true });
+             return;
+          }
+          if (subreddit && !post.subreddit) {
+             navigate(`/u/${post.authorId}/post/${postId}`, { replace: true });
+             return;
+          }
+          if (userId && post.authorId !== userId) {
+             navigate(`/u/${post.authorId}/post/${postId}`, { replace: true });
+             return;
+          }
+
           setVotes((post.upvotes || 0) - (post.downvotes || 0));
           setViewCount(post.viewCount || 0);
 
@@ -535,6 +727,20 @@ const PostDetail = () => {
             const fetchedPost = await fetchPostById(postId, user?.uid);
 
             if (fetchedPost) {
+              // Validate subreddit/user if present in URL
+              if (subreddit && fetchedPost.subreddit && fetchedPost.subreddit !== subreddit) {
+                 navigate(`/r/${fetchedPost.subreddit}/post/${postId}`, { replace: true });
+                 return;
+              }
+              if (subreddit && !fetchedPost.subreddit) {
+                 navigate(`/u/${fetchedPost.authorId}/post/${postId}`, { replace: true });
+                 return;
+              }
+              if (userId && fetchedPost.authorId !== userId) {
+                 navigate(`/u/${fetchedPost.authorId}/post/${postId}`, { replace: true });
+                 return;
+              }
+
               // Check if post is soft deleted and user is not the author
               if (fetchedPost.isDeleted && (!user || user.uid !== fetchedPost.authorId)) {
                 // Post is deleted and user is not the author - show taken down message
@@ -811,18 +1017,29 @@ const PostDetail = () => {
                 <span className="action-text">{comments.length} {t('comments')}</span>
               </div>
 
-              <button className="post-action-button">
+              <button className="post-action-button" onClick={handleShare}>
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="action-icon">
                   <path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92c0-1.61-1.31-2.92-2.92-2.92zM18 4c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zM6 13c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm12 7.02c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1z" />
                 </svg>
                 <span className="action-text">{t('share')}</span>
               </button>
 
-              <button className="post-action-button">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="action-icon">
+              <button
+                className="post-action-button"
+                onClick={handleSavePost}
+                disabled={saveLoading}
+                title={isSaved ? 'Unsave post' : 'Save post'}
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill={isSaved ? '#FFD700' : 'currentColor'}
+                  stroke={isSaved ? '#FFD700' : 'none'}
+                  className="action-icon"
+                >
                   <path d="M17 3H7c-1.1 0-2 .9-2 2v16l7-3 7 3V5c0-1.1-.9-2-2-2zm0 15l-5-2.18L7 18V5h10v13z" />
                 </svg>
-                <span className="action-text">{t('save')}</span>
+                <span className="action-text" style={{ color: isSaved ? '#FFD700' : 'inherit' }}>{t('save')}</span>
               </button>
             </div>
           </div>
@@ -893,6 +1110,9 @@ const PostDetail = () => {
                 maxDepth={10}
                 postId={postId!}
                 onReplyAdded={loadComments}
+                highlightedCommentId={highlightedCommentId}
+                postSubreddit={post?.subreddit}
+                postAuthorId={post?.authorId}
               />
             ))}
           </div>
@@ -912,6 +1132,14 @@ const PostDetail = () => {
           postId={postId!}
           authorId={post.authorId}
           subreddit={post.subreddit}
+        />
+      )}
+
+      {/* Share Modal */}
+      {showShareModal && (
+        <ShareModal
+          url={shareUrl}
+          onClose={() => setShowShareModal(false)}
         />
       )}
     </div>

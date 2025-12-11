@@ -26,6 +26,7 @@ const Changelog = lazy(() => import('./pages/Changelog'))
 const ChangelogCreate = lazy(() => import('./pages/ChangelogCreate'))
 const Feedback = lazy(() => import('./pages/Feedback'))
 const FeedbackPostDetail = lazy(() => import('./pages/FeedbackPostDetail'))
+const Notifications = lazy(() => import('./pages/Notifications'))
 const CreateSubredditForm = lazy(() => import('./components/subreddit/CreateSubredditForm'))
 const OnboardingModal = lazy(() => import('./components/onboarding/OnboardingModal'))
 
@@ -87,6 +88,7 @@ function App() {
               <Route path="search" element={<Search />} />
               <Route path="rdeletepost" element={<RecentlyDeleted />} />
               <Route path="inbox" element={<Inbox />} />
+              <Route path="notifications" element={<Notifications />} />
               <Route path="changelog" element={<Changelog />} />
               <Route path="changelog/create" element={<ChangelogCreate />} />
               <Route path="r/feedback" element={<Feedback />} />

@@ -389,7 +389,7 @@
 .empty-posts {
   text-align: center;
   padding: 60px 20px;
-  background-color: white;
+  background-color: var(--color-card-background);
   border-radius: 12px;
   box-shadow: var(--shadow-small);
 }
@@ -433,7 +433,7 @@
 }
 
 .sidebar-card {
-  background-color: white;
+  background-color: var(--color-card-background);
   border-radius: 12px;
   padding: 20px;
   box-shadow: var(--shadow-small);
@@ -549,7 +549,7 @@
 .error-message {
   text-align: center;
   padding: 40px 20px;
-  background-color: white;
+  background-color: var(--color-card-background);
   border-radius: 12px;
   box-shadow: var(--shadow-small);
 }

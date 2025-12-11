@@ -145,12 +145,44 @@ const Profile = () => {
 
   useEffect(() => {
     if (profileUser?.id) {
-      // Lấy bài viết của người dùng using the actual user ID from profile
+      // Fetch user's own posts
       fetchUserPosts(profileUser.id);
     }
   }, [profileUser?.id]);
 
   const isOwnProfile = user && profileUser && user.uid === profileUser.id;
+
+  // Fetch saved posts when on saved tab
+  const [savedPosts, setSavedPosts] = useState<any[]>([]);
+  const [loadingSavedPosts, setLoadingSavedPosts] = useState(false);
+
+  useEffect(() => {
+    const fetchSavedPosts = async () => {
+      if (activeTab === 'saved' && isOwnProfile && profileUser?.savedPosts?.length > 0) {
+        setLoadingSavedPosts(true);
+        try {
+          const { fetchPostById } = usePostsStore.getState();
+          const fetchedPosts = await Promise.all(
+            profileUser.savedPosts.map(async (postId: string) => {
+              try {
+                return await fetchPostById(postId, user?.uid);
+              } catch (error) {
+                console.error(`Error fetching saved post ${postId}:`, error);
+                return null;
+              }
+            })
+          );
+          setSavedPosts(fetchedPosts.filter(p => p !== null));
+        } catch (error) {
+          console.error('Error fetching saved posts:', error);
+        } finally {
+          setLoadingSavedPosts(false);
+        }
+      }
+    };
+
+    fetchSavedPosts();
+  }, [activeTab, isOwnProfile, profileUser?.savedPosts, user?.uid]);
 
   // Check privacy settings
   const isProfileHidden = profileUser?.hideProfile && !isOwnProfile;
@@ -260,21 +292,21 @@ const Profile = () => {
                   </>
                 )}
               </p>
-              
+
               {!isOwnProfile && (
                 <div className="profile-actions" style={{ marginTop: '16px' }}>
-                  <button 
+                  <button
                     className="btn btn-primary"
                     onClick={() => {
-                      navigate('/inbox', { 
-                        state: { 
+                      navigate('/inbox', {
+                        state: {
                           startChatWith: {
                             id: profileUser.id,
                             username: profileUser.username,
                             displayName: profileUser.displayName,
                             avatarUrl: profileUser.avatarUrl || profileUser.photoURL
-                          } 
-                        } 
+                          }
+                        }
                       });
                     }}
                     style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
@@ -421,12 +453,52 @@ const Profile = () => {
         )}
 
         {activeTab === 'saved' && isOwnProfile && (
-          <div className="empty-state">
-            <h3>{t('noSaved')}</h3>
-            <p>
-              {t('noSavedMe')}
-            </p>
-          </div>
+          <>
+            {loadingSavedPosts ? (
+              <div className="posts-list">
+                {Array.from({ length: 3 }).map((_, index) => (
+                  <PostSkeleton key={index} />
+                ))}
+              </div>
+            ) : savedPosts.length === 0 ? (
+              <div className="empty-state">
+                <h3>{t('noSaved')}</h3>
+                <p>{t('noSavedMe')}</p>
+              </div>
+            ) : (
+              <div className="posts-list">
+                {savedPosts.map((post) => (
+                  <PostCard
+                    key={post.id}
+                    post={{
+                      id: post.id,
+                      title: post.title,
+                      body: post.content,
+                      contentType: post.contentType || 'html',
+                      author: {
+                        uid: post.authorId,
+                        displayName: post.authorUsername,
+                        photoURL: undefined
+                      },
+                      community: post.subreddit ? {
+                        name: post.subreddit,
+                        displayName: post.subreddit
+                      } : undefined,
+                      imageUrls: post.imageUrls,
+                      attachments: post.attachments,
+                      createdAt: post.createdAt,
+                      upvotes: post.upvotes || 0,
+                      downvotes: post.downvotes || 0,
+                      commentCount: post.commentCount || 0,
+                      type: post.imageUrls && post.imageUrls.length > 0 ? 'image' : 'text'
+                    }}
+                    onVote={handleVote}
+                    userVote={getUserVote(post.id)}
+                  />
+                ))}
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

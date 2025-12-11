@@ -1,0 +1,142 @@
+.share-modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+.share-modal {
+    background-color: var(--color-card-background);
+    border-radius: 12px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    width: 90%;
+    max-width: 500px;
+    animation: slideUp 0.3s ease;
+    overflow: hidden;
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.share-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--color-neutral-border-weak);
+}
+
+.share-modal-header h3 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--color-neutral-content);
+}
+
+.share-modal-close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+    color: var(--color-neutral-content-weak);
+    transition: all 0.2s;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.share-modal-close:hover {
+    background-color: var(--color-neutral-background-weak);
+    color: var(--color-neutral-content);
+}
+
+.share-modal-content {
+    padding: 24px;
+}
+
+.share-url-container {
+    margin-bottom: 16px;
+}
+
+.share-url-input {
+    width: 100%;
+    padding: 12px 16px;
+    border: 2px solid var(--color-neutral-border);
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: 'Courier New', monospace;
+    background-color: var(--color-neutral-background-weak);
+    color: var(--color-neutral-content);
+    transition: all 0.2s;
+}
+
+.share-url-input:focus {
+    outline: none;
+    border-color: var(--color-reddit-blue);
+    background-color: var(--color-card-background);
+}
+
+.share-copy-button {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 24px;
+    background: linear-gradient(135deg, var(--color-reddit-blue), #46a3ff);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.share-copy-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 121, 211, 0.4);
+}
+
+.share-copy-button.copied {
+    background: linear-gradient(135deg, #10b981, #059669);
+}
+
+.share-copy-button svg {
+    flex-shrink: 0;
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+    .share-modal-backdrop {
+        background-color: rgba(0, 0, 0, 0.8);
+    }
+}

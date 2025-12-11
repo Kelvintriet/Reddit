@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store';
 import { useLanguageStore } from '../store/useLanguageStore';
-import { createChangelog, type ChangelogChange } from '../collections/changelogs';
+import { createChangelog, getChangelogs, type ChangelogChange } from '../collections/changelogs';
 import {
     isAuthorizedChangelogUser,
     verifyChangelogPassword,
@@ -23,6 +23,7 @@ const ChangelogCreate: React.FC = () => {
 
     // Form state
     const [version, setVersion] = useState('');
+    const [previousVersion, setPreviousVersion] = useState<string>('');
     const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
     const [changes, setChanges] = useState<ChangelogChange[]>([
         { type: 'feature', description: '' }
@@ -90,6 +91,26 @@ const ChangelogCreate: React.FC = () => {
 
         checkAuthAndSession();
     }, [user, isInitialized, navigate, t]);
+
+    // Fetch latest changelog to get previous version
+    useEffect(() => {
+        const fetchLatestVersion = async () => {
+            try {
+                const changelogs = await getChangelogs();
+                if (changelogs && changelogs.length > 0) {
+                    // Changelogs are sorted by date descending, so first one is latest
+                    setPreviousVersion(changelogs[0].version);
+                }
+            } catch (error) {
+                console.error('Error fetching latest changelog:', error);
+                // Don't show error to user, just skip setting previous version
+            }
+        };
+
+        if (isPasswordVerified) {
+            fetchLatestVersion();
+        }
+    }, [isPasswordVerified]);
 
     const handlePasswordSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -249,7 +270,7 @@ const ChangelogCreate: React.FC = () => {
                                 id="version"
                                 value={version}
                                 onChange={(e) => setVersion(e.target.value)}
-                                placeholder="e.g., 1.2.0"
+                                placeholder={previousVersion ? `Previous: ${previousVersion}` : "e.g., 1.2.0"}
                                 required
                             />
                         </div>

@@ -21,8 +21,14 @@ export class FileCleanupWebSocket {
    * Connect to WebSocket server
    */
   connect(): Promise<void> {
+    // Prevent duplicate connections
+    if (this.ws && (this.ws.readyState === WebSocket.CONNECTING || this.ws.readyState === WebSocket.OPEN)) {
+      console.log('⚠️ WebSocket already connected or connecting, skipping...');
+      return Promise.resolve();
+    }
+
     return new Promise((resolve, reject) => {
-      const backendUrl = (import.meta.env.VITE_BACKEND_URL || 'https://server.reddit.koolname.asia').replace('localhost', '127.0.0.1');
+      const backendUrl = import.meta.env.VITE_BACKEND_URL || 'https://server.reddit.koolname.asia';
       const wsUrl = backendUrl.replace('http://', 'ws://').replace('https://', 'wss://') + '/ws/file-cleanup';
 
       console.log('🔗 Connecting to WebSocket:', wsUrl);
@@ -31,7 +37,7 @@ export class FileCleanupWebSocket {
         this.ws = new WebSocket(wsUrl);
 
         this.ws.onopen = () => {
-          console.log('🔌 File cleanup WebSocket connected to:', wsUrl);
+          console.log('🔌 File cleanup WebSocket connected');
           this.reconnectAttempts = 0;
 
           // Register session with current fileIds

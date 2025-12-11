@@ -48,6 +48,7 @@ export interface Conversation {
         [userId: string]: {
             username: string;
             displayName: string;
+            atName?: string;
             avatarUrl?: string | null;
         }
     };
@@ -67,16 +68,18 @@ export const sendMessage = async (
     fromUserId: string,
     fromUsername: string,
     fromDisplayName: string,
+    fromAtName: string | undefined,
     fromAvatarUrl: string | undefined,
     toUserId: string,
     toUsername: string,
     toDisplayName: string,
+    toAtName: string | undefined,
     toAvatarUrl: string | undefined,
     body: string
 ): Promise<string> => {
     try {
         const conversationId = getConversationId(fromUserId, toUserId);
-        
+
         // 1. Add message
         const messageData = {
             fromUserId,
@@ -102,11 +105,13 @@ export const sendMessage = async (
             [fromUserId]: {
                 username: fromUsername,
                 displayName: fromDisplayName,
+                atName: fromAtName,
                 avatarUrl: fromAvatarUrl || null
             },
             [toUserId]: {
                 username: toUsername,
                 displayName: toDisplayName,
+                atName: toAtName,
                 avatarUrl: toAvatarUrl || null
             }
         };
@@ -133,19 +138,19 @@ export const sendMessage = async (
             // Update existing conversation
             // We need to preserve existing participant details if we don't have them
             const existingData = conversationSnap.data() as Conversation;
-            
+
             // Merge participant details carefully
             const updatedParticipantDetails = { ...existingData.participantDetails };
-            
+
             // Update sender
             updatedParticipantDetails[fromUserId] = participantDetails[fromUserId];
-            
+
             // Update receiver ONLY if we have new info (e.g. avatar is not null) OR if it's missing
             if (participantDetails[toUserId].avatarUrl || !updatedParticipantDetails[toUserId]) {
-                 updatedParticipantDetails[toUserId] = {
-                     ...updatedParticipantDetails[toUserId],
-                     ...participantDetails[toUserId]
-                 };
+                updatedParticipantDetails[toUserId] = {
+                    ...updatedParticipantDetails[toUserId],
+                    ...participantDetails[toUserId]
+                };
             }
 
             await updateDoc(conversationRef, {
@@ -176,11 +181,11 @@ export const acceptConversation = async (conversationId: string, userId: string)
     try {
         const conversationRef = doc(db, CONVERSATIONS_COLLECTION, conversationId);
         const conversationSnap = await getDoc(conversationRef);
-        
+
         if (conversationSnap.exists()) {
             const data = conversationSnap.data() as Conversation;
             const acceptedParticipants = data.acceptedParticipants || [];
-            
+
             if (!acceptedParticipants.includes(userId)) {
                 await updateDoc(conversationRef, {
                     acceptedParticipants: [...acceptedParticipants, userId]
@@ -290,7 +295,7 @@ export const markAsRead = async (messageId: string): Promise<void> => {
     try {
         const messageRef = doc(db, MESSAGES_COLLECTION, messageId);
         const messageSnap = await getDoc(messageRef);
-        
+
         if (messageSnap.exists() && !messageSnap.data().isRead) {
             const data = messageSnap.data();
             await updateDoc(messageRef, { isRead: true });
@@ -322,7 +327,7 @@ export const deleteConversation = async (conversationId: string): Promise<void> 
     try {
         // Delete the conversation document
         await deleteDoc(doc(db, CONVERSATIONS_COLLECTION, conversationId));
-        
+
         // Note: We should also delete messages, but for now we'll leave them orphaned 
         // or handle via a cloud function trigger.
     } catch (error) {
@@ -339,7 +344,7 @@ export const getUnreadCount = async (userId: string): Promise<number> => {
             collection(db, CONVERSATIONS_COLLECTION),
             where('participants', 'array-contains', userId)
         );
-        
+
         const snapshot = await getDocs(q);
         let total = 0;
         snapshot.forEach(doc => {

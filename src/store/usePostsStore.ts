@@ -131,19 +131,18 @@ export const usePostsStore = create<PostsState>()(
           const cacheKey = subreddit || 'home'
 
           // Only update if we have results OR if current posts are empty (initial load)
-          if (filteredPosts.length > 0 || currentPosts.length === 0) {
-            set({
-              posts: filteredPosts.length > 0 ? filteredPosts : currentPosts,
-              cache: {
-                ...get().cache,
-                [cacheKey]: {
-                  data: filteredPosts.length > 0 ? filteredPosts : currentPosts,
-                  timestamp: Date.now(),
-                  subreddit
-                }
+          // Always update to reflect the current state of the database, even if empty
+          set({
+            posts: filteredPosts,
+            cache: {
+              ...get().cache,
+              [cacheKey]: {
+                data: filteredPosts,
+                timestamp: Date.now(),
+                subreddit
               }
-            })
-          }
+            }
+          })
         }, (error) => {
           console.error('Realtime listener error:', error)
           // Don't clear posts on error - keep existing posts
@@ -260,8 +259,10 @@ export const usePostsStore = create<PostsState>()(
               }
             })
           } else {
-            // If no posts, keep existing posts but don't cache empty array
+            // If no posts, clear posts and don't cache empty array (or maybe we should cache it?)
+            // For now, just clear the posts to show empty state
             set({
+              posts: [],
               isLoading: false,
               error: null
             })
@@ -384,8 +385,9 @@ export const usePostsStore = create<PostsState>()(
               }
             })
           } else {
-            // If no posts, keep existing posts but don't cache empty array
+            // If no posts, clear posts
             set({
+              posts: [],
               isLoading: false,
               error: null
             })
@@ -565,8 +567,9 @@ export const usePostsStore = create<PostsState>()(
               }
             })
           } else {
-            // If no posts, keep existing posts but don't cache empty array
+            // If no posts, clear posts
             set({
+              posts: [],
               isLoading: false,
               error: null
             })

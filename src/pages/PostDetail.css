@@ -1158,6 +1158,106 @@
   text-decoration: underline;
 }
 
+/* Deleted Comment Styles */
+.deleted-comment {
+  opacity: 0.7;
+  background-color: var(--bg-tertiary);
+  border-left: 3px solid var(--text-muted);
+}
+
+.deleted-comment-collapsed {
+  padding: var(--space-md);
+  background-color: var(--bg-secondary);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-sm);
+}
+
+.show-deleted-comment-button {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  background: none;
+  border: 1px dashed var(--border-medium);
+  color: var(--text-muted);
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  width: 100%;
+  justify-content: center;
+}
+
+.show-deleted-comment-button:hover {
+  background-color: var(--bg-hover);
+  color: var(--text-secondary);
+  border-style: solid;
+}
+
+.show-deleted-comment-button svg {
+  width: 16px;
+  height: 16px;
+}
+
+.collapse-deleted-button {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-light);
+  color: var(--text-muted);
+  padding: var(--space-xs) var(--space-md);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-bottom: var(--space-md);
+}
+
+.collapse-deleted-button:hover {
+  background-color: var(--bg-hover);
+  color: var(--text-secondary);
+}
+
+/* Highlighted Comment (from share URL) */
+.highlighted-comment {
+  background: linear-gradient(90deg,
+      rgba(255, 215, 0, 0.15) 0%,
+      rgba(255, 215, 0, 0.08) 100%);
+  border-left: 4px solid #FFD700;
+  animation: highlightPulse 2s ease-in-out;
+  scroll-margin-top: 100px;
+  /* Space from top when scrolled to */
+}
+
+@keyframes highlightPulse {
+
+  0%,
+  100% {
+    background: linear-gradient(90deg,
+        rgba(255, 215, 0, 0.15) 0%,
+        rgba(255, 215, 0, 0.08) 100%);
+  }
+
+  50% {
+    background: linear-gradient(90deg,
+        rgba(255, 215, 0, 0.25) 0%,
+        rgba(255, 215, 0, 0.15) 100%);
+  }
+}
+
+.highlighted-comment .comment-container {
+  position: relative;
+}
+
+.highlighted-comment::before {
+  content: '📌';
+  position: absolute;
+  right: 10px;
+  top: 10px;
+  font-size: 20px;
+  opacity: 0.6;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .post-detail-container {
@@ -1305,6 +1405,7 @@
   outline: 2px solid var(--accent-secondary);
   outline-offset: 2px;
 }
+
 /* Fix for sorting dropdown visibility */
 .sort-select option {
   background-color: var(--bg-primary);

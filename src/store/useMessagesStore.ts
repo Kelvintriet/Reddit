@@ -30,6 +30,7 @@ interface Conversation {
         [userId: string]: {
             username: string;
             displayName: string;
+            atName?: string;
             avatarUrl?: string | null;
         }
     };
@@ -51,10 +52,12 @@ interface MessagesState {
         fromUserId: string,
         fromUsername: string,
         fromDisplayName: string,
+        fromAtName: string | undefined,
         fromAvatarUrl: string | undefined,
         toUserId: string,
         toUsername: string,
         toDisplayName: string,
+        toAtName: string | undefined,
         toAvatarUrl: string | undefined,
         body: string
     ) => Promise<string>;
@@ -108,10 +111,12 @@ export const useMessagesStore = create<MessagesState>((set, get) => ({
         fromUserId,
         fromUsername,
         fromDisplayName,
+        fromAtName,
         fromAvatarUrl,
         toUserId,
         toUsername,
         toDisplayName,
+        toAtName,
         toAvatarUrl,
         body
     ) => {
@@ -119,10 +124,12 @@ export const useMessagesStore = create<MessagesState>((set, get) => ({
             fromUserId,
             fromUsername,
             fromDisplayName,
+            fromAtName,
             fromAvatarUrl,
             toUserId,
             toUsername,
             toDisplayName,
+            toAtName,
             toAvatarUrl,
             body
         );
@@ -158,7 +165,7 @@ export const useMessagesStore = create<MessagesState>((set, get) => ({
         // Since we can't change imports easily in this block, let's assume it's imported or use the one from collections
         const { deleteConversation } = await import('../collections/messages');
         await deleteConversation(conversationId);
-        
+
         set({
             conversations: get().conversations.filter(c => c.id !== conversationId),
             selectedConversationId: get().selectedConversationId === conversationId ? null : get().selectedConversationId,

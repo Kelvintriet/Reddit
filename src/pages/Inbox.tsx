@@ -72,7 +72,7 @@ const Inbox = () => {
         const repairConversations = async () => {
             for (const conversation of conversations) {
                 const otherUserId = conversation.participants.find((id: string) => id !== user.uid);
-                if (otherUserId && (!conversation.participantDetails?.[otherUserId] || !conversation.participantDetails?.[otherUserId]?.displayName)) {
+                if (otherUserId && (!conversation.participantDetails?.[otherUserId] || !conversation.participantDetails?.[otherUserId]?.displayName || !conversation.participantDetails?.[otherUserId]?.atName)) {
                     console.log('Repairing conversation:', conversation.id, 'missing user:', otherUserId);
                     try {
                         const userProfile = await getUserProfile(otherUserId);
@@ -83,6 +83,7 @@ const Inbox = () => {
                                 [otherUserId]: {
                                     username: userProfile.username || 'User',
                                     displayName: userProfile.displayName || 'User',
+                                    atName: userProfile.atName || userProfile.username || 'user',
                                     avatarUrl: userProfile.avatarUrl || (userProfile as any).photoURL || null
                                 }
                             };
@@ -120,7 +121,7 @@ const Inbox = () => {
 
         const conversation = conversations.find(c => c.id === selectedConversationId);
         // If conversation doesn't exist in store yet (new chat), we need to rely on newChatUser
-        
+
         let otherUserId = '';
         let otherUser = null;
 
@@ -139,15 +140,17 @@ const Inbox = () => {
                 user.uid,
                 user.username || user.displayName || 'Anonymous',
                 user.displayName || user.username || 'Anonymous',
+                user.atName || user.username,
                 user.avatarUrl || user.photoURL || undefined,
                 otherUserId,
                 otherUser?.username || 'User',
                 otherUser?.displayName || 'User',
+                otherUser?.atName || otherUser?.username,
                 otherUser?.avatarUrl || otherUser?.photoURL || undefined,
                 messageInput.trim()
             );
             setMessageInput('');
-            
+
             // If this was a new chat, we need to switch to the conversation view immediately
             // to enforce the "Waiting for acceptance" state.
             if (!conversation) {
@@ -156,7 +159,7 @@ const Inbox = () => {
                 // We know the conversation ID is deterministic.
                 const participants = [user.uid, otherUserId].sort();
                 const newConvoId = participants.join('_');
-                
+
                 // Force update state to view this conversation
                 setSelectedConversation(newConvoId);
                 setShowNewChat(false);
@@ -189,7 +192,7 @@ const Inbox = () => {
         if (!user) return;
 
         // Check if conversation already exists
-        const existingConversation = conversations.find(c => 
+        const existingConversation = conversations.find(c =>
             c.participants.includes(selectedUser.id) && c.participants.includes(user.uid)
         );
 
@@ -201,7 +204,7 @@ const Inbox = () => {
             setNewChatUser(selectedUser);
             const participants = [user.uid, selectedUser.id].sort();
             const newConvoId = participants.join('_');
-            
+
             setSelectedConversation(newConvoId);
             startMessagesSubscription(newConvoId); // This will return empty list
             setShowNewChat(false);
@@ -214,10 +217,10 @@ const Inbox = () => {
         if (!user) return null;
         const otherUserId = conversation.participants.find((id: string) => id !== user.uid);
         if (!otherUserId) return null;
-        
+
         const details = conversation.participantDetails?.[otherUserId];
         if (details) return { ...details, id: otherUserId };
-        
+
         // Fallback if details are missing but we have the ID
         return {
             id: otherUserId,
@@ -250,7 +253,7 @@ const Inbox = () => {
     }
 
     const selectedConversation = conversations.find(c => c.id === selectedConversationId);
-    
+
     // Hack: If selectedConversation is null but selectedConversationId is set, 
     // it means it's a new chat. We need the user details.
     // I'll store the "new chat user" in a state.
@@ -260,8 +263,8 @@ const Inbox = () => {
         startNewChat(u);
     };
 
-    const activeChatUser = selectedConversation 
-        ? getOtherParticipant(selectedConversation) 
+    const activeChatUser = selectedConversation
+        ? getOtherParticipant(selectedConversation)
         : newChatUser;
 
     const isAccepted = selectedConversation?.acceptedParticipants?.includes(user?.uid || '');
@@ -270,7 +273,7 @@ const Inbox = () => {
     // Actually, the requirement is: "other user MUST accept the conversation, else, user will be blocked and cant chat"
     // This usually means the RECEIVER sees an "Accept" button.
     // The SENDER sees "Waiting for acceptance".
-    
+
     const otherUserId = activeChatUser?.id || (selectedConversation?.participants.find((id: string) => id !== user?.uid));
     const isOtherAccepted = selectedConversation?.acceptedParticipants?.includes(otherUserId);
 
@@ -309,8 +312,8 @@ const Inbox = () => {
             <div className="inbox-sidebar">
                 <div className="inbox-sidebar-header">
                     <h2>Chats</h2>
-                    <button 
-                        className="inbox-compose-btn" 
+                    <button
+                        className="inbox-compose-btn"
                         onClick={() => setShowNewChat(!showNewChat)}
                         title={t('composeNewMessage')}
                     >
@@ -334,8 +337,8 @@ const Inbox = () => {
                         {userSuggestions.length > 0 && (
                             <div className="inbox-suggestions">
                                 {userSuggestions.map(u => (
-                                    <div 
-                                        key={u.id} 
+                                    <div
+                                        key={u.id}
                                         className="inbox-suggestion-item"
                                         onClick={() => handleNewChatSelect(u)}
                                     >
@@ -348,7 +351,7 @@ const Inbox = () => {
                                         </div>
                                         <div className="inbox-suggestion-info">
                                             <span className="inbox-suggestion-name">{u.displayName}</span>
-                                            <span className="inbox-suggestion-username">@{u.username}</span>
+                                            <span className="inbox-suggestion-username">@{u.atName || u.username}</span>
                                         </div>
                                     </div>
                                 ))}
@@ -362,7 +365,7 @@ const Inbox = () => {
                         const otherUser = getOtherParticipant(conversation);
                         const isUnread = conversation.unreadCount?.[user.uid] > 0;
                         const isMenuOpen = activeMenuId === conversation.id;
-                        
+
                         // Check if conversation is fully accepted
                         const isAcceptedByMe = conversation.acceptedParticipants?.includes(user.uid);
                         const otherUserId = conversation.participants.find(id => id !== user.uid);
@@ -388,7 +391,7 @@ const Inbox = () => {
                                     <div className="inbox-message-item-header">
                                         <span className="inbox-message-sender">{otherUser?.displayName || 'Unknown User'}</span>
                                         <span className="inbox-message-time">
-                                            {conversation.lastMessage?.createdAt && 
+                                            {conversation.lastMessage?.createdAt &&
                                                 formatDistanceToNow(conversation.lastMessage.createdAt, { addSuffix: false, locale: language === 'vi' ? vi : enUS })}
                                         </span>
                                     </div>
@@ -398,11 +401,11 @@ const Inbox = () => {
                                     </div>
                                 </div>
                                 {isUnread && <div className="inbox-unread-dot"></div>}
-                                
+
                                 {/* 3-dot menu - Only show if NOT fully accepted (as per request) */}
                                 {!isFullyAccepted && (
                                     <div className="inbox-item-menu">
-                                        <button 
+                                        <button
                                             className="inbox-menu-btn"
                                             onClick={(e) => {
                                                 e.stopPropagation();
@@ -413,7 +416,7 @@ const Inbox = () => {
                                         </button>
                                         {isMenuOpen && (
                                             <div className="inbox-menu-dropdown">
-                                                <button 
+                                                <button
                                                     className="inbox-menu-item delete"
                                                     onClick={(e) => handleDeleteConversation(e, conversation.id)}
                                                 >
@@ -447,7 +450,7 @@ const Inbox = () => {
                                 </div>
                                 <div className="inbox-sender-info">
                                     <div className="inbox-sender-name">{activeChatUser?.displayName}</div>
-                                    <div className="inbox-sender-email">@{activeChatUser?.username}</div>
+                                    <div className="inbox-sender-email">@{activeChatUser?.atName || activeChatUser?.username}</div>
                                 </div>
                             </div>
                             <button className="inbox-icon-btn">
@@ -485,7 +488,7 @@ const Inbox = () => {
                             {messages.map((msg, index) => {
                                 const isMe = msg.fromUserId === user.uid;
                                 const showAvatar = !isMe && (index === 0 || messages[index - 1].fromUserId !== msg.fromUserId);
-                                
+
                                 return (
                                     <div key={msg.id} className={`chat-message-row ${isMe ? 'me' : 'other'}`}>
                                         {!isMe && (
@@ -528,8 +531,8 @@ const Inbox = () => {
                                 </form>
                             ) : (
                                 <div className="chat-input-disabled">
-                                    {!isAccepted 
-                                        ? "Accept the chat to reply." 
+                                    {!isAccepted
+                                        ? "Accept the chat to reply."
                                         : "Waiting for acceptance..."}
                                 </div>
                             )}
@@ -540,8 +543,8 @@ const Inbox = () => {
                         <Mail size={64} />
                         <h3>Select a conversation</h3>
                         <p>Choose a chat from the list or start a new one.</p>
-                        <button 
-                            className="btn-primary" 
+                        <button
+                            className="btn-primary"
                             style={{ marginTop: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}
                             onClick={() => setShowNewChat(true)}
                         >
