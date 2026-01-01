@@ -1,7 +1,7 @@
 import axios from 'axios';
 
-const FIREBASE_PROJECT_ID = process.env.FIREBASE_PROJECT_ID || 'xredread';
-const FIREBASE_API_KEY = process.env.FIREBASE_API_KEY || 'AIzaSyAq91-kUVQlXW3MhwpfRPmGP7e0nWAqGT0';
+const FIREBASE_PROJECT_ID = process.env.FIREBASE_PROJECT_ID;
+const FIREBASE_API_KEY = process.env.FIREBASE_API_KEY;
 
 // Authorized users who can create changelogs
 const AUTHORIZED_USERS = [
