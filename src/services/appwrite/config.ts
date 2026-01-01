@@ -2,8 +2,8 @@ import { Client, Account, Storage, Databases } from 'appwrite'
 
 // Khởi tạo Client Appwrite
 const client = new Client()
-    .setEndpoint(import.meta.env.VITE_APPWRITE_ENDPOINT || 'https://fra.cloud.appwrite.io/v1')
-    .setProject(import.meta.env.VITE_APPWRITE_PROJECT_ID || '68354a45003c063d0155')
+    .setEndpoint(import.meta.env.VITE_APPWRITE_ENDPOINT)
+    .setProject(import.meta.env.VITE_APPWRITE_PROJECT_ID)
 
 // Khởi tạo các services
 export const account = new Account(client)
@@ -11,12 +11,12 @@ export const storage = new Storage(client)
 export const databases = new Databases(client)
 
 // Constants cho storage
-export const STORAGE_BUCKET_ID = import.meta.env.VITE_APPWRITE_STORAGE_BUCKET_ID || '686a52c0001f6ee0e043'
+export const STORAGE_BUCKET_ID = import.meta.env.VITE_APPWRITE_STORAGE_BUCKET_ID
 
 // Debug logging
 console.log('🔧 Appwrite Configuration:', {
-  endpoint: import.meta.env.VITE_APPWRITE_ENDPOINT || 'https://fra.cloud.appwrite.io/v1',
-  projectId: import.meta.env.VITE_APPWRITE_PROJECT_ID || '68354a45003c063d0155',
+  endpoint: import.meta.env.VITE_APPWRITE_ENDPOINT,
+  projectId: import.meta.env.VITE_APPWRITE_PROJECT_ID,
   bucketId: STORAGE_BUCKET_ID
 })
 

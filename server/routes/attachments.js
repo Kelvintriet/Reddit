@@ -1,9 +1,9 @@
 import axios from 'axios';
 
 // Support both VITE_ prefixed (shared .env) and non-prefixed env vars
-const APPWRITE_ENDPOINT = process.env.APPWRITE_ENDPOINT || process.env.VITE_APPWRITE_ENDPOINT || 'https://sfo.cloud.appwrite.io/v1';
-const APPWRITE_PROJECT_ID = process.env.APPWRITE_PROJECT_ID || process.env.VITE_APPWRITE_PROJECT_ID || '692b884000178a170988';
-const APPWRITE_BUCKET_ID = process.env.APPWRITE_BUCKET_ID || process.env.VITE_APPWRITE_STORAGE_BUCKET_ID || '692b896c002fa0a3fc4b';
+const APPWRITE_ENDPOINT = process.env.APPWRITE_ENDPOINT || process.env.VITE_APPWRITE_ENDPOINT;
+const APPWRITE_PROJECT_ID = process.env.APPWRITE_PROJECT_ID || process.env.VITE_APPWRITE_PROJECT_ID;
+const APPWRITE_BUCKET_ID = process.env.APPWRITE_BUCKET_ID || process.env.VITE_APPWRITE_STORAGE_BUCKET_ID;
 
 /**
  * Proxy route to securely serve attachments from Appwrite

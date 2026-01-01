@@ -2,7 +2,7 @@ import { CohereClient } from 'cohere-ai';
 
 // Khởi tạo Cohere client
 export const cohereClient = new CohereClient({
-  token: import.meta.env.VITE_COHERE_API_KEY || 'YOUR_COHERE_API_KEY',
+  token: import.meta.env.VITE_COHERE_API_KEY,
 });
 
 // Loại phân tích văn bản

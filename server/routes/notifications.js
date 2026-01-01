@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const FIREBASE_PROJECT_ID = process.env.FIREBASE_PROJECT_ID || 'xredread';
+const FIREBASE_PROJECT_ID = process.env.FIREBASE_PROJECT_ID;
 
 // Helper to convert Firestore timestamp to ISO string
 const convertTimestamp = (timestamp) => {
