@@ -1,12 +1,12 @@
 import { Client, Storage, ID } from 'appwrite'
 
 const client = new Client()
-  .setEndpoint(import.meta.env.VITE_APPWRITE_ENDPOINT || 'https://fra.cloud.appwrite.io/v1')
-  .setProject(import.meta.env.VITE_APPWRITE_PROJECT_ID || '68354a45003c063d0155')
+  .setEndpoint(import.meta.env.VITE_APPWRITE_ENDPOINT)
+  .setProject(import.meta.env.VITE_APPWRITE_PROJECT_ID)
 
 const storage = new Storage(client)
 
-const bucketId = import.meta.env.VITE_APPWRITE_STORAGE_BUCKET_ID || '686a52c0001f6ee0e043'
+const bucketId = import.meta.env.VITE_APPWRITE_STORAGE_BUCKET_ID
 
 export const SUPPORTED_IMAGE_TYPES = [
   'image/jpeg',
@@ -290,14 +290,14 @@ export const getFile = async (fileId: string) => {
 }
 
 export const getFileDownloadUrl = (fileId: string): string => {
-  const projectId = import.meta.env.VITE_APPWRITE_PROJECT_ID || '68354a45003c063d0155'
-  const endpoint = import.meta.env.VITE_APPWRITE_ENDPOINT || 'https://fra.cloud.appwrite.io/v1'
+  const projectId = import.meta.env.VITE_APPWRITE_PROJECT_ID
+  const endpoint = import.meta.env.VITE_APPWRITE_ENDPOINT
   return `${endpoint}/storage/buckets/${bucketId}/files/${fileId}/download?project=${projectId}`
 }
 
 export const getFileViewUrl = (fileId: string): string => {
-  const projectId = import.meta.env.VITE_APPWRITE_PROJECT_ID || '68354a45003c063d0155'
-  const endpoint = import.meta.env.VITE_APPWRITE_ENDPOINT || 'https://fra.cloud.appwrite.io/v1'
+  const projectId = import.meta.env.VITE_APPWRITE_PROJECT_ID
+  const endpoint = import.meta.env.VITE_APPWRITE_ENDPOINT
   
   // Sử dụng view URL thay vì preview vì preview chỉ dành cho paid plan
   const url = `${endpoint}/storage/buckets/${bucketId}/files/${fileId}/view?project=${projectId}`
@@ -306,8 +306,8 @@ export const getFileViewUrl = (fileId: string): string => {
 }
 
 export const getVideoStreamUrl = (fileId: string): string => {
-  const projectId = import.meta.env.VITE_APPWRITE_PROJECT_ID || '68354a45003c063d0155'
-  const endpoint = import.meta.env.VITE_APPWRITE_ENDPOINT || 'https://fra.cloud.appwrite.io/v1'
+  const projectId = import.meta.env.VITE_APPWRITE_PROJECT_ID
+  const endpoint = import.meta.env.VITE_APPWRITE_ENDPOINT
   
   // Sử dụng view URL bình thường cho video - không cần mode=admin
   const url = `${endpoint}/storage/buckets/${bucketId}/files/${fileId}/view?project=${projectId}`
@@ -316,16 +316,16 @@ export const getVideoStreamUrl = (fileId: string): string => {
 }
 
 export const getImagePreviewUrl = (fileId: string): string => {
-  const projectId = import.meta.env.VITE_APPWRITE_PROJECT_ID || '68354a45003c063d0155'
-  const endpoint = import.meta.env.VITE_APPWRITE_ENDPOINT || 'https://fra.cloud.appwrite.io/v1'
+  const projectId = import.meta.env.VITE_APPWRITE_PROJECT_ID
+  const endpoint = import.meta.env.VITE_APPWRITE_ENDPOINT
   
   // Sử dụng view URL thay vì preview
   return `${endpoint}/storage/buckets/${bucketId}/files/${fileId}/view?project=${projectId}`
 }
 
 export const createThumbnail = (fileId: string): string => {
-  const projectId = import.meta.env.VITE_APPWRITE_PROJECT_ID || '68354a45003c063d0155'
-  const endpoint = import.meta.env.VITE_APPWRITE_ENDPOINT || 'https://fra.cloud.appwrite.io/v1'
+  const projectId = import.meta.env.VITE_APPWRITE_PROJECT_ID
+  const endpoint = import.meta.env.VITE_APPWRITE_ENDPOINT
   
   // Sử dụng view URL thay vì preview
   return `${endpoint}/storage/buckets/${bucketId}/files/${fileId}/view?project=${projectId}`
