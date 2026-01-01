@@ -4,11 +4,11 @@ Koa.js backend server for secure attachment access with authentication and post 
 
 ## Features
 
-- ✅ Firebase authentication verification
-- ✅ Blocked user detection
-- ✅ Post deletion verification
-- ✅ Secure attachment proxy
-- ✅ Prevents access to attachments from deleted posts
+- Firebase authentication verification
+- Blocked user detection
+- Post deletion verification
+- Secure attachment proxy
+- Prevents access to attachments from deleted posts
 
 ## Setup
 
@@ -82,9 +82,8 @@ Health check endpoint.
 
 ## Security Features
 
-- 🔒 Authentication required for all attachment requests
-- 🚫 Blocks access for blocked users
-- 🗑️ Prevents access to attachments from deleted posts
-- ✅ Verifies attachment belongs to the specified post
-- 🔐 Secure token-based authentication
-
+- Authentication required for all attachment requests
+- Blocks access for blocked users
+- Prevents access to attachments from deleted posts
+- Verifies attachment belongs to the specified post
+- Secure token-based authentication
